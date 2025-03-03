@@ -257,7 +257,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'Search Manga',
         description: `
-  - **${constants_1.SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${constants_1.SwaggerApiOperation.NOT_NEED_AUTH}**
   - Everyone can use this route
   - **Just only choose one sort field**:
       'updatedAt',
@@ -285,7 +285,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'Get all unpublish manga',
         description: `
-  - **${constants_1.SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${constants_1.SwaggerApiOperation.NEED_AUTH}**
   - Only **admin** can see this API
       `,
     }),
@@ -307,7 +307,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'Get all publish manga',
         description: `
-  - **${constants_1.SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${constants_1.SwaggerApiOperation.NOT_NEED_AUTH}**
   - Everyone can use this route
   - Order by updated date
   - **Admin** can see more information
@@ -331,7 +331,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'View Details Manga',
         description: `
-  - **${constants_1.SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${constants_1.SwaggerApiOperation.NOT_NEED_AUTH}**
   - Everyone can use this route
   - **Admin** can see more information
   - This route just use to find manga **not deleted, not draft, and published**
@@ -351,7 +351,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'User rating for Manga',
         description: `
-  - **${constants_1.SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${constants_1.SwaggerApiOperation.NEED_AUTH}**
   - Just user have account can use this API
       `,
     }),

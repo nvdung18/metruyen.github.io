@@ -278,4 +278,9 @@ export class MangaService {
       throw new HttpException('Can not update Manga', HttpStatus.BAD_REQUEST);
     return isUpdatedManga;
   }
+
+  async getNameMangaById(mangaId: number): Promise<string> {
+    const foundManga = await this.findMangaById(mangaId);
+    return foundManga.manga_title;
+  }
 }

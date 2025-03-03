@@ -39,6 +39,7 @@
     "cacheable": "^1.8.7",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "cloudinary": "^2.5.1",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "helmet": "^8.0.0",
@@ -52,6 +53,7 @@
     "sequelize-typescript": "^2.1.6",
     "server": "file:",
     "slugify": "^1.6.6",
+    "streamifier": "^0.1.1",
     "uuid": "^11.0.3",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
@@ -63,6 +65,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.2",
+    "@types/multer": "^1.4.12",
     "@types/node": "^20.3.1",
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",

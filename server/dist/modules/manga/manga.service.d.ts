@@ -27,4 +27,5 @@ export declare class MangaService {
     getAllPublishManga(paginateDto: PaginatedDto<MangaDto>): Promise<PaginatedDto<MangaDto>>;
     getDetailsManga(mangaId: number): Promise<Manga>;
     ratingManga(mangaId: number, rating: number): Promise<number>;
+    getNameMangaById(mangaId: number): Promise<string>;
 }

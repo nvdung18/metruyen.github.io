@@ -26,12 +26,18 @@ const cache_module_1 = require("./shared/cache/cache.module");
 const category_module_1 = require("./modules/category/category.module");
 const manga_module_1 = require("./modules/manga/manga.module");
 const favorite_module_1 = require("./modules/favorite/favorite.module");
+const chapter_module_1 = require("./modules/chapter/chapter.module");
+const platform_express_1 = require("@nestjs/platform-express");
+const cloudinary_module_1 = require("./shared/cloudinary/cloudinary.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            platform_express_1.MulterModule.register({
+                dest: './shared/uploads',
+            }),
             config_1.ConfigModule.forRoot({
                 cache: true,
                 isGlobal: true,
@@ -44,6 +50,8 @@ exports.AppModule = AppModule = __decorate([
             category_module_1.CategoryModule,
             manga_module_1.MangaModule,
             favorite_module_1.FavoriteModule,
+            chapter_module_1.ChapterModule,
+            cloudinary_module_1.CloudinaryModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

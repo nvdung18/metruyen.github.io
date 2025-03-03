@@ -17,8 +17,13 @@ import { MangaModule } from './modules/manga/manga.module';
 // import { DatabaseModule } from './configs/config.module';
 import { FavoriteModule } from './modules/favorite/favorite.module';
 import { ChapterModule } from './modules/chapter/chapter.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
 @Module({
   imports: [
+    MulterModule.register({
+      dest: './shared/uploads', // Thư mục lưu trữ ảnh
+    }),
     ConfigModule.forRoot({
       cache: true,
       isGlobal: true,
@@ -32,6 +37,7 @@ import { ChapterModule } from './modules/chapter/chapter.module';
     MangaModule,
     FavoriteModule,
     ChapterModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [

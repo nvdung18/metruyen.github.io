@@ -79,7 +79,6 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
       refCode: request.requestId,
       statusCode: exception.getStatus() || 500,
     });
-
     const status =
       exception instanceof HttpException
         ? exception.getStatus()

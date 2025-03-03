@@ -87,7 +87,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'Get all category',
         description: `
-  - **${constants_1.SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${constants_1.SwaggerApiOperation.NOT_NEED_AUTH}**
   - Everyone can use this route
   - **Admin** can see more information of category
     `,

@@ -76,7 +76,7 @@ export class CategoryController {
   @ApiOperation({
     summary: 'Get all category',
     description: `
-  - **${SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${SwaggerApiOperation.NOT_NEED_AUTH}**
   - Everyone can use this route
   - **Admin** can see more information of category
     `,

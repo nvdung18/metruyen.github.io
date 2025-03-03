@@ -39,14 +39,20 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      usr_salt: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
       usr_slug: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
+      },
+      usr_total_token: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      usr_number_tokens_received_today: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
       },
       usr_role: {
         type: DataTypes.INTEGER,

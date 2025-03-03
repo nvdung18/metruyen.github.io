@@ -1065,7 +1065,7 @@
     "@types/range-parser" "*"
     "@types/send" "*"
 
-"@types/express@^5.0.0":
+"@types/express@*", "@types/express@^5.0.0":
   version "5.0.0"
   resolved "https://registry.npmjs.org/@types/express/-/express-5.0.0.tgz"
   integrity sha512-DvZriSMehGHL1ZNLzi6MidnsDhUZM/x2pRdDIKdwbUNqqwHxMlRdkxtn6/EPKyqKpHqTl/4nRZsRNLpZxZRpPQ==
@@ -1145,6 +1145,13 @@
   version "0.7.34"
   resolved "https://registry.npmjs.org/@types/ms/-/ms-0.7.34.tgz"
   integrity sha512-nG96G3Wp6acyAgJqGasjODb+acrI7KltPiRxzHPXnP3NgI28bpQDRv53olbqGXbfcgF5aiiHmO3xpwEpS5Ld9g==
+
+"@types/multer@^1.4.12":
+  version "1.4.12"
+  resolved "https://registry.yarnpkg.com/@types/multer/-/multer-1.4.12.tgz#da67bd0c809f3a63fe097c458c0d4af1fea50ab7"
+  integrity sha512-pQ2hoqvXiJt2FP9WQVLPRO+AmiIm/ZYkavPlIQnx282u4ZrVdztx0pkh3jjpQt0Kz+YI0YhSG264y08UJKoUQg==
+  dependencies:
+    "@types/express" "*"
 
 "@types/node@*", "@types/node@^20.3.1":
   version "20.17.10"
@@ -2090,6 +2097,14 @@ clone@^1.0.2:
   version "1.0.4"
   resolved "https://registry.npmjs.org/clone/-/clone-1.0.4.tgz"
   integrity sha512-JQHZ2QMW6l3aH/j6xCqQThY/9OH4D/9ls34cgkUBiEeocRTU04tHfKPBsUK1PqZCUQM7GiA0IIXJSuXHI64Kbg==
+
+cloudinary@^2.5.1:
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/cloudinary/-/cloudinary-2.5.1.tgz#821a65bc889649222daa31ec60c2661f4d8f342e"
+  integrity sha512-CNg6uU53Hl4FEVynkTGpt5bQEAQWDHi3H+Sm62FzKf5uQHipSN2v7qVqS8GRVqeb0T1WNV+22+75DOJeRXYeSQ==
+  dependencies:
+    lodash "^4.17.21"
+    q "^1.5.1"
 
 cluster-key-slot@1.1.2, cluster-key-slot@^1.1.2:
   version "1.1.2"
@@ -4929,6 +4944,11 @@ pure-rand@^6.0.0:
   resolved "https://registry.npmjs.org/pure-rand/-/pure-rand-6.1.0.tgz"
   integrity sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==
 
+q@^1.5.1:
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/q/-/q-1.5.1.tgz#7e32f75b41381291d04611f1bf14109ac00651d7"
+  integrity sha512-kV/CThkXo6xyFEZUugw/+pIOywXcDbFYgSct5cT3gqlbkBE1SJdwy6UQoZvodiWF/ckQLZyDE/Bu1M6gVu5lVw==
+
 qs@6.13.0:
   version "6.13.0"
   resolved "https://registry.npmjs.org/qs/-/qs-6.13.0.tgz"
@@ -5265,6 +5285,7 @@ serve-static@1.16.2:
     "@nestjs/mapped-types" "*"
     "@nestjs/platform-express" "^10.0.0"
     "@nestjs/sequelize" "^10.0.1"
+    "@nestjs/swagger" "^11.0.2"
     "@types/crypto-js" "^4.2.2"
     "@types/sequelize" "^4.28.20"
     accesscontrol "^2.2.1"
@@ -5274,6 +5295,7 @@ serve-static@1.16.2:
     cacheable "^1.8.7"
     class-transformer "^0.5.1"
     class-validator "^0.14.1"
+    cloudinary "^2.5.1"
     crypto-js "^4.2.0"
     date-fns "^4.1.0"
     helmet "^8.0.0"
@@ -5285,7 +5307,7 @@ serve-static@1.16.2:
     sequelize "^6.37.5"
     sequelize-cli "^6.6.2"
     sequelize-typescript "^2.1.6"
-    server "file:C:/Users/DUNG TRANG COMPUTER/AppData/Local/Yarn/Cache/v6/npm-server-0.0.1-486224ef-1e83-4f63-bf31-75bda965f06b-1737291171908/node_modules/server"
+    server "file:C:/Users/DUNG TRANG COMPUTER/AppData/Local/Yarn/Cache/v6/npm-server-0.0.1-878a9cde-69ae-4f43-84da-45338377f0f9-1739865723547/node_modules/server"
     slugify "^1.6.6"
     uuid "^11.0.3"
     winston "^3.17.0"
@@ -5449,6 +5471,11 @@ statuses@2.0.1:
   version "2.0.1"
   resolved "https://registry.npmjs.org/statuses/-/statuses-2.0.1.tgz"
   integrity sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==
+
+streamifier@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/streamifier/-/streamifier-0.1.1.tgz#97e98d8fa4d105d62a2691d1dc07e820db8dfc4f"
+  integrity sha512-zDgl+muIlWzXNsXeyUfOk9dChMjlpkq0DRsxujtYPgyJ676yQ8jEm6zzaaWHFDg5BNcLuif0eD2MTyJdZqXpdg==
 
 streamsearch@^1.1.0:
   version "1.1.0"

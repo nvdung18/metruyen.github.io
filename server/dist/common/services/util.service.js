@@ -41,6 +41,14 @@ let Util = class Util {
             return `${isLastEle ? value : value + ', '}`;
         });
     }
+    replaceDataObjectByKey(objReplace, objWillBeReplace) {
+        Object.entries(objReplace).forEach(([key, value]) => {
+            if (value !== undefined) {
+                objWillBeReplace[key] = value;
+            }
+        });
+        return objWillBeReplace;
+    }
 };
 Util = __decorate([
     (0, common_1.Injectable)()

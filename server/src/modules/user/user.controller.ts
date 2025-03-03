@@ -15,6 +15,7 @@ export class UserController {
   @ApiOperation({
     summary: 'User sign-up',
     description: `
+  - **${SwaggerApiOperation.NOT_NEED_AUTH}**
   - **${SwaggerApiOperation.NOT_REQUIRE_CLIENT_ID}**
     `,
   })

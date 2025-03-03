@@ -201,7 +201,7 @@ export class MangaController {
   @ApiOperation({
     summary: 'Search Manga',
     description: `
-  - **${SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${SwaggerApiOperation.NOT_NEED_AUTH}**
   - Everyone can use this route
   - **Just only choose one sort field**:
       'updatedAt',
@@ -235,7 +235,7 @@ export class MangaController {
   @ApiOperation({
     summary: 'Get all unpublish manga',
     description: `
-  - **${SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${SwaggerApiOperation.NEED_AUTH}**
   - Only **admin** can see this API
       `,
   })
@@ -264,7 +264,7 @@ export class MangaController {
   @ApiOperation({
     summary: 'Get all publish manga',
     description: `
-  - **${SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${SwaggerApiOperation.NOT_NEED_AUTH}**
   - Everyone can use this route
   - Order by updated date
   - **Admin** can see more information
@@ -295,7 +295,7 @@ export class MangaController {
   @ApiOperation({
     summary: 'View Details Manga',
     description: `
-  - **${SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${SwaggerApiOperation.NOT_NEED_AUTH}**
   - Everyone can use this route
   - **Admin** can see more information
   - This route just use to find manga **not deleted, not draft, and published**
@@ -318,7 +318,7 @@ export class MangaController {
   @ApiOperation({
     summary: 'User rating for Manga',
     description: `
-  - **${SwaggerApiOperation.CLIENT_ID_OPTIONAL}**
+  - **${SwaggerApiOperation.NEED_AUTH}**
   - Just user have account can use this API
       `,
   })

@@ -9,4 +9,5 @@ export default class Util {
         object: any;
     }): object;
     static getAllDataOfEnum(enumObj: any): string[];
+    replaceDataObjectByKey(objReplace: any, objWillBeReplace: any): any;
 }

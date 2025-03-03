@@ -70,6 +70,20 @@ export class User extends Model {
   })
   usr_slug: string;
 
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  })
+  usr_number_tokens_received_today: number;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  })
+  usr_total_token: number;
+
   @ForeignKey(() => Role)
   @Column({
     type: DataType.INTEGER,

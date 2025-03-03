@@ -39,4 +39,13 @@ export default class Util {
       return `${isLastEle ? value : value + ', '}`;
     });
   }
+
+  replaceDataObjectByKey(objReplace: any, objWillBeReplace: any) {
+    Object.entries(objReplace).forEach(([key, value]) => {
+      if (value !== undefined) {
+        objWillBeReplace[key] = value; // Only replace keys with new values
+      }
+    });
+    return objWillBeReplace;
+  }
 }

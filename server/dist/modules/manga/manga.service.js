@@ -180,6 +180,10 @@ let MangaService = class MangaService {
             throw new common_1.HttpException('Can not update Manga', common_1.HttpStatus.BAD_REQUEST);
         return isUpdatedManga;
     }
+    async getNameMangaById(mangaId) {
+        const foundManga = await this.findMangaById(mangaId);
+        return foundManga.manga_title;
+    }
 };
 exports.MangaService = MangaService;
 exports.MangaService = MangaService = __decorate([

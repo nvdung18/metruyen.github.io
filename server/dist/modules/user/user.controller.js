@@ -34,6 +34,7 @@ __decorate([
     (0, swagger_1.ApiOperation)({
         summary: 'User sign-up',
         description: `
+  - **${constants_1.SwaggerApiOperation.NOT_NEED_AUTH}**
   - **${constants_1.SwaggerApiOperation.NOT_REQUIRE_CLIENT_ID}**
     `,
     }),

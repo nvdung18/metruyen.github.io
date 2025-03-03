@@ -16,4 +16,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./role.constant"), exports);
 __exportStar(require("./swagger.constant"), exports);
+__exportStar(require("./cloudinary.constant"), exports);
 //# sourceMappingURL=index.js.map

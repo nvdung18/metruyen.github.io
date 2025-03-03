@@ -4,10 +4,8 @@ import {
   Delete,
   Get,
   Param,
-  Patch,
   Post,
   Req,
-  Res,
 } from '@nestjs/common';
 import { FavoriteService } from './favorite.service';
 import {
