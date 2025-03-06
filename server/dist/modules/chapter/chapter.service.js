@@ -19,20 +19,22 @@ const cloudinary_service_1 = require("../../shared/cloudinary/cloudinary.service
 const manga_service_1 = require("../manga/manga.service");
 const chapter_model_1 = require("./models/chapter.model");
 const util_service_1 = __importDefault(require("../../common/services/util.service"));
+const pinata_service_1 = require("../../shared/pinata/pinata.service");
 let ChapterService = class ChapterService {
-    constructor(chapterRepo, cloudinaryService, mangaService, util) {
+    constructor(chapterRepo, cloudinaryService, mangaService, pinataService, util) {
         this.chapterRepo = chapterRepo;
         this.cloudinaryService = cloudinaryService;
         this.mangaService = mangaService;
+        this.pinataService = pinataService;
         this.util = util;
     }
     async createChapterForManga(createChapterDto, files, mangaId) {
         const nameManga = await this.mangaService.getNameMangaById(mangaId);
         const folderName = `${nameManga}/${createChapterDto.chap_number}`;
-        const uploadResults = await this.cloudinaryService.uploadManyFiles(files, folderName);
+        const uploadResults = await this.pinataService.uploadManyFiles(files, folderName);
         const secureUrls = uploadResults.map((result, index) => ({
             page: index,
-            image_url: result.secure_url,
+            image_url: result['IpfsHash'],
         }));
         const chapterId = this.util.generateIdByTime();
         const newChapter = await this.chapterRepo.createChapter(new chapter_model_1.Chapter({
@@ -113,6 +115,7 @@ exports.ChapterService = ChapterService = __decorate([
     __metadata("design:paramtypes", [chapter_repo_1.ChapterRepo,
         cloudinary_service_1.CloudinaryService,
         manga_service_1.MangaService,
+        pinata_service_1.PinataService,
         util_service_1.default])
 ], ChapterService);
 //# sourceMappingURL=chapter.service.js.map

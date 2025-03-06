@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UploadedFiles,
   UseInterceptors,
   ValidationPipe,
@@ -28,11 +29,15 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { AtLeastOneFieldPipe } from '@common/pipes/at-least-one-field.pipe';
 import { GuestRole } from '@common/decorators/roles.decorator';
+import { PinataService } from 'src/shared/pinata/pinata.service';
 
 @ApiBearerAuth()
 @Controller('chapter')
 export class ChapterController {
-  constructor(private readonly chapterService: ChapterService) {}
+  constructor(
+    private readonly chapterService: ChapterService,
+    private readonly pinataService: PinataService,
+  ) {}
 
   @ApiOperation({
     summary: 'Add chapter by admin',

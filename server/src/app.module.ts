@@ -19,6 +19,7 @@ import { FavoriteModule } from './modules/favorite/favorite.module';
 import { ChapterModule } from './modules/chapter/chapter.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
+import { PinataModule } from './shared/pinata/pinata.module';
 @Module({
   imports: [
     MulterModule.register({
@@ -38,6 +39,7 @@ import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
     FavoriteModule,
     ChapterModule,
     CloudinaryModule,
+    PinataModule,
   ],
   controllers: [AppController],
   providers: [

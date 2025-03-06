@@ -1,6 +1,0 @@
-2025-02-28 14:27:34 - info - /manga/search - da5c918d-9fdb-4ebb-8134-ee0fb7b5033d - input params ::GET - {}
-2025-02-28 14:28:42 - info - /manga/publish - f2aacbe6-1dea-4a58-ab1b-c5f75e52e4f6 - input params ::GET - {}
-2025-02-28 14:28:48 - info - /manga/publish - 7684dae0-ed31-4088-89a5-18199286cf01 - input params ::GET - {"page":"2"}
-2025-02-28 14:31:17 - info - /auth/login - 0f12e315-7ffb-4f54-befe-0fd35e631624 - input params ::POST - {"usr_email":"admin123@gmail.com","usr_password":"admin123"}
-2025-02-28 14:32:02 - info - /manga/unpublish - 1dda658c-f813-48bc-868c-4d690020c6cc - input params ::GET - {}
-2025-02-28 14:32:46 - info - /manga/publish - 2cdbd818-b1c5-4477-a47f-1d3a2aeebd4f - input params ::GET - {}

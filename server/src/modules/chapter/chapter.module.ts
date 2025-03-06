@@ -6,12 +6,14 @@ import { Chapter } from './models/chapter.model';
 import { ChapterRepo } from './chapter.repo';
 import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
 import { MangaModule } from '@modules/manga/manga.module';
+import { PinataModule } from 'src/shared/pinata/pinata.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Chapter]),
     CloudinaryModule,
     MangaModule,
+    PinataModule,
   ],
   controllers: [ChapterController],
   providers: [ChapterService, ChapterRepo],

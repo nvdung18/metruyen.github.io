@@ -29,6 +29,7 @@ const favorite_module_1 = require("./modules/favorite/favorite.module");
 const chapter_module_1 = require("./modules/chapter/chapter.module");
 const platform_express_1 = require("@nestjs/platform-express");
 const cloudinary_module_1 = require("./shared/cloudinary/cloudinary.module");
+const pinata_module_1 = require("./shared/pinata/pinata.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -52,6 +53,7 @@ exports.AppModule = AppModule = __decorate([
             favorite_module_1.FavoriteModule,
             chapter_module_1.ChapterModule,
             cloudinary_module_1.CloudinaryModule,
+            pinata_module_1.PinataModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

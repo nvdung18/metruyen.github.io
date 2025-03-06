@@ -6,6 +6,7 @@ import { MangaService } from '@modules/manga/manga.service';
 import { Chapter } from './models/chapter.model';
 import Util from '@common/services/util.service';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
+import { PinataService } from 'src/shared/pinata/pinata.service';
 
 @Injectable()
 export class ChapterService {
@@ -13,6 +14,7 @@ export class ChapterService {
     private readonly chapterRepo: ChapterRepo,
     private readonly cloudinaryService: CloudinaryService,
     private readonly mangaService: MangaService,
+    private readonly pinataService: PinataService,
     private util: Util,
   ) {}
 
@@ -23,14 +25,15 @@ export class ChapterService {
   ): Promise<any> {
     const nameManga = await this.mangaService.getNameMangaById(mangaId);
     const folderName = `${nameManga}/${createChapterDto.chap_number}`;
+    // const folderName = nameManga;
 
-    const uploadResults = await this.cloudinaryService.uploadManyFiles(
+    const uploadResults = await this.pinataService.uploadManyFiles(
       files,
       folderName,
     );
     const secureUrls = uploadResults.map((result, index) => ({
       page: index,
-      image_url: result.secure_url,
+      image_url: result['IpfsHash'],
     }));
     const chapterId = this.util.generateIdByTime();
     const newChapter = await this.chapterRepo.createChapter(

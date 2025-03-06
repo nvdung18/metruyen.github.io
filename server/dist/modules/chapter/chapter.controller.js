@@ -24,9 +24,11 @@ const platform_express_1 = require("@nestjs/platform-express");
 const update_chapter_dto_1 = require("./dto/update-chapter.dto");
 const at_least_one_field_pipe_1 = require("../../common/pipes/at-least-one-field.pipe");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const pinata_service_1 = require("../../shared/pinata/pinata.service");
 let ChapterController = class ChapterController {
-    constructor(chapterService) {
+    constructor(chapterService, pinataService) {
         this.chapterService = chapterService;
+        this.pinataService = pinataService;
     }
     async createChapterForManga(req, createChapterDto, files, mangaId) {
         const data = await this.chapterService.createChapterForManga(createChapterDto, files, mangaId);
@@ -215,6 +217,7 @@ __decorate([
 exports.ChapterController = ChapterController = __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('chapter'),
-    __metadata("design:paramtypes", [chapter_service_1.ChapterService])
+    __metadata("design:paramtypes", [chapter_service_1.ChapterService,
+        pinata_service_1.PinataService])
 ], ChapterController);
 //# sourceMappingURL=chapter.controller.js.map

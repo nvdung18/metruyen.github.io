@@ -15,6 +15,7 @@ const chapter_model_1 = require("./models/chapter.model");
 const chapter_repo_1 = require("./chapter.repo");
 const cloudinary_module_1 = require("../../shared/cloudinary/cloudinary.module");
 const manga_module_1 = require("../manga/manga.module");
+const pinata_module_1 = require("../../shared/pinata/pinata.module");
 let ChapterModule = class ChapterModule {
 };
 exports.ChapterModule = ChapterModule;
@@ -24,6 +25,7 @@ exports.ChapterModule = ChapterModule = __decorate([
             sequelize_1.SequelizeModule.forFeature([chapter_model_1.Chapter]),
             cloudinary_module_1.CloudinaryModule,
             manga_module_1.MangaModule,
+            pinata_module_1.PinataModule,
         ],
         controllers: [chapter_controller_1.ChapterController],
         providers: [chapter_service_1.ChapterService, chapter_repo_1.ChapterRepo],

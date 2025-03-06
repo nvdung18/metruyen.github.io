@@ -59,12 +59,6 @@ export class User extends Model {
 
   @Column({
     type: DataType.STRING,
-    allowNull: true,
-  })
-  usr_salt: string;
-
-  @Column({
-    type: DataType.STRING,
     allowNull: false,
     unique: true,
   })

@@ -71,18 +71,27 @@ __decorate([
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.STRING,
-        allowNull: true,
-    }),
-    __metadata("design:type", String)
-], User.prototype, "usr_salt", void 0);
-__decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.STRING,
         allowNull: false,
         unique: true,
     }),
     __metadata("design:type", String)
 ], User.prototype, "usr_slug", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+    }),
+    __metadata("design:type", Number)
+], User.prototype, "usr_number_tokens_received_today", void 0);
+__decorate([
+    (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+    }),
+    __metadata("design:type", Number)
+], User.prototype, "usr_total_token", void 0);
 __decorate([
     (0, sequelize_typescript_1.ForeignKey)(() => role_model_1.Role),
     (0, sequelize_typescript_1.Column)({

@@ -1,0 +1,38 @@
+2025-03-05 15:17:24 - info - /auth/login - 2d9d23b2-98a5-4fda-b2c0-a9b0b936575d - input params ::POST - {"usr_email":"admin123@gmail.com","usr_password":"admin123"}
+2025-03-05 15:17:24 - error - /auth/login - 04c74245-c20e-4a85-bbc5-9684ca5cf249 - Unknown column 'usr_salt' in 'field list'::[SequelizeDatabaseError] - 500 - Error
+    at Query.run (E:\Work code\web project\Manga\server\node_modules\sequelize\src\dialects\mysql\query.js:46:25)
+    at <anonymous> (E:\Work code\web project\Manga\server\node_modules\sequelize\src\sequelize.js:650:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at MySQLQueryInterface.select (E:\Work code\web project\Manga\server\node_modules\sequelize\src\dialects\abstract\query-interface.js:1001:12)
+    at Function.findAll (E:\Work code\web project\Manga\server\node_modules\sequelize\src\model.js:1824:21)
+    at Function.findOne (E:\Work code\web project\Manga\server\node_modules\sequelize\src\model.js:1998:12)
+    at AuthService.signIn (E:\Work code\web project\Manga\server\src\modules\auth\auth.service.ts:23:23)
+    at AuthController.signIn (E:\Work code\web project\Manga\server\src\modules\auth\auth.controller.ts:70:17)
+2025-03-05 15:18:39 - info - /auth/login - f5431143-f5af-4248-b8f8-d6a19ae1abc6 - input params ::POST - {"usr_email":"admin123@gmail.com","usr_password":"admin123"}
+2025-03-05 15:19:04 - info - /auth/auth-token - 7f664e2a-125c-4434-bb51-a1eb2b34e80d - input params ::GET - {}
+2025-03-05 16:10:17 - info - /chapter/test/upload - 8b86b599-dd08-4cc5-87f3-2ff143466da4 - input params ::POST - {}
+2025-03-05 16:12:14 - info - /chapter/test/upload - 063f688f-0b18-4e21-80d7-b8f82452dcb5 - input params ::POST - {}
+2025-03-05 16:13:51 - info - /chapter/test/upload - 761c79cd-b621-4fed-a924-24a0acb8d123 - input params ::POST - {}
+2025-03-05 16:15:04 - info - /chapter/test/upload - 5196dda7-6296-466a-abf0-fd1d2ee69c7a - input params ::POST - {}
+2025-03-05 16:15:18 - info - /chapter/test/upload - ce476e53-3cdb-48d1-97e0-59d7db05bed0 - input params ::POST - {}
+2025-03-05 16:21:45 - info - /chapter/test/upload - 85b52886-6ece-406a-a203-eff6545a6d50 - input params ::POST - {}
+2025-03-05 16:26:10 - info - /chapter/test/upload - 8c5527e4-62d0-415d-8b1a-4c62e629c8d0 - input params ::POST - {}
+2025-03-05 16:26:47 - info - /chapter/test/upload - 2984a442-40c4-4a70-938d-897e4efa806c - input params ::POST - {}
+2025-03-05 16:31:31 - info - /chapter/test/upload - fb4d4cdc-f583-41cd-8386-e3d26cc6c364 - input params ::POST - {}
+2025-03-05 16:32:18 - info - /chapter/test/upload - aafe443e-4373-4df1-8d8d-14a2bd1708fc - input params ::POST - {}
+2025-03-05 22:49:58 - info - /chapter/test/upload - 608c7d39-6c3b-49dc-8efa-c79a1a2a8e23 - input params ::POST - {}
+2025-03-05 22:50:32 - info - /chapter/test/upload - 34ffac37-b129-442c-b6e7-59fbaa55a405 - input params ::POST - {}
+2025-03-05 22:50:35 - info - /chapter/test/upload - c82d920f-3782-4134-8fdd-f88e6d419f99 - input params ::POST - {}
+2025-03-05 22:52:10 - info - /chapter/test/upload - 723ae774-d688-41d7-99ec-24543aa4cb78 - input params ::POST - {}
+2025-03-05 22:54:31 - info - /chapter/test/upload - 5b074ea0-3d1b-437f-a12b-f29d96ac559c - input params ::POST - {}
+2025-03-05 22:54:50 - info - /chapter/test/upload - f58eb7c8-9ca0-48bf-8dbc-85c6b780ded6 - input params ::POST - {}
+2025-03-05 22:55:48 - info - /chapter/test/upload - ad12ae40-fe42-4d05-9224-9456d4d155c0 - input params ::POST - {}
+2025-03-05 22:56:29 - info - /chapter/test/upload - 0b808bbb-8260-40d3-b47d-275bf81727b9 - input params ::POST - {}
+2025-03-05 22:56:54 - info - /chapter/test/upload - ed9f4d7d-3970-4086-bf6b-a0653af092a4 - input params ::POST - {}
+2025-03-05 22:57:03 - info - /chapter/test/upload - 48fd1525-d616-4fbe-95a2-ac3429c30ebf - input params ::POST - {}
+2025-03-05 22:57:38 - info - /chapter/test/upload - a55a1198-191b-4690-a528-0aba108d325d - input params ::POST - {}
+2025-03-05 23:01:03 - info - /chapter/test/upload - de69265f-6dd8-4e50-8f17-8bd9f61b2562 - input params ::POST - {}
+2025-03-05 23:02:58 - info - /chapter/test/upload - 4285f5d4-2828-46b1-a2e5-d418d4272d11 - input params ::POST - {}
+2025-03-05 23:54:41 - info - /chapter/1 - e32d77b3-d594-4fe0-a828-7de40310e082 - input params ::POST - {}
+2025-03-05 23:58:09 - info - /chapter/test/upload - 10fbea3a-5171-49d0-9393-aaa49529abaf - input params ::POST - {}
+2025-03-05 23:58:30 - info - /chapter/test/upload - 94ebd85b-3948-4882-ae78-04241ffb5f45 - input params ::POST - {}

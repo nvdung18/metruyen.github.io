@@ -1,9 +1,11 @@
 import { ChapterService } from './chapter.service';
 import { CreateChapterDto } from './dto/create-chapter.dto';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
+import { PinataService } from 'src/shared/pinata/pinata.service';
 export declare class ChapterController {
     private readonly chapterService;
-    constructor(chapterService: ChapterService);
+    private readonly pinataService;
+    constructor(chapterService: ChapterService, pinataService: PinataService);
     createChapterForManga(req: Request, createChapterDto: CreateChapterDto, files: Express.Multer.File[], mangaId: number): Promise<{
         metadata: any;
     }>;
