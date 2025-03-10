@@ -1,0 +1,81 @@
+2025-03-08 00:34:05 - info - /chapter/1 - 3cbb3a19-faef-4d9c-afff-78d53e1fe0f8 - input params ::POST - {}
+2025-03-08 00:34:58 - info - /chapter/1 - 6eef972f-5e1c-4489-b59f-16ca970acb65 - input params ::POST - {}
+2025-03-08 00:36:06 - info - /chapter/1 - c607b64c-3b1d-47b3-88e1-1cc60b381461 - input params ::POST - {}
+2025-03-08 00:37:47 - info - /chapter/1 - 3b41a595-f3e9-4aef-80f9-5cc163c759b9 - input params ::POST - {}
+2025-03-08 00:39:55 - info - /chapter/1 - 5361135e-3371-4af5-b38d-11bf5487fe42 - input params ::POST - {}
+2025-03-08 00:43:34 - info - /chapter/4 - cbd5b01f-8b2d-40ca-b46e-7ebd6b6f4b7d - input params ::POST - {}
+2025-03-08 10:35:14 - info - /category - cb779f32-60ce-43a1-aeec-19fc850ea394 - input params ::GET - {}
+2025-03-08 10:36:37 - info - /category - 7705b38a-a7c3-4f88-86bd-4399b39acf0c - input params ::GET - {}
+2025-03-08 15:29:15 - info - /auth/login - 434d4a07-3d43-41df-ad7f-88a5ccc37d58 - input params ::POST - {"usr_email":"user123@example.com","usr_password":"user123"}
+2025-03-08 15:29:40 - info - /favorite/manga-from-favorite/2 - dd534a21-525a-42af-a8b9-c9e5a302181f - input params ::GET - {}
+2025-03-08 15:29:40 - error - /favorite/manga-from-favorite/2 - 1701eaf8-e939-428d-8134-f455b286ac1c - Not found favorite - 400 - HttpException: Not found favorite
+    at FavoriteService.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.service.ts:71:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at FavoriteController.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.controller.ts:96:18)
+2025-03-08 15:30:31 - info - /favorite/manga-from-favorite/2 - 5cb350d0-71ba-4e91-ae18-559bac87a607 - input params ::GET - {}
+2025-03-08 15:30:31 - error - /favorite/manga-from-favorite/2 - b1c1a434-435e-4982-a561-95a91d2b4daf - Not found favorite - 400 - HttpException: Not found favorite
+    at FavoriteService.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.service.ts:72:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at FavoriteController.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.controller.ts:96:18)
+2025-03-08 15:30:41 - info - /favorite/manga-from-favorite/1 - e936b456-c385-46de-841b-6278c143b19d - input params ::GET - {}
+2025-03-08 15:30:51 - info - /favorite/manga-from-favorite/1 - ee5dcf14-0fb5-4971-b221-a840516f9ee1 - input params ::GET - {}
+2025-03-08 15:32:47 - info - /favorite/manga-to-favorite - ffb104a5-f8f5-457e-afa8-fca2c9b8bab7 - input params ::POST - {"manga_id":1,"fav_id":1}
+2025-03-08 15:32:54 - info - /favorite/manga-to-favorite - 359389b3-f8a8-47f1-83a2-3d5f246b8f1b - input params ::POST - {"manga_id":2,"fav_id":1}
+2025-03-08 15:32:58 - info - /favorite/manga-to-favorite - e526ab3a-04c4-4835-b169-50b82adf93eb - input params ::POST - {"manga_id":3,"fav_id":1}
+2025-03-08 15:32:58 - error - /favorite/manga-to-favorite - dac70fe3-628e-4deb-a7f4-73c60c817de2 - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at FavoriteService.addMangaToFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.service.ts:25:5)
+    at FavoriteController.addMangaToFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.controller.ts:43:18)
+2025-03-08 15:33:02 - info - /favorite/manga-to-favorite - 8a641a20-f3ef-4a2c-8e4f-fb8f36710736 - input params ::POST - {"manga_id":4,"fav_id":1}
+2025-03-08 15:33:05 - info - /favorite/manga-to-favorite - b1a31742-515d-4723-9006-303b422f3484 - input params ::POST - {"manga_id":5,"fav_id":1}
+2025-03-08 15:33:10 - info - /favorite/manga-from-favorite/1 - 3c54dd2b-7cee-43a1-a1a6-8d6285ad7445 - input params ::GET - {}
+2025-03-08 15:36:32 - info - /favorite/manga-from-favorite/1 - 6a1321b8-0345-4642-8093-aad1fcbc0355 - input params ::GET - {}
+2025-03-08 15:40:36 - info - /favorite/manga-from-favorite/1 - 0896887a-192e-4fc7-8d43-56a59f30e725 - input params ::GET - {}
+2025-03-08 15:41:52 - info - /favorite/manga-from-favorite/1 - b0e7b10f-fee6-4eb6-aabf-1ec0aa957527 - input params ::GET - {}
+2025-03-08 15:41:52 - error - /favorite/manga-from-favorite/1 - f5f1d9ae-37ea-4cf0-a367-e95cf77a8b27 - Unknown column 'manga.isDeleted' in 'on clause'::[SequelizeDatabaseError] - 500 - Error
+    at Query.run (E:\Work code\web project\Manga\server\node_modules\sequelize\src\dialects\mysql\query.js:46:25)
+    at <anonymous> (E:\Work code\web project\Manga\server\node_modules\sequelize\src\sequelize.js:650:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at MySQLQueryInterface.select (E:\Work code\web project\Manga\server\node_modules\sequelize\src\dialects\abstract\query-interface.js:1001:12)
+    at Function.findAll (E:\Work code\web project\Manga\server\node_modules\sequelize\src\model.js:1824:21)
+    at FavoriteRepo.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.repo.ts:53:12)
+    at FavoriteService.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.service.ts:74:7)
+    at FavoriteController.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.controller.ts:96:18)
+2025-03-08 15:42:02 - info - /favorite/manga-from-favorite/1 - 23b34842-fed5-4514-9804-56eaba0ba047 - input params ::GET - {}
+2025-03-08 15:42:12 - info - /favorite/manga-from-favorite/1 - f55f1479-2bab-4028-b585-be87797930af - input params ::GET - {}
+2025-03-08 15:45:17 - info - /favorite/manga-from-favorite/1 - a1fdcd0e-b2c1-434e-872e-253a8eb50a9a - input params ::GET - {}
+2025-03-08 15:45:39 - info - /favorite/manga-from-favorite/1 - c4e7e958-2c80-4ad8-b594-5bb2b222374d - input params ::GET - {}
+2025-03-08 15:45:53 - info - /favorite/manga-from-favorite/1 - dd310fc5-c59a-48d0-a48f-83d413d9f98d - input params ::GET - {}
+2025-03-08 15:46:10 - info - /favorite/manga-from-favorite/1 - fc143d4d-2fd3-481a-a65b-773c4e4d1669 - input params ::GET - {}
+2025-03-08 15:50:49 - info - /chapter/3 - cd6ce676-7e8e-4bd2-9c0b-a4ce0af26eb1 - input params ::GET - {}
+2025-03-08 15:50:49 - error - /chapter/3 - 2dc36cae-effe-49f5-ac03-c1c97a6d4c89 - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at ChapterService.getAllChaptersByMangaId (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.service.ts:131:5)
+    at ChapterController.getAllChaptersByMangaId (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.controller.ts:148:18)
+2025-03-08 15:54:03 - info - /chapter/details/1 - 58f61bf0-51ba-4d99-ad56-291d50cc6060 - input params ::GET - {"chapter":"1"}
+2025-03-08 15:54:13 - info - /chapter/details/3 - d200ed38-7f4a-4f85-9824-92ca989d556b - input params ::GET - {"chapter":"1"}
+2025-03-08 15:54:13 - error - /chapter/details/3 - e81e4740-b630-4b33-9428-a3fe02a7be6d - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at ChapterService.getDetailsOfChapterByChapNumber (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.service.ts:146:5)
+    at ChapterController.getDetailsOfChapterByChapNumber (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.controller.ts:180:18)
+2025-03-08 15:59:17 - info - /chapter/2 - 7893e3d0-054c-4d00-91c2-bd34d23dad8a - input params ::GET - {}
+2025-03-08 15:59:23 - info - /chapter/4 - a7ccf2ad-936f-46de-b810-67522f9fc36d - input params ::GET - {}
+2025-03-08 16:03:18 - info - /chapter/details/3 - b9b1b06d-9035-4f00-a5fd-ef7053e451f0 - input params ::GET - {"chapter":"1"}
+2025-03-08 16:03:18 - error - /chapter/details/3 - 03f6e333-ce43-4ab9-8a75-eb5448390f45 - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at ChapterService.getDetailsOfChapterByChapNumber (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.service.ts:148:5)
+    at ChapterController.getDetailsOfChapterByChapNumber (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.controller.ts:180:18)
+2025-03-08 16:03:22 - info - /chapter/details/2 - 23094e3c-cca5-4280-9b87-707a0e4c4db4 - input params ::GET - {"chapter":"1"}
+2025-03-08 16:13:04 - info - /auth/login - 030a04b9-5f96-449c-a4e0-76e7c38c1de2 - input params ::POST - {"usr_email":"admin123@gmail.com","usr_password":"admin123"}
+2025-03-08 16:13:21 - info - /manga/10 - 12c2f45f-e50f-4097-9429-ed154773ee8e - input params ::DELETE - {}
+2025-03-08 16:15:08 - info - /manga/10 - 48cf2db3-2e1f-470f-9532-aaf8bc0cc11d - input params ::DELETE - {}
+2025-03-08 16:15:08 - error - /manga/10 - 9968faef-bf0e-4577-9a69-df3e8b207e30 - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at MangaService.deleteManga (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:288:5)
+    at MangaController.deleteManga (E:\Work code\web project\Manga\server\src\modules\manga\manga.controller.ts:359:17)
+2025-03-08 16:30:46 - info - /chapter/7 - afcd2f10-f881-402f-a547-2e4c13327adc - input params ::DELETE - {}

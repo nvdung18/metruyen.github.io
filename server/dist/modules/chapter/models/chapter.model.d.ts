@@ -6,7 +6,7 @@ export declare class Chapter extends Model {
     manga: Manga;
     chap_number: number;
     chap_title: string;
-    chap_content: object;
+    chap_content: string;
     chap_views: number;
     is_deleted: boolean;
 }

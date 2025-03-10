@@ -7,29 +7,32 @@ export class PinataService {
   constructor(@Inject('PINATA_SDK') private readonly pinata: PinataSDK) {}
 
   async uploadFile(
-    file: Express.Multer.File,
-    groupName: string,
-    fileName: string = '',
+    file: Buffer | Express.Multer.File,
+    fileName: string,
+    groupName: string = '',
   ): Promise<PinataResponse> {
-    const groups = await this.getGroupByName(groupName);
-    let group: PinataResponse;
-    if (groups.length === 0) {
-      group = await this.createNewGroup(groupName);
-    } else {
-      group = groups[0];
-    }
-
+    const fileBuffer = file instanceof Buffer ? file : file.buffer;
     const objFile = Object.assign(
-      new Blob([file.buffer], { type: 'text/plain' }),
+      new Blob([fileBuffer], { type: 'text/plain' }),
       {
         name: fileName,
         lastModified: Date.now(),
       },
     );
 
+    let group: PinataResponse = null;
+    if (groupName != '') {
+      const groups = await this.getGroupByName(groupName);
+      if (groups.length === 0) {
+        group = await this.createNewGroup(groupName);
+      } else {
+        group = groups[0];
+      }
+    }
+
     //  Upload file lên Pinata
     const upload = await this.pinata.upload.file(objFile, {
-      groupId: group['id'],
+      groupId: group == null ? '' : group['id'],
     });
 
     return upload;
@@ -37,15 +40,15 @@ export class PinataService {
 
   async uploadManyFiles(
     files: Express.Multer.File[],
-    groupName: string,
+    groupName: string = '',
     fileNames: any[] = [],
   ): Promise<PinataResponse[]> {
     return Promise.all(
       files.map((file, index) =>
         this.uploadFile(
           file,
-          groupName,
           fileNames[index]?.toString() || index.toString(),
+          groupName,
         ),
       ),
     );
@@ -61,7 +64,8 @@ export class PinataService {
     return group;
   }
 
-  convertToFolderName(folderName: string): string {
-    return folderName.toLowerCase().replace(/\s+/g, '-'); // Replace spaces with hyphens
+  async getFileByCid(cid: string): Promise<PinataResponse> {
+    const file = await this.pinata.gateways.get(cid);
+    return file;
   }
 }

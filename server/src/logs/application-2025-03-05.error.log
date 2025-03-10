@@ -1,9 +1,0 @@
-2025-03-05 15:17:24 - error - /auth/login - 04c74245-c20e-4a85-bbc5-9684ca5cf249 - Unknown column 'usr_salt' in 'field list'::[SequelizeDatabaseError] - 500 - Error
-    at Query.run (E:\Work code\web project\Manga\server\node_modules\sequelize\src\dialects\mysql\query.js:46:25)
-    at <anonymous> (E:\Work code\web project\Manga\server\node_modules\sequelize\src\sequelize.js:650:28)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at MySQLQueryInterface.select (E:\Work code\web project\Manga\server\node_modules\sequelize\src\dialects\abstract\query-interface.js:1001:12)
-    at Function.findAll (E:\Work code\web project\Manga\server\node_modules\sequelize\src\model.js:1824:21)
-    at Function.findOne (E:\Work code\web project\Manga\server\node_modules\sequelize\src\model.js:1998:12)
-    at AuthService.signIn (E:\Work code\web project\Manga\server\src\modules\auth\auth.service.ts:23:23)
-    at AuthController.signIn (E:\Work code\web project\Manga\server\src\modules\auth\auth.controller.ts:70:17)

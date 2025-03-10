@@ -10,7 +10,7 @@ export declare class ChapterController {
         metadata: any;
     }>;
     updateChapter(req: Request, updateChapterDto: UpdateChapterDto, files: Express.Multer.File[], chapterId: number): Promise<{
-        metadata: Number;
+        metadata: number;
     }>;
     getAllChaptersByMangaId(req: Request, mangaId: number): Promise<{
         metadata: any;
@@ -19,6 +19,9 @@ export declare class ChapterController {
         metadata: any;
     }>;
     increaseViewOfChapter(req: Request, mangaId: number, chapter: number): Promise<{
+        metadata: number;
+    }>;
+    deleteChapter(req: Request, chapId: number): Promise<{
         metadata: number;
     }>;
 }

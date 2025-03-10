@@ -184,6 +184,13 @@ let MangaService = class MangaService {
         const foundManga = await this.findMangaById(mangaId);
         return foundManga.manga_title;
     }
+    async deleteManga(mangaId) {
+        await this.findMangaById(mangaId);
+        const isDeletedManga = await this.mangaRepo.deleteMangaById(mangaId);
+        if (!isDeletedManga)
+            throw new common_1.HttpException('Can not delete Manga', common_1.HttpStatus.BAD_REQUEST);
+        return isDeletedManga;
+    }
 };
 exports.MangaService = MangaService;
 exports.MangaService = MangaService = __decorate([

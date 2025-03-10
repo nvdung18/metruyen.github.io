@@ -34,15 +34,17 @@ let ChapterService = class ChapterService {
         const uploadResults = await this.pinataService.uploadManyFiles(files, folderName);
         const secureUrls = uploadResults.map((result, index) => ({
             page: index,
-            image_url: result['IpfsHash'],
+            image: `ipfs.io/ipfs/${result['IpfsHash']}`,
         }));
+        const jsonBufferUrls = Buffer.from(JSON.stringify(secureUrls));
+        const uploadJsonUrls = await this.pinataService.uploadFile(jsonBufferUrls, `${nameManga}-${createChapterDto.chap_number}`, folderName);
         const chapterId = this.util.generateIdByTime();
         const newChapter = await this.chapterRepo.createChapter(new chapter_model_1.Chapter({
             chap_id: chapterId,
             chap_manga_id: mangaId,
             chap_title: createChapterDto.chap_title,
             chap_number: createChapterDto.chap_number,
-            chap_content: JSON.stringify(secureUrls),
+            chap_content: uploadJsonUrls['IpfsHash'],
         }));
         if (!newChapter)
             throw new common_1.HttpException('Chapter can not create', common_1.HttpStatus.BAD_REQUEST);
@@ -50,22 +52,23 @@ let ChapterService = class ChapterService {
     }
     async updateChapterForManga(updateChapterDto, chapId, files = []) {
         let foundChapter = await this.findChapterById(chapId);
+        await this.mangaService.findMangaById(foundChapter.chap_manga_id);
         foundChapter = this.util.replaceDataObjectByKey(updateChapterDto, foundChapter);
         if (files.length != 0 && updateChapterDto.chap_img_pages.length != 0) {
-            if (typeof foundChapter.chap_content === 'string') {
-                foundChapter.chap_content = JSON.parse(foundChapter.chap_content);
-            }
+            const chapterContent = await this.pinataService.getFileByCid(foundChapter.chap_content);
             const nameManga = await this.mangaService.getNameMangaById(foundChapter.chap_manga_id);
             const folderName = `${nameManga}/${foundChapter.chap_number}`;
-            const uploadResults = await this.cloudinaryService.uploadManyFiles(files, folderName, updateChapterDto.chap_img_pages);
+            const uploadResults = await this.pinataService.uploadManyFiles(files, folderName, updateChapterDto.chap_img_pages);
             const secureUrls = uploadResults.map((result, index) => ({
                 page: updateChapterDto.chap_img_pages[index],
-                image_url: result.secure_url,
+                image: `ipfs.io/ipfs/${result['IpfsHash']}`,
             }));
             updateChapterDto.chap_img_pages.forEach((value, index) => {
-                foundChapter.chap_content[value] = secureUrls[index];
+                chapterContent['data'][value] = secureUrls[index];
             });
-            foundChapter.chap_content = JSON.stringify(foundChapter.chap_content);
+            const jsonBufferUrls = Buffer.from(JSON.stringify(chapterContent['data']));
+            const uploadJsonUrls = await this.pinataService.uploadFile(jsonBufferUrls, `${nameManga}-${foundChapter.chap_number}`, folderName);
+            foundChapter.chap_content = uploadJsonUrls['IpfsHash'];
         }
         const isUpdated = await this.chapterRepo.updateChapter(foundChapter);
         if (!isUpdated)
@@ -107,6 +110,13 @@ let ChapterService = class ChapterService {
         if (!isUpdated)
             throw new common_1.HttpException('Can not increase view of chapter', common_1.HttpStatus.BAD_REQUEST);
         return isUpdated;
+    }
+    async deleteChapter(chapId) {
+        await this.findChapterById(chapId);
+        const isDeleted = await this.chapterRepo.deleteChapterById(chapId);
+        if (!isDeleted)
+            throw new common_1.HttpException('Can not delete Chapter', common_1.HttpStatus.BAD_REQUEST);
+        return isDeleted;
     }
 };
 exports.ChapterService = ChapterService;

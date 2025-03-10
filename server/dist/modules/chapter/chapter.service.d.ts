@@ -14,7 +14,7 @@ export declare class ChapterService {
     private util;
     constructor(chapterRepo: ChapterRepo, cloudinaryService: CloudinaryService, mangaService: MangaService, pinataService: PinataService, util: Util);
     createChapterForManga(createChapterDto: CreateChapterDto, files: Express.Multer.File[], mangaId: number): Promise<any>;
-    updateChapterForManga(updateChapterDto: UpdateChapterDto, chapId: number, files?: Express.Multer.File[]): Promise<Number>;
+    updateChapterForManga(updateChapterDto: UpdateChapterDto, chapId: number, files?: Express.Multer.File[]): Promise<number>;
     findChapterById(chapId: number, { isDeleted, options, }?: {
         isDeleted?: boolean;
         options?: object;
@@ -23,4 +23,5 @@ export declare class ChapterService {
     getNumberOfChapters(mangaId: number): Promise<number>;
     getDetailsOfChapterByChapNumber(mangaId: number, chapNumber: number): Promise<Chapter>;
     increaseViewOfChapter(mangaId: number, chapNumber: number): Promise<number>;
+    deleteChapter(chapId: number): Promise<number>;
 }

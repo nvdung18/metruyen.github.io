@@ -1,0 +1,42 @@
+2025-03-08 15:29:40 - error - /favorite/manga-from-favorite/2 - 1701eaf8-e939-428d-8134-f455b286ac1c - Not found favorite - 400 - HttpException: Not found favorite
+    at FavoriteService.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.service.ts:71:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at FavoriteController.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.controller.ts:96:18)
+2025-03-08 15:30:31 - error - /favorite/manga-from-favorite/2 - b1c1a434-435e-4982-a561-95a91d2b4daf - Not found favorite - 400 - HttpException: Not found favorite
+    at FavoriteService.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.service.ts:72:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at FavoriteController.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.controller.ts:96:18)
+2025-03-08 15:32:58 - error - /favorite/manga-to-favorite - dac70fe3-628e-4deb-a7f4-73c60c817de2 - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at FavoriteService.addMangaToFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.service.ts:25:5)
+    at FavoriteController.addMangaToFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.controller.ts:43:18)
+2025-03-08 15:41:52 - error - /favorite/manga-from-favorite/1 - f5f1d9ae-37ea-4cf0-a367-e95cf77a8b27 - Unknown column 'manga.isDeleted' in 'on clause'::[SequelizeDatabaseError] - 500 - Error
+    at Query.run (E:\Work code\web project\Manga\server\node_modules\sequelize\src\dialects\mysql\query.js:46:25)
+    at <anonymous> (E:\Work code\web project\Manga\server\node_modules\sequelize\src\sequelize.js:650:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at MySQLQueryInterface.select (E:\Work code\web project\Manga\server\node_modules\sequelize\src\dialects\abstract\query-interface.js:1001:12)
+    at Function.findAll (E:\Work code\web project\Manga\server\node_modules\sequelize\src\model.js:1824:21)
+    at FavoriteRepo.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.repo.ts:53:12)
+    at FavoriteService.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.service.ts:74:7)
+    at FavoriteController.getListMangaFromFavorite (E:\Work code\web project\Manga\server\src\modules\favorite\favorite.controller.ts:96:18)
+2025-03-08 15:50:49 - error - /chapter/3 - 2dc36cae-effe-49f5-ac03-c1c97a6d4c89 - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at ChapterService.getAllChaptersByMangaId (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.service.ts:131:5)
+    at ChapterController.getAllChaptersByMangaId (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.controller.ts:148:18)
+2025-03-08 15:54:13 - error - /chapter/details/3 - e81e4740-b630-4b33-9428-a3fe02a7be6d - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at ChapterService.getDetailsOfChapterByChapNumber (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.service.ts:146:5)
+    at ChapterController.getDetailsOfChapterByChapNumber (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.controller.ts:180:18)
+2025-03-08 16:03:18 - error - /chapter/details/3 - 03f6e333-ce43-4ab9-8a75-eb5448390f45 - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at ChapterService.getDetailsOfChapterByChapNumber (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.service.ts:148:5)
+    at ChapterController.getDetailsOfChapterByChapNumber (E:\Work code\web project\Manga\server\src\modules\chapter\chapter.controller.ts:180:18)
+2025-03-08 16:15:08 - error - /manga/10 - 9968faef-bf0e-4577-9a69-df3e8b207e30 - Not found manga - 400 - HttpException: Not found manga
+    at MangaService.findMangaById (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:165:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at MangaService.deleteManga (E:\Work code\web project\Manga\server\src\modules\manga\manga.service.ts:288:5)
+    at MangaController.deleteManga (E:\Work code\web project\Manga\server\src\modules\manga\manga.controller.ts:359:17)

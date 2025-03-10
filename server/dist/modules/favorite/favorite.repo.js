@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const sequelize_1 = require("@nestjs/sequelize");
 const favorite_model_1 = require("./models/favorite.model");
 const favorite_details_model_1 = require("./models/favorite-details.model");
+const manga_model_1 = require("../manga/models/manga.model");
 let FavoriteRepo = class FavoriteRepo {
     constructor(favoriteModel, favoriteDetailsModel) {
         this.favoriteModel = favoriteModel;
@@ -46,6 +47,14 @@ let FavoriteRepo = class FavoriteRepo {
             where: {
                 fav_id: fav_id,
             },
+            include: [
+                {
+                    model: manga_model_1.Manga,
+                    as: 'manga',
+                    attributes: ['manga_title', 'manga_thumb'],
+                    where: { is_deleted: false },
+                },
+            ],
             ...options,
         });
     }

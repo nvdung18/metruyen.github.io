@@ -336,4 +336,27 @@ export class MangaController {
       metadata: data,
     };
   }
+
+  @ApiOperation({
+    summary: 'Admin delete Manga',
+    description: `
+  - **${SwaggerApiOperation.NEED_AUTH}**
+  - Only **admin** can use this API.
+      `,
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Id of manga',
+  })
+  @Delete('/:id')
+  @ResponseMessage('Delete Manga successful')
+  @UseGuards(RolesGuard)
+  @UseGuards(AuthGuard)
+  @Roles({ action: 'deleteAny', resource: 'Manga' })
+  async deleteManga(@Param('id') id: number) {
+    return {
+      metadata: await this.mangaService.deleteManga(id),
+    };
+  }
 }

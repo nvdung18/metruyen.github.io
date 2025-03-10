@@ -81,6 +81,10 @@ let ChapterRepo = class ChapterRepo {
         });
         return affectedCount;
     }
+    async deleteChapterById(chapId) {
+        const [affectedCount] = await this.chapterModel.update({ is_deleted: true }, { where: { chap_id: chapId } });
+        return affectedCount;
+    }
 };
 exports.ChapterRepo = ChapterRepo;
 exports.ChapterRepo = ChapterRepo = __decorate([

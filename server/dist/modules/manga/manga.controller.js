@@ -108,6 +108,11 @@ let MangaController = class MangaController {
             metadata: data,
         };
     }
+    async deleteManga(id) {
+        return {
+            metadata: await this.mangaService.deleteManga(id),
+        };
+    }
 };
 exports.MangaController = MangaController;
 __decorate([
@@ -366,6 +371,29 @@ __decorate([
     __metadata("design:paramtypes", [Request, Number, Number]),
     __metadata("design:returntype", Promise)
 ], MangaController.prototype, "ratingForManga", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({
+        summary: 'Admin delete Manga',
+        description: `
+  - **${constants_1.SwaggerApiOperation.NEED_AUTH}**
+  - Only **admin** can use this API.
+      `,
+    }),
+    (0, swagger_1.ApiParam)({
+        name: 'id',
+        type: Number,
+        description: 'Id of manga',
+    }),
+    (0, common_1.Delete)('/:id'),
+    (0, response_message_decorator_1.ResponseMessage)('Delete Manga successful'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, roles_decorator_1.Roles)({ action: 'deleteAny', resource: 'Manga' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], MangaController.prototype, "deleteManga", null);
 exports.MangaController = MangaController = __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiTags)('Manga'),

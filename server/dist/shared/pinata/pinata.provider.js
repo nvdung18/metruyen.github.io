@@ -8,7 +8,7 @@ exports.PinataProvider = {
     useFactory: (configService) => {
         return new pinata_web3_1.PinataSDK({
             pinataJwt: configService.get('PINATA_JWT'),
-            pinataGateway: configService.get('GATEWAY_URL'),
+            pinataGateway: configService.get('PINATA_GATEWAY_URL'),
         });
     },
     inject: [config_1.ConfigService],

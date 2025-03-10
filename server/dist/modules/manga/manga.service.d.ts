@@ -28,4 +28,5 @@ export declare class MangaService {
     getDetailsManga(mangaId: number): Promise<Manga>;
     ratingManga(mangaId: number, rating: number): Promise<number>;
     getNameMangaById(mangaId: number): Promise<string>;
+    deleteManga(mangaId: number): Promise<number>;
 }

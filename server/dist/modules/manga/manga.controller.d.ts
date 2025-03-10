@@ -70,4 +70,7 @@ export declare class MangaController {
     ratingForManga(req: Request, id: number, rating: number): Promise<{
         metadata: number;
     }>;
+    deleteManga(id: number): Promise<{
+        metadata: number;
+    }>;
 }

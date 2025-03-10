@@ -5,7 +5,7 @@ export declare class ChapterRepo {
     private sequelize;
     constructor(chapterModel: typeof Chapter, sequelize: Sequelize);
     createChapter(chapter: Chapter, options?: object): Promise<Chapter>;
-    updateChapter(chapter: Chapter, options?: object): Promise<Number>;
+    updateChapter(chapter: Chapter, options?: object): Promise<number>;
     findChapterById(chapId: number, { isDeleted, options, }?: {
         isDeleted?: boolean;
         options?: object;
@@ -23,4 +23,5 @@ export declare class ChapterRepo {
         isDeleted?: boolean;
         options?: object;
     }): Promise<number>;
+    deleteChapterById(chapId: number): Promise<number>;
 }

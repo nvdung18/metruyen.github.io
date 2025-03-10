@@ -12,6 +12,7 @@ export declare class MangaRepo {
     deleteMangaCategory(mangaCategory: Attributes<MangaCategory>[], options?: object): Promise<number>;
     publishMangaById(mangaId: number): Promise<number>;
     unpublishMangaById(mangaId: number): Promise<number>;
+    deleteMangaById(mangaId: number): Promise<number>;
     searchManga(page: number, limit: number, whereConditions: any[], order: any[], includeConditions: any[], option?: object): Promise<any>;
     getAllUnpublishManga(option?: object): Promise<Array<Manga>>;
     getAllPublishManga(option?: object): Promise<Array<Manga>>;

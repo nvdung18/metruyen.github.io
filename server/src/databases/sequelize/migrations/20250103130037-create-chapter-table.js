@@ -31,8 +31,8 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      chap_content: {
-        type: DataTypes.JSON,
+      chap_content: { // content is a CID of ipfs file
+        type: DataTypes.STRING,
         allowNull: true,
       },
       chap_views: {

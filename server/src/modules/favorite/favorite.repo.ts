@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Favorite } from './models/favorite.model';
 import { FavoriteDetail } from './models/favorite-details.model';
+import { Manga } from '@modules/manga/models/manga.model';
 
 @Injectable()
 export class FavoriteRepo {
@@ -53,6 +54,14 @@ export class FavoriteRepo {
       where: {
         fav_id: fav_id,
       },
+      include: [
+        {
+          model: Manga,
+          as: 'manga',
+          attributes: ['manga_title', 'manga_thumb'],
+          where: { is_deleted: false },
+        },
+      ],
       ...options,
     });
   }

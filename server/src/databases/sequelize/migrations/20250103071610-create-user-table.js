@@ -58,7 +58,7 @@ module.exports = {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: 'Roles', // Name of the target table
+          model: 'roles', // Name of the target table
           key: 'role_id', // Key in the target table
         },
       },

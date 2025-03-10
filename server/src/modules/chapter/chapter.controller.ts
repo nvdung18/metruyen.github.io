@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -215,6 +216,27 @@ export class ChapterController {
       mangaId,
       chapter,
     );
+    return {
+      metadata: data,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Delete chapter',
+    description: `
+  - **${SwaggerApiOperation.NOT_NEED_AUTH}**
+    `,
+  })
+  @Delete('/:id')
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Chapter id',
+  })
+  @ResponseMessage('Delete chapter successful')
+  @AuthorizeAction({ action: 'deleteAny', resource: 'Chapters' })
+  async deleteChapter(@Req() req: Request, @Param('id') chapId: number) {
+    const data = await this.chapterService.deleteChapter(chapId);
     return {
       metadata: data,
     };

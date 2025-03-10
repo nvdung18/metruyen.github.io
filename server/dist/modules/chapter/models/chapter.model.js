@@ -52,10 +52,10 @@ __decorate([
 ], Chapter.prototype, "chap_title", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.JSON,
+        type: sequelize_typescript_1.DataType.STRING,
         allowNull: true,
     }),
-    __metadata("design:type", Object)
+    __metadata("design:type", String)
 ], Chapter.prototype, "chap_content", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({

@@ -62,6 +62,10 @@ let MangaRepo = class MangaRepo {
         const [affectedCount] = await this.mangaModel.update({ is_published: false, is_draft: true }, { where: { manga_id: mangaId } });
         return affectedCount;
     }
+    async deleteMangaById(mangaId) {
+        const [affectedCount] = await this.mangaModel.update({ is_deleted: true, is_draft: false, is_published: false }, { where: { manga_id: mangaId } });
+        return affectedCount;
+    }
     async searchManga(page, limit, whereConditions, order, includeConditions, option = {}) {
         const offset = (page - 1) * limit;
         const { rows: data, count: total } = await this.mangaModel.findAndCountAll({

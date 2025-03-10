@@ -1,4 +1,4 @@
 // cloudinary-response.ts
-import { PinResponse, GroupResponseItem } from 'pinata-web3';
+import { PinResponse, GroupResponseItem, GetCIDResponse } from 'pinata-web3';
 
-export type PinataResponse = PinResponse | GroupResponseItem;
+export type PinataResponse = PinResponse | GroupResponseItem | GetCIDResponse;

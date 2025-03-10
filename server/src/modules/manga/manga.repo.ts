@@ -73,6 +73,14 @@ export class MangaRepo {
     return affectedCount;
   }
 
+  async deleteMangaById(mangaId: number): Promise<number> {
+    const [affectedCount] = await this.mangaModel.update(
+      { is_deleted: true, is_draft: false, is_published: false },
+      { where: { manga_id: mangaId } },
+    );
+    return affectedCount;
+  }
+
   async searchManga(
     page: number,
     limit: number,

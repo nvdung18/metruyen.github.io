@@ -60,6 +60,12 @@ let ChapterController = class ChapterController {
             metadata: data,
         };
     }
+    async deleteChapter(req, chapId) {
+        const data = await this.chapterService.deleteChapter(chapId);
+        return {
+            metadata: data,
+        };
+    }
 };
 exports.ChapterController = ChapterController;
 __decorate([
@@ -214,6 +220,27 @@ __decorate([
     __metadata("design:paramtypes", [Request, Number, Number]),
     __metadata("design:returntype", Promise)
 ], ChapterController.prototype, "increaseViewOfChapter", null);
+__decorate([
+    (0, swagger_1.ApiOperation)({
+        summary: 'Delete chapter',
+        description: `
+  - **${constants_1.SwaggerApiOperation.NOT_NEED_AUTH}**
+    `,
+    }),
+    (0, common_1.Delete)('/:id'),
+    (0, swagger_1.ApiParam)({
+        name: 'id',
+        type: Number,
+        description: 'Chapter id',
+    }),
+    (0, response_message_decorator_1.ResponseMessage)('Delete chapter successful'),
+    (0, authorize_action_decorator_1.AuthorizeAction)({ action: 'deleteAny', resource: 'Chapters' }),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Request, Number]),
+    __metadata("design:returntype", Promise)
+], ChapterController.prototype, "deleteChapter", null);
 exports.ChapterController = ChapterController = __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('chapter'),

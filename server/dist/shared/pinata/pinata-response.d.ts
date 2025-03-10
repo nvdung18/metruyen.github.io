@@ -1,2 +1,2 @@
-import { PinResponse, GroupResponseItem } from 'pinata-web3';
-export type PinataResponse = PinResponse | GroupResponseItem;
+import { PinResponse, GroupResponseItem, GetCIDResponse } from 'pinata-web3';
+export type PinataResponse = PinResponse | GroupResponseItem | GetCIDResponse;

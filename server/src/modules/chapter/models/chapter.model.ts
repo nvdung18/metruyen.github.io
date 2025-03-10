@@ -41,10 +41,10 @@ export class Chapter extends Model {
   chap_title: string;
 
   @Column({
-    type: DataType.JSON,
+    type: DataType.STRING, // * content is a CID of ipfs file
     allowNull: true,
   })
-  chap_content: object;
+  chap_content: string;
 
   @Column({
     type: DataType.INTEGER,

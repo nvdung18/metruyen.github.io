@@ -17,7 +17,7 @@ export class ChapterRepo {
     return await this.chapterModel.create(chapter.toJSON(), options);
   }
 
-  async updateChapter(chapter: Chapter, options: object = {}): Promise<Number> {
+  async updateChapter(chapter: Chapter, options: object = {}): Promise<number> {
     const [affectedCount] = await this.chapterModel.update(chapter.toJSON(), {
       where: { chap_id: chapter.chap_id },
       ...options,
@@ -106,6 +106,14 @@ export class ChapterRepo {
       },
     );
 
+    return affectedCount;
+  }
+
+  async deleteChapterById(chapId: number): Promise<number> {
+    const [affectedCount] = await this.chapterModel.update(
+      { is_deleted: true },
+      { where: { chap_id: chapId } },
+    );
     return affectedCount;
   }
 }
