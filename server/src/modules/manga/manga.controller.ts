@@ -83,7 +83,7 @@ export class MangaController {
   @UseGuards(AuthGuard)
   @Roles({ action: 'updateAny', resource: 'Manga' })
   async updateManga(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body(new AtLeastOneFieldPipe()) updateMangaDto: UpdateMangaDto, // need to check at least one value
   ) {
     return {
@@ -357,6 +357,17 @@ export class MangaController {
   async deleteManga(@Param('id') id: number) {
     return {
       metadata: await this.mangaService.deleteManga(id),
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Test web3',
+  })
+  @Get('/TestWeb3')
+  @ResponseMessage('Test web3 successful')
+  async testWeb3() {
+    return {
+      metadata: await this.mangaService.testWeb3(),
     };
   }
 }

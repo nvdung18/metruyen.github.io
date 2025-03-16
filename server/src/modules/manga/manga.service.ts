@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { MangaRepo } from './manga.repo';
 import { CreateMangaDto } from './dto/create-manga.dto';
@@ -13,6 +14,10 @@ import { SearchMangaDto } from './dto/search-manga.dto';
 import { literal } from 'sequelize';
 import { Category } from '@modules/category/models/category.model';
 import CommonUtil from 'src/shared/utils/common.util';
+import { HistoryType } from 'src/shared/utils/enums.util';
+import { Web3Service } from 'src/shared/web3/web3.service';
+import { PinataService } from 'src/shared/pinata/pinata.service';
+import { ContractTransaction } from 'ethers';
 
 @Injectable()
 export class MangaService {
@@ -20,7 +25,13 @@ export class MangaService {
     private mangaRepo: MangaRepo,
     private util: Util,
     private sequelize: Sequelize,
+    private web3Service: Web3Service,
+    private pinataService: PinataService,
   ) {}
+
+  async testWeb3() {
+    return await this.web3Service.getOwner();
+  }
 
   async createManga(createMangaDto: CreateMangaDto) {
     const mangaId = this.util.generateIdByTime();
@@ -50,10 +61,33 @@ export class MangaService {
         true, //isCreateManga
       );
 
+      const folderName = `${rest.manga_title}-history`;
+      const jsonBufferHistory = CommonUtil.createMangaJsonBufferHistory(
+        HistoryType.CreateManga,
+        0,
+        {
+          changes: [{ ...rest, manga_id: mangaId, manga_slug: mangaSlug }],
+        },
+      );
+      const uploadJson = await this.pinataService.uploadFile(
+        jsonBufferHistory,
+        `${rest.manga_title}-history-v0`,
+        folderName,
+      );
+
+      // call smart contract to create a transaction in blockchain
+      const tx = await this.web3Service
+        .updateManga(mangaId, uploadJson['IpfsHash'])
+        .catch(async (err) => {
+          await this.pinataService.deleteFilesByCid([uploadJson['IpfsHash']]);
+          throw new HttpException(
+            'Something wrong when create manga',
+            HttpStatus.BAD_REQUEST,
+          );
+        });
+
       return manga;
     });
-    if (!result)
-      throw new HttpException('Manga not created', HttpStatus.BAD_REQUEST);
 
     return { result };
   }
@@ -63,17 +97,41 @@ export class MangaService {
     updateMangaDto: UpdateMangaDto,
   ): Promise<number> {
     const foundManga = await this.findMangaById(mangaId);
+    const folderName = `${foundManga.manga_title}-history`;
+    const changes: { field: string; oldValue: any; newValue: any }[] = [];
 
     Object.entries(updateMangaDto).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (value !== undefined && foundManga[key] !== value) {
+        changes.push({
+          field: key,
+          oldValue: foundManga[key],
+          newValue: value,
+        });
         foundManga[key] = value; // Only replace keys with new values
       }
     });
+    // check if there is no change, not need to update
+    if (changes.length == 0)
+      throw new HttpException('No changes to update', HttpStatus.BAD_REQUEST);
 
-    const isUpdatedManga = this.mangaRepo.updateManga(foundManga);
-    if (!isUpdatedManga)
-      throw new HttpException('Can not update Manga', HttpStatus.BAD_REQUEST);
-    return isUpdatedManga;
+    // update manga
+    const result = await this.sequelize.transaction(async (t) => {
+      const isUpdatedManga = await this.mangaRepo.updateManga(foundManga, {
+        transaction: t,
+      });
+      if (!isUpdatedManga)
+        throw new HttpException('Can not update Manga', HttpStatus.BAD_REQUEST);
+
+      await this.createHistoryOfUpdateManga(
+        HistoryType.UpdateManga,
+        mangaId,
+        folderName,
+        { changes: changes },
+      );
+
+      return isUpdatedManga;
+    });
+    return result;
   }
 
   async addMangaCategory(
@@ -129,26 +187,60 @@ export class MangaService {
   }
 
   async publishMangaById(mangaId: number): Promise<number> {
-    await this.findMangaById(mangaId);
+    const foundManga = await this.findMangaById(mangaId, false, true);
+    const folderName = `${foundManga.manga_title}-history`;
 
-    const isPublishedManga = await this.mangaRepo.publishMangaById(mangaId);
-    if (!isPublishedManga)
-      throw new HttpException('Can not publish manga', HttpStatus.BAD_REQUEST);
+    const result = this.sequelize.transaction(async (t) => {
+      const isPublishedManga = await this.mangaRepo.publishMangaById(mangaId, {
+        transaction: t,
+      });
+      if (!isPublishedManga)
+        throw new HttpException(
+          'Can not publish manga',
+          HttpStatus.BAD_REQUEST,
+        );
 
-    return isPublishedManga;
+      await this.createHistoryOfUpdateManga(
+        HistoryType.PublishManga,
+        mangaId,
+        folderName,
+        { changes: [] },
+      );
+
+      return isPublishedManga;
+    });
+
+    return result;
   }
 
   async unpublishMangaById(mangaId: number): Promise<number> {
-    await this.findMangaById(mangaId);
+    const foundManga = await this.findMangaById(mangaId, false, false);
+    const folderName = `${foundManga.manga_title}-history`;
 
-    const isUnpublishedManga = await this.mangaRepo.unpublishMangaById(mangaId);
-    if (!isUnpublishedManga)
-      throw new HttpException(
-        'Can not unpublish manga',
-        HttpStatus.BAD_REQUEST,
+    const result = this.sequelize.transaction(async (t) => {
+      const isPublishedManga = await this.mangaRepo.unpublishMangaById(
+        mangaId,
+        {
+          transaction: t,
+        },
+      );
+      if (!isPublishedManga)
+        throw new HttpException(
+          'Can not unpublish manga',
+          HttpStatus.BAD_REQUEST,
+        );
+
+      await this.createHistoryOfUpdateManga(
+        HistoryType.UnpublishManga,
+        mangaId,
+        folderName,
+        { changes: [] },
       );
 
-    return isUnpublishedManga;
+      return isPublishedManga;
+    });
+
+    return result;
   }
 
   async findMangaById(
@@ -156,11 +248,19 @@ export class MangaService {
     is_deleted: boolean = false,
     is_draft: boolean = false,
   ): Promise<Manga> {
-    const foundManga = await this.mangaRepo.findMangaById(
-      id,
-      is_deleted,
-      is_draft,
-    );
+    const whereConditions: any = { manga_id: id, is_deleted, is_draft };
+    const foundManga = await this.mangaRepo.findMangaById(whereConditions);
+    if (!foundManga)
+      throw new HttpException('Not found manga', HttpStatus.BAD_REQUEST);
+    return foundManga;
+  }
+
+  async findMangaByIdCanPublishOrUnPublish(
+    id: number,
+    is_deleted: boolean = false,
+  ): Promise<Manga> {
+    const whereConditions: any = { manga_id: id, is_deleted };
+    const foundManga = await this.mangaRepo.findMangaById(whereConditions);
     if (!foundManga)
       throw new HttpException('Not found manga', HttpStatus.BAD_REQUEST);
     return foundManga;
@@ -279,17 +379,88 @@ export class MangaService {
     return isUpdatedManga;
   }
 
-  async getNameMangaById(mangaId: number): Promise<string> {
-    const foundManga = await this.findMangaById(mangaId);
+  async getNameMangaById(
+    mangaId: number,
+    conditions: {
+      isDeleted?: boolean;
+      isDraft?: boolean; //draft is unpublish
+      canPublishOrUnpublish?: boolean; //unpublish is draft
+    } = { isDeleted: false, isDraft: false, canPublishOrUnpublish: false },
+  ): Promise<string> {
+    const { canPublishOrUnpublish, isDeleted, isDraft } = conditions;
+    let foundManga: Manga;
+    if (!canPublishOrUnpublish) {
+      foundManga = await this.findMangaById(mangaId, isDeleted, isDraft);
+    } else {
+      foundManga = await this.findMangaByIdCanPublishOrUnPublish(
+        mangaId,
+        conditions.isDeleted,
+      );
+    }
     return foundManga.manga_title;
   }
 
   async deleteManga(mangaId: number): Promise<number> {
-    await this.findMangaById(mangaId);
+    const foundManga = await this.findMangaById(mangaId, false, true);
+    const folderName = `${foundManga.manga_title}-history`;
 
-    const isDeletedManga = await this.mangaRepo.deleteMangaById(mangaId);
-    if (!isDeletedManga)
-      throw new HttpException('Can not delete Manga', HttpStatus.BAD_REQUEST);
-    return isDeletedManga;
+    // delete manga
+    const result = await this.sequelize.transaction(async (t) => {
+      const isDeleted = await this.mangaRepo.deleteMangaById(mangaId, {
+        transaction: t,
+      });
+      if (!isDeleted)
+        throw new HttpException('Can not delete Manga', HttpStatus.BAD_REQUEST);
+
+      await this.createHistoryOfUpdateManga(
+        HistoryType.DeleteManga,
+        mangaId,
+        folderName,
+        { changes: [] },
+      );
+
+      return isDeleted;
+    });
+    return result;
+  }
+
+  async createHistoryOfUpdateManga(
+    type: HistoryType,
+    mangaId: number,
+    folderName: string,
+    data: { changes: object[] } = {
+      changes: [],
+    },
+  ): Promise<ContractTransaction> {
+    const { changes } = data;
+
+    // create and upload history file to Pinata
+    const { cid } =
+      await this.web3Service.getDataLatestBlockOfMangaUpdateByMangaId(mangaId);
+    const dataOfLatestVersion = await this.pinataService.getFileByCid(cid);
+
+    const { jsonBufferHistory, newVersion } =
+      CommonUtil.createDataHistoryUpdateManga(type, cid, {
+        dataToUpdate: changes,
+        dataOfLatestVersion: dataOfLatestVersion,
+      });
+
+    const uploadJson = await this.pinataService.uploadFile(
+      jsonBufferHistory,
+      `${folderName}-v${newVersion}`,
+      folderName,
+    );
+
+    // call smart contract to create a transaction in blockchain
+    const tx = await this.web3Service
+      .updateManga(mangaId, uploadJson['IpfsHash'])
+      .catch(async (err) => {
+        await this.pinataService.deleteFilesByCid([uploadJson['IpfsHash']]);
+        throw new HttpException(
+          'Something wrong when create manga',
+          HttpStatus.BAD_REQUEST,
+        );
+      });
+    return tx;
   }
 }

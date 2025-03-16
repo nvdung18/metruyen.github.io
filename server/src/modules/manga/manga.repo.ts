@@ -21,12 +21,13 @@ export class MangaRepo {
   }
 
   async findMangaById(
-    mangaId: number,
-    is_deleted: boolean = false,
-    is_draft: boolean = false,
+    whereConditions: any,
+    // mangaId: number,
+    // is_deleted: boolean = false,
+    // is_draft: boolean = false,
   ): Promise<Manga> {
     return await this.mangaModel.findOne({
-      where: { manga_id: mangaId, is_deleted, is_draft },
+      where: whereConditions,
     });
   }
 
@@ -57,26 +58,35 @@ export class MangaRepo {
     });
   }
 
-  async publishMangaById(mangaId: number): Promise<number> {
+  async publishMangaById(
+    mangaId: number,
+    options: object = {},
+  ): Promise<number> {
     const [affectedCount] = await this.mangaModel.update(
       { is_published: true, is_draft: false },
-      { where: { manga_id: mangaId } },
+      { where: { manga_id: mangaId }, ...options },
     );
     return affectedCount;
   }
 
-  async unpublishMangaById(mangaId: number): Promise<number> {
+  async unpublishMangaById(
+    mangaId: number,
+    options: object = {},
+  ): Promise<number> {
     const [affectedCount] = await this.mangaModel.update(
       { is_published: false, is_draft: true },
-      { where: { manga_id: mangaId } },
+      { where: { manga_id: mangaId }, ...options },
     );
     return affectedCount;
   }
 
-  async deleteMangaById(mangaId: number): Promise<number> {
+  async deleteMangaById(
+    mangaId: number,
+    options: object = {},
+  ): Promise<number> {
     const [affectedCount] = await this.mangaModel.update(
       { is_deleted: true, is_draft: false, is_published: false },
-      { where: { manga_id: mangaId } },
+      { where: { manga_id: mangaId }, ...options },
     );
     return affectedCount;
   }

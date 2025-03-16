@@ -54,6 +54,11 @@ export class PinataService {
     );
   }
 
+  async deleteFilesByCid(cid: string[]): Promise<PinataResponse[]> {
+    const deleteResponse = await this.pinata.unpin(cid);
+    return deleteResponse;
+  }
+
   async createNewGroup(folderName: string): Promise<PinataResponse> {
     const group = await this.pinata.groups.create({ name: folderName });
     return group;

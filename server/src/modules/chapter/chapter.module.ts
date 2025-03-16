@@ -7,6 +7,7 @@ import { ChapterRepo } from './chapter.repo';
 import { CloudinaryModule } from 'src/shared/cloudinary/cloudinary.module';
 import { MangaModule } from '@modules/manga/manga.module';
 import { PinataModule } from 'src/shared/pinata/pinata.module';
+import { Web3Module } from 'src/shared/web3/web3.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PinataModule } from 'src/shared/pinata/pinata.module';
     CloudinaryModule,
     MangaModule,
     PinataModule,
+    Web3Module,
   ],
   controllers: [ChapterController],
   providers: [ChapterService, ChapterRepo],

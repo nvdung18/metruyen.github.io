@@ -20,6 +20,7 @@ import { ChapterModule } from './modules/chapter/chapter.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
 import { PinataModule } from './shared/pinata/pinata.module';
+import { Web3Module } from './shared/web3/web3.module';
 @Module({
   imports: [
     MulterModule.register({
@@ -40,6 +41,7 @@ import { PinataModule } from './shared/pinata/pinata.module';
     ChapterModule,
     CloudinaryModule,
     PinataModule,
+    Web3Module,
   ],
   controllers: [AppController],
   providers: [

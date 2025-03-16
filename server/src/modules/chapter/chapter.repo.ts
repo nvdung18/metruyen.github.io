@@ -109,10 +109,13 @@ export class ChapterRepo {
     return affectedCount;
   }
 
-  async deleteChapterById(chapId: number): Promise<number> {
+  async deleteChapterById(
+    chapId: number,
+    options: object = {},
+  ): Promise<number> {
     const [affectedCount] = await this.chapterModel.update(
       { is_deleted: true },
-      { where: { chap_id: chapId } },
+      { where: { chap_id: chapId }, ...options },
     );
     return affectedCount;
   }

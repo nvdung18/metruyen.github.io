@@ -1,5 +1,13 @@
 node_modules
-
+.idea
+.vscode
+.history
+.DS_Store
+dist
+docs
+build
+logs
+*.log
 # local env files
 .env
 .env.local

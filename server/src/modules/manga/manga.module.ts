@@ -6,9 +6,15 @@ import { Manga } from './models/manga.model';
 import { MangaRepo } from './manga.repo';
 import { MangaCategory } from './models/manga-category.model';
 import { ChapterModule } from '@modules/chapter/chapter.module';
+import { Web3Module } from 'src/shared/web3/web3.module';
+import { PinataModule } from 'src/shared/pinata/pinata.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Manga, MangaCategory])],
+  imports: [
+    SequelizeModule.forFeature([Manga, MangaCategory]),
+    Web3Module,
+    PinataModule,
+  ],
   controllers: [MangaController],
   providers: [MangaService, MangaRepo],
   exports: [MangaService, MangaRepo],

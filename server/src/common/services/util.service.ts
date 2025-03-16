@@ -40,12 +40,31 @@ export default class Util {
     });
   }
 
-  replaceDataObjectByKey(objReplace: any, objWillBeReplace: any) {
+  replaceDataObjectByKey(data: { objReplace: any; objWillBeReplace: any }): {
+    updatedObject: any;
+    changes: { field: string; oldValue: any; newValue: any }[];
+  } {
+    const { objReplace, objWillBeReplace } = data;
+    const changes: { field: string; oldValue: any; newValue: any }[] = [];
     Object.entries(objReplace).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (
+        value !== undefined &&
+        objWillBeReplace[key] != undefined &&
+        objWillBeReplace[key] !== value
+      ) {
+        changes.push({
+          field: key,
+          oldValue: objWillBeReplace[key],
+          newValue: value,
+        });
         objWillBeReplace[key] = value; // Only replace keys with new values
       }
     });
-    return objWillBeReplace;
+    // Object.entries(objReplace).forEach(([key, value]) => {
+    //   if (value !== undefined) {
+    //     objWillBeReplace[key] = value; // Only replace keys with new values
+    //   }
+    // });
+    return { updatedObject: objWillBeReplace, changes };
   }
 }
