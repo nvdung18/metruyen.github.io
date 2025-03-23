@@ -39,7 +39,7 @@ export class PinataService {
   }
 
   async uploadManyFiles(
-    files: Express.Multer.File[],
+    files: (Express.Multer.File | Buffer)[],
     groupName: string = '',
     fileNames: any[] = [],
   ): Promise<PinataResponse[]> {

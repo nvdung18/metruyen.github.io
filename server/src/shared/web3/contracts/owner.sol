@@ -3,7 +3,7 @@
 pragma solidity >=0.7.0 <0.9.0;
 
 import "hardhat/console.sol";
-import "contracts/metruyen/SaveAddress.sol";
+import "contracts/metruyen/factory.sol";
 
 /**
  * @title Owner
@@ -31,7 +31,7 @@ contract Owner {
             "Invalid Factory contract address"
         );
         Factory factoryContract = Factory(_factoryContract);
-        factoryContract.addExistingContract("Owenr", address(this));
+        factoryContract.addExistingContract("Owner", address(this));
 
         console.log("Owner contract deployed by:", msg.sender);
         owner = msg.sender; // 'msg.sender' is sender of current call, contract deployer for a constructor

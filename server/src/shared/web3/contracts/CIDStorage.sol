@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "contracts/metruyen/Owner.sol";
 import "hardhat/console.sol";
-import "contracts/metruyen/SaveAddress.sol";
+import "contracts/metruyen/factory.sol";
 
 contract CIDStorage {
     event StoryUpdated(

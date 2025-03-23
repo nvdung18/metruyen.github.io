@@ -3,12 +3,14 @@ import { CategoryRepo } from './category.repo';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import Util from '@common/services/util.service';
 import { Category } from './models/category.model';
+import { CacheService } from 'src/shared/cache/cache.service';
 
 @Injectable()
 export class CategoryService {
   constructor(
     private categoryRepo: CategoryRepo,
     private util: Util,
+    private cacheService: CacheService,
   ) {}
 
   async createNewCategory(createCategoryDto: CreateCategoryDto) {
@@ -30,6 +32,10 @@ export class CategoryService {
     if (!category)
       throw new HttpException('Category not created', HttpStatus.BAD_REQUEST);
 
+    // delete cache
+    const cacheKey = `all_categories`;
+    await this.cacheService.delete(cacheKey);
+
     return { category };
   }
 
@@ -48,11 +54,27 @@ export class CategoryService {
         'Can not update category',
         HttpStatus.BAD_REQUEST,
       );
+
+    // delete cache
+    const cacheKey = `all_categories`;
+    await this.cacheService.delete(cacheKey);
+
     return isUpdated;
   }
 
   async getAllCategories(): Promise<Array<Category>> {
+    const cacheKey = `all_categories`;
+    const cacheCategories = await this.cacheService.get(cacheKey);
+    if (cacheCategories) {
+      const categories = (cacheCategories as Category[]).map((value) => {
+        const category = new Category({ ...(value as Category) });
+        return category.get({ plain: true });
+      });
+
+      return categories;
+    }
     const categories = await this.categoryRepo.getAllCategories({ raw: true });
+    await this.cacheService.set(cacheKey, categories);
     return categories;
   }
 }

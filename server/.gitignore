@@ -6,9 +6,11 @@ node_modules
 dist
 docs
 build
-logs
 *.log
 # local env files
 .env
 .env.local
 .env.*.local
+.qodo
+
+.early.coverage

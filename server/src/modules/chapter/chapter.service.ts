@@ -11,6 +11,7 @@ import { ContractTransaction } from 'ethers';
 import { Web3Service } from 'src/shared/web3/web3.service';
 import CommonUtil from 'src/shared/utils/common.util';
 import { Sequelize } from 'sequelize-typescript';
+import { CacheService } from 'src/shared/cache/cache.service';
 
 @Injectable()
 export class ChapterService {
@@ -21,6 +22,7 @@ export class ChapterService {
     private util: Util,
     private web3Service: Web3Service,
     private sequelize: Sequelize,
+    private cacheService: CacheService,
   ) {}
 
   async createChapterForManga(
@@ -72,6 +74,10 @@ export class ChapterService {
           changes: [updateObj],
         },
       );
+      // delete cache
+      const cacheKey = `list_chapter:${mangaId}`;
+      await this.cacheService.delete(cacheKey);
+
       return newChapter.get({ plain: true });
     });
     return result;
@@ -156,6 +162,10 @@ export class ChapterService {
         },
       );
 
+      // delete cache
+      const cacheKey = `chapter_details:${foundChapter.chap_manga_id}:chapters:${foundChapter.chap_number}`;
+      await this.cacheService.delete(cacheKey);
+
       return isUpdated;
     });
     return result;
@@ -180,9 +190,30 @@ export class ChapterService {
   async getAllChaptersByMangaId(mangaId: number): Promise<Chapter[]> {
     await this.mangaService.findMangaById(mangaId);
 
-    return await this.chapterRepo.getAllChaptersByMangaId(mangaId, {
-      options: { raw: true },
-    });
+    const cacheKey = `list_chapter:${mangaId}`;
+    const cacheListChapters = await this.cacheService.get(cacheKey);
+    if (cacheListChapters) {
+      const listChapters = (cacheListChapters as Chapter[]).map(
+        (value, index) => {
+          const chapter = new Chapter({ ...(value as Chapter) });
+          return chapter.get({ plain: true });
+        },
+      );
+      return listChapters;
+    }
+
+    const listChapters = await this.chapterRepo.getAllChaptersByMangaId(
+      mangaId,
+      {
+        options: {
+          raw: true,
+          attributes: ['chap_id', 'chap_manga_id', 'chap_number'],
+        },
+      },
+    );
+    await this.cacheService.set(cacheKey, listChapters, '1d');
+
+    return listChapters;
   }
 
   async getNumberOfChapters(mangaId: number): Promise<number> {
@@ -192,8 +223,24 @@ export class ChapterService {
   async getDetailsOfChapterByChapNumber(
     mangaId: number,
     chapNumber: number,
+    userId: number,
   ): Promise<Chapter> {
     await this.mangaService.findMangaById(mangaId);
+
+    const cacheKey = `chapter_details:${mangaId}:chapters:${chapNumber}`;
+    const cacheChapter = await this.cacheService.get(cacheKey);
+    if (cacheChapter) {
+      const chapter = new Chapter({ ...(cacheChapter as object) });
+      // delete and save Chapter user being read
+      await this.mangaService.deleteChapterUserBeingRead({ mangaId, userId });
+      await this.mangaService.saveChapterUserBeingRead({
+        mangaId,
+        chapNumber,
+        userId,
+      });
+
+      return chapter.get({ plain: true });
+    }
 
     const foundChapter = await this.chapterRepo.getDetailsOfChapterByChapNumber(
       mangaId,
@@ -204,6 +251,17 @@ export class ChapterService {
     );
     if (!foundChapter)
       throw new HttpException('Not Found Chapter', HttpStatus.NOT_FOUND);
+
+    await this.cacheService.set(cacheKey, foundChapter, '1d');
+
+    // delete and save Chapter user being read
+    await this.mangaService.deleteChapterUserBeingRead({ mangaId, userId });
+    await this.mangaService.saveChapterUserBeingRead({
+      mangaId,
+      chapNumber,
+      userId,
+    });
+
     return foundChapter;
   }
 

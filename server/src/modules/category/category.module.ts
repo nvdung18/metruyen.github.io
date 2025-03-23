@@ -4,9 +4,10 @@ import { CategoryController } from './category.controller';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Category } from './models/category.model';
 import { CategoryRepo } from './category.repo';
+import { CacheModule } from 'src/shared/cache/cache.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Category])],
+  imports: [SequelizeModule.forFeature([Category]), CacheModule],
   controllers: [CategoryController],
   providers: [CategoryService, CategoryRepo],
 })

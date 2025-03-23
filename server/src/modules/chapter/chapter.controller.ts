@@ -178,9 +178,11 @@ export class ChapterController {
     @Param('id') mangaId: number,
     @Query('chapter') chapter: number,
   ) {
+    const userId = req['user']['sub'];
     const data = await this.chapterService.getDetailsOfChapterByChapNumber(
       mangaId,
       chapter,
+      userId,
     );
     return {
       metadata: req['permission'].filter(data),

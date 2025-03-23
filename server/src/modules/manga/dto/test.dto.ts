@@ -1,30 +1,40 @@
-import { ApiProperty, ApiPropertyOptional, ApiSchema } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
+  isArray,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
 
-@ApiSchema({ description: 'Description of the CreateMangaDto schema' })
-export class CreateMangaDto {
+export class FileUploadDto {
+  @ApiProperty({ type: 'string', format: 'binary' })
+  file: any;
+
   @ApiProperty()
   @IsNotEmpty()
   @IsString({ message: 'Invalid format' })
   manga_title: string;
-
-  @ApiProperty({ type: 'string', format: 'binary' })
-  manga_thumb: Express.Multer.File;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsString({ message: 'Invalid format' })
   manga_author: string;
 
-  @ApiProperty({ type: [Number] })
+  @ApiPropertyOptional()
+  @IsString({ message: 'Invalid format' })
+  @IsOptional()
+  manga_description: string;
+
+  @ApiProperty({
+    description: `Array containing page numbers will be changed.`,
+    type: [Number],
+    required: false,
+  })
+  @IsOptional()
   @Transform(({ value }) => {
     // Handle both string and array inputs
     if (!value.length) return [];
@@ -35,12 +45,7 @@ export class CreateMangaDto {
     }
     return value;
   })
-  @IsArray({ message: 'category_id must be an array' })
-  @IsNumber({}, { each: true, message: 'Each category_id must be a number' }) // Validate that each element is a number
-  category_id: number[];
-
-  @ApiPropertyOptional()
-  @IsString({ message: 'Invalid format' })
-  @IsOptional()
-  manga_description: string;
+  @IsArray({ message: 'chap_img_pages must be an array' })
+  @IsNumber({}, { each: true })
+  chap_img_pages?: number[];
 }

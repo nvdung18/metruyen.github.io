@@ -48,6 +48,7 @@ export class MangaCategory extends Model {
     type: DataType.DATE,
   })
   updatedAt: Date;
+
   @BelongsTo(() => Manga)
   manga: Manga;
   @BelongsTo(() => Category)

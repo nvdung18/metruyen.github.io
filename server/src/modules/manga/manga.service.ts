@@ -18,6 +18,8 @@ import { HistoryType } from 'src/shared/utils/enums.util';
 import { Web3Service } from 'src/shared/web3/web3.service';
 import { PinataService } from 'src/shared/pinata/pinata.service';
 import { ContractTransaction } from 'ethers';
+import { CacheService } from 'src/shared/cache/cache.service';
+import { omit } from 'lodash';
 
 @Injectable()
 export class MangaService {
@@ -27,27 +29,40 @@ export class MangaService {
     private sequelize: Sequelize,
     private web3Service: Web3Service,
     private pinataService: PinataService,
+    private cacheService: CacheService,
   ) {}
 
   async testWeb3() {
     return await this.web3Service.getOwner();
   }
 
-  async createManga(createMangaDto: CreateMangaDto) {
+  async createManga(
+    createMangaDto: CreateMangaDto,
+    mangaThumb: Express.Multer.File,
+  ) {
     const mangaId = this.util.generateIdByTime();
     const mangaSlug = this.util.generateSlug([
       createMangaDto.manga_title,
       Math.floor(mangaId / 1000).toString(),
     ]);
 
-    const { category_id, ...rest } = createMangaDto;
+    const { category_id } = createMangaDto;
+    const rest = omit(createMangaDto, ['category_id', 'manga_thumb']);
+    const folderName = `${rest.manga_title}-history`;
 
+    // Create manga
     const result = await this.sequelize.transaction(async (t) => {
+      const uploadThumb = await this.pinataService.uploadFile(
+        mangaThumb,
+        `${rest.manga_title}-thumb`,
+        folderName,
+      );
       const manga = await this.mangaRepo.createNewManga(
         new Manga({
           ...rest,
           manga_id: mangaId,
           manga_slug: mangaSlug,
+          manga_thumb: uploadThumb['IpfsHash'],
         }),
         { transaction: t },
       );
@@ -61,7 +76,7 @@ export class MangaService {
         true, //isCreateManga
       );
 
-      const folderName = `${rest.manga_title}-history`;
+      // Upload history create manga to pinata
       const jsonBufferHistory = CommonUtil.createMangaJsonBufferHistory(
         HistoryType.CreateManga,
         0,
@@ -69,6 +84,7 @@ export class MangaService {
           changes: [{ ...rest, manga_id: mangaId, manga_slug: mangaSlug }],
         },
       );
+
       const uploadJson = await this.pinataService.uploadFile(
         jsonBufferHistory,
         `${rest.manga_title}-history-v0`,
@@ -131,6 +147,11 @@ export class MangaService {
 
       return isUpdatedManga;
     });
+
+    // delete cache
+    const cacheKey = `manga:${mangaId}`;
+    await this.cacheService.delete(cacheKey);
+
     return result;
   }
 
@@ -156,6 +177,11 @@ export class MangaService {
         'Can not add manga category',
         HttpStatus.BAD_REQUEST,
       );
+
+    // delete cache
+    const cacheKey = `manga:${mangaId}`;
+    await this.cacheService.delete(cacheKey);
+
     return mangaCategories;
   }
 
@@ -183,6 +209,11 @@ export class MangaService {
         'Can not delete manga category',
         HttpStatus.BAD_REQUEST,
       );
+
+    // delete cache
+    const cacheKey = `manga:${mangaId}`;
+    await this.cacheService.delete(cacheKey);
+
     return result;
   }
 
@@ -236,6 +267,9 @@ export class MangaService {
         folderName,
         { changes: [] },
       );
+      // delete cache
+      const cacheKey = `manga:${mangaId}`;
+      await this.cacheService.delete(cacheKey);
 
       return isPublishedManga;
     });
@@ -361,11 +395,24 @@ export class MangaService {
   }
 
   async getDetailsManga(mangaId: number): Promise<Manga> {
+    const cacheKey = `manga:${mangaId}`;
+    const cacheManga = await this.cacheService.get(cacheKey);
+    if (cacheManga) {
+      const manga = new Manga({ ...(cacheManga as object) });
+      manga.setDataValue('categories', cacheManga['categories']);
+      return manga.get({ plain: true });
+    }
+
     const foundManga = await this.mangaRepo.getDetailsManga(mangaId, [
       { is_deleted: false, is_draft: false, is_published: true },
     ]);
     if (!foundManga)
       throw new HttpException('Not found manga', HttpStatus.BAD_REQUEST);
+    await this.cacheService.set(
+      cacheKey,
+      foundManga.get({ plain: true }),
+      '1d',
+    );
     return foundManga.get({ plain: true });
   }
 
@@ -418,6 +465,9 @@ export class MangaService {
         folderName,
         { changes: [] },
       );
+      // delete cache
+      const cacheKey = `manga:${mangaId}`;
+      await this.cacheService.delete(cacheKey);
 
       return isDeleted;
     });
@@ -462,5 +512,34 @@ export class MangaService {
         );
       });
     return tx;
+  }
+
+  async saveChapterUserBeingRead({
+    mangaId,
+    chapNumber,
+    userId,
+  }: {
+    mangaId: number;
+    chapNumber: number;
+    userId: number;
+  }) {
+    return this.mangaRepo.saveChapterUserBeingRead({
+      mangaId,
+      chapNumber,
+      userId,
+    });
+  }
+
+  async deleteChapterUserBeingRead({
+    mangaId,
+    userId,
+  }: {
+    mangaId: number;
+    userId: number;
+  }): Promise<number> {
+    return this.mangaRepo.deleteChapterUserBeingRead({
+      mangaId,
+      userId,
+    });
   }
 }

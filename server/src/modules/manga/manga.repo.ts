@@ -7,6 +7,7 @@ import { Op, literal } from 'sequelize';
 import { Category } from '@modules/category/models/category.model';
 import PaginateUtil from 'src/shared/utils/paginate.util';
 import { SearchMangaDto } from './dto/search-manga.dto';
+import { UserMangaChapter } from './models/manga-chapter-user-being-read';
 
 @Injectable()
 export class MangaRepo {
@@ -14,6 +15,8 @@ export class MangaRepo {
     @InjectModel(Manga) private mangaModel: typeof Manga,
     @InjectModel(MangaCategory)
     private mangaCategoryModel: typeof MangaCategory,
+    @InjectModel(UserMangaChapter)
+    private userMangaChapter: typeof UserMangaChapter,
   ) {}
 
   async createNewManga(manga: Manga, options: object = {}): Promise<Manga> {
@@ -189,6 +192,30 @@ export class MangaRepo {
     return await this.mangaModel.findOne({
       where: { [Op.and]: whereConditions },
       include: includeConditions,
+      ...options,
+    });
+  }
+
+  async saveChapterUserBeingRead(
+    {
+      mangaId,
+      chapNumber,
+      userId,
+    }: { mangaId: number; chapNumber: number; userId: number },
+    options: object = {},
+  ): Promise<UserMangaChapter> {
+    return await this.userMangaChapter.create(
+      { manga_id: mangaId, user_id: userId, chapter_being_read: chapNumber },
+      options,
+    );
+  }
+
+  async deleteChapterUserBeingRead(
+    { mangaId, userId }: { mangaId: number; userId: number },
+    options: object = {},
+  ): Promise<number> {
+    return await this.userMangaChapter.destroy({
+      where: { manga_id: mangaId, user_id: userId },
       ...options,
     });
   }

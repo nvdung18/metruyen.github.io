@@ -21,6 +21,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
 import { PinataModule } from './shared/pinata/pinata.module';
 import { Web3Module } from './shared/web3/web3.module';
+import { CommentModule } from './modules/comment/comment.module';
 @Module({
   imports: [
     MulterModule.register({
@@ -42,6 +43,7 @@ import { Web3Module } from './shared/web3/web3.module';
     CloudinaryModule,
     PinataModule,
     Web3Module,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [

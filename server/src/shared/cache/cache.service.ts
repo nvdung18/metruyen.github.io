@@ -1,5 +1,6 @@
+import KeyvRedis, { createClient } from '@keyv/redis';
 import { Inject, Injectable } from '@nestjs/common';
-import { Cacheable } from 'cacheable';
+import { Cacheable, Keyv } from 'cacheable';
 @Injectable()
 export class CacheService {
   constructor(@Inject('CACHE_INSTANCE') private readonly cache: Cacheable) {}

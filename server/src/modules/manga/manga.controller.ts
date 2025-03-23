@@ -9,7 +9,10 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { MangaService } from './manga.service';
 import { CreateMangaDto } from './dto/create-manga.dto';
@@ -20,6 +23,7 @@ import { GuestRole, Roles } from '@common/decorators/roles.decorator';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -36,6 +40,8 @@ import { MangaDto } from './dto/manga.dto';
 import { ApiPaginateQuery } from '@common/decorators/api-paginate-query.decorator';
 import { SearchMangaDto } from './dto/search-manga.dto';
 import { AuthorizeAction } from '@common/decorators/authorize-action.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { FileUploadDto } from './dto/test.dto';
 
 @ApiBearerAuth()
 @ApiTags('Manga')
@@ -51,13 +57,22 @@ export class MangaController {
       `,
   })
   @Post('')
+  @UseInterceptors(FileInterceptor('manga_thumb'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Create Manga',
+    type: CreateMangaDto,
+  })
   @ResponseMessage('Manga created successfully')
   @UseGuards(RolesGuard)
   @UseGuards(AuthGuard)
   @Roles({ action: 'createAny', resource: 'Manga' })
-  async createManga(@Body() createMangaDto: CreateMangaDto) {
+  async createManga(
+    @Body() createMangaDto: CreateMangaDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     return {
-      metadata: await this.mangaService.createManga(createMangaDto),
+      metadata: await this.mangaService.createManga(createMangaDto, file),
     };
   }
 

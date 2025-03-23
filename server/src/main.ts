@@ -1,11 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  ValidationPipe,
+  ValidationError,
+} from '@nestjs/common';
 import { DatabaseExceptionsFilter } from '@common/filters/db.exception';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { SwaggerConfig } from './configs/swagger.config';
+// import { ValidationError } from 'sequelize';
 
 async function bootstrap() {
   const app = await NestFactory.create(
@@ -23,6 +28,9 @@ async function bootstrap() {
       // transform: true, // Enable transformation to apply DTO class types
       disableErrorMessages:
         process.env.NODE_ENV == 'development' ? true : false,
+      // exceptionFactory: (validationErrors: ValidationError[] = []) => {
+      //   return new BadRequestException(validationErrors);
+      // },
     }),
   );
   app.useGlobalFilters(new DatabaseExceptionsFilter());
