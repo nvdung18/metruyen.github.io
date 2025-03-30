@@ -10,12 +10,14 @@ import { Web3Module } from 'src/shared/web3/web3.module';
 import { PinataModule } from 'src/shared/pinata/pinata.module';
 import { CacheModule } from 'src/shared/cache/cache.module';
 import { UserMangaChapter } from './models/manga-chapter-user-being-read';
+import { CategoryModule } from '@modules/category/category.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Manga, MangaCategory, UserMangaChapter]),
     Web3Module,
     PinataModule,
+    CategoryModule,
     CacheModule,
   ],
   controllers: [MangaController],

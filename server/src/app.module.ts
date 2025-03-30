@@ -22,6 +22,7 @@ import { CloudinaryModule } from './shared/cloudinary/cloudinary.module';
 import { PinataModule } from './shared/pinata/pinata.module';
 import { Web3Module } from './shared/web3/web3.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { ErrorReportModule } from './modules/error-report/error-report.module';
 @Module({
   imports: [
     MulterModule.register({
@@ -44,6 +45,7 @@ import { CommentModule } from './modules/comment/comment.module';
     PinataModule,
     Web3Module,
     CommentModule,
+    ErrorReportModule,
   ],
   controllers: [AppController],
   providers: [

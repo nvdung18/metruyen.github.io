@@ -22,7 +22,7 @@ export class AuthService {
   async signIn(data: SignInDto): Promise<object> {
     const foundUser = await this.userRepo.findUserByEmail(data.usr_email);
     if (!foundUser)
-      throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     const matchPassword = await compare(
       data.usr_password,
@@ -64,7 +64,7 @@ export class AuthService {
         fields: ['usr_id', 'usr_name', 'usr_email'],
         object: foundUser,
       }),
-      token: { access_token: accessToken, refresh_token: refreshToken },
+      tokens: { access_token: accessToken, refresh_token: refreshToken },
     };
   }
 

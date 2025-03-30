@@ -20,6 +20,7 @@ import { PinataService } from 'src/shared/pinata/pinata.service';
 import { ContractTransaction } from 'ethers';
 import { CacheService } from 'src/shared/cache/cache.service';
 import { omit } from 'lodash';
+import { CategoryService } from '@modules/category/category.service';
 
 @Injectable()
 export class MangaService {
@@ -30,6 +31,7 @@ export class MangaService {
     private web3Service: Web3Service,
     private pinataService: PinataService,
     private cacheService: CacheService,
+    private categoryService: CategoryService,
   ) {}
 
   async testWeb3() {
@@ -67,7 +69,7 @@ export class MangaService {
         { transaction: t },
       );
 
-      await this.addMangaCategory(
+      const { changes: mangaCategories } = await this.addMangaCategory(
         category_id,
         mangaId,
         {
@@ -81,7 +83,14 @@ export class MangaService {
         HistoryType.CreateManga,
         0,
         {
-          changes: [{ ...rest, manga_id: mangaId, manga_slug: mangaSlug }],
+          changes: [
+            {
+              ...rest,
+              manga_id: mangaId,
+              manga_slug: mangaSlug,
+              categories: mangaCategories.map((item) => item),
+            },
+          ],
         },
       );
 
@@ -111,8 +120,9 @@ export class MangaService {
   async updateManga(
     mangaId: number,
     updateMangaDto: UpdateMangaDto,
+    mangaThumb: Express.Multer.File,
   ): Promise<number> {
-    const foundManga = await this.findMangaById(mangaId);
+    const foundManga = await this.findMangaByIdCanPublishOrUnPublish(mangaId);
     const folderName = `${foundManga.manga_title}-history`;
     const changes: { field: string; oldValue: any; newValue: any }[] = [];
 
@@ -126,6 +136,22 @@ export class MangaService {
         foundManga[key] = value; // Only replace keys with new values
       }
     });
+
+    // check and upload manga thumb
+    let uploadThumb: any;
+    if (mangaThumb) {
+      uploadThumb = await this.pinataService.uploadFile(
+        mangaThumb,
+        `${foundManga.manga_title}-thumb`,
+        folderName,
+      );
+      changes.push({
+        field: 'manga_thumb',
+        oldValue: foundManga.manga_thumb,
+        newValue: uploadThumb['IpfsHash'],
+      });
+      foundManga.manga_thumb = uploadThumb['IpfsHash'];
+    }
     // check if there is no change, not need to update
     if (changes.length == 0)
       throw new HttpException('No changes to update', HttpStatus.BAD_REQUEST);
@@ -160,55 +186,98 @@ export class MangaService {
     mangaId: number,
     options: object = {},
     isCreateManga: boolean = false,
-  ): Promise<MangaCategory[]> {
+  ): Promise<{
+    mangaCategories: MangaCategory[];
+    changes: { field: string; categoryId: any; categoryName: any }[];
+  }> {
+    const changes: { field: string; categoryId: any; categoryName: any }[] = [];
+    let foundManga: Manga;
     if (!isCreateManga) {
-      await this.findMangaById(mangaId);
+      foundManga = await this.findMangaByIdCanPublishOrUnPublish(mangaId);
     }
 
-    const mangaCategory = category_id.map((item) => {
-      return { category_id: item, manga_id: mangaId };
-    });
-    const mangaCategories = await this.mangaRepo.addMangaCategory(
-      mangaCategory,
-      options,
+    const mangaCategory = await Promise.all(
+      category_id.map(async (id) => {
+        const category = await this.categoryService.getCategoryById(id);
+        changes.push({
+          field: 'category_id',
+          categoryId: id,
+          categoryName: category.category_name,
+        });
+        return { category_id: id, manga_id: mangaId };
+      }),
     );
-    if (!mangaCategories)
-      throw new HttpException(
-        'Can not add manga category',
-        HttpStatus.BAD_REQUEST,
+
+    let mangaCategories: MangaCategory[];
+    if (isCreateManga) {
+      mangaCategories = await this.mangaRepo.addMangaCategory(
+        mangaCategory,
+        options,
       );
+    } else {
+      mangaCategories = await this.sequelize.transaction(async (t) => {
+        mangaCategories = await this.mangaRepo.addMangaCategory(mangaCategory, {
+          transaction: t,
+        });
+
+        await this.createHistoryOfUpdateManga(
+          HistoryType.CreateCategoryForManga,
+          mangaId,
+          `${foundManga.manga_title}-history`,
+          { changes: changes },
+        );
+
+        const result = mangaCategories.map((category) => category.dataValues);
+        return result;
+      });
+    }
 
     // delete cache
     const cacheKey = `manga:${mangaId}`;
     await this.cacheService.delete(cacheKey);
 
-    return mangaCategories;
+    return { mangaCategories, changes };
   }
 
   async deleteMangaCategory(
     category_id: number[],
     mangaId: number,
   ): Promise<number> {
-    await this.findMangaById(mangaId);
+    const changes: { field: string; categoryId: any; categoryName: any }[] = [];
+    const foundManga = await this.findMangaByIdCanPublishOrUnPublish(mangaId);
 
-    const mangaCategory = category_id.map((item) => {
-      return { category_id: item, manga_id: mangaId };
-    });
+    const mangaCategory = Promise.all(
+      category_id.map(async (id) => {
+        const category = await this.categoryService.getCategoryById(id);
+        changes.push({
+          field: 'category_id',
+          categoryId: id,
+          categoryName: category.category_name,
+        });
+        return { category_id: id, manga_id: mangaId };
+      }),
+    );
 
     const result = await this.sequelize.transaction(async (t) => {
       const isDeleted = await this.mangaRepo.deleteMangaCategory(
-        mangaCategory,
+        await Promise.resolve(mangaCategory),
         { transaction: t },
+      );
+      if (!isDeleted)
+        throw new HttpException(
+          'Can not delete manga category',
+          HttpStatus.BAD_REQUEST,
+        );
+
+      await this.createHistoryOfUpdateManga(
+        HistoryType.DeleteCategoryForMagna,
+        mangaId,
+        `${foundManga.manga_title}-history`,
+        { changes: changes },
       );
 
       return isDeleted;
     });
-
-    if (!result)
-      throw new HttpException(
-        'Can not delete manga category',
-        HttpStatus.BAD_REQUEST,
-      );
 
     // delete cache
     const cacheKey = `manga:${mangaId}`;
@@ -448,7 +517,7 @@ export class MangaService {
   }
 
   async deleteManga(mangaId: number): Promise<number> {
-    const foundManga = await this.findMangaById(mangaId, false, true);
+    const foundManga = await this.findMangaById(mangaId, false, true); //make sure manga is draft before delete
     const folderName = `${foundManga.manga_title}-history`;
 
     // delete manga

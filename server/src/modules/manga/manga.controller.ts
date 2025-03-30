@@ -93,16 +93,24 @@ export class MangaController {
     description: 'Id of manga',
   })
   @Patch(':id')
+  @UseInterceptors(FileInterceptor('manga_thumb'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Update Manga',
+    type: UpdateMangaDto,
+  })
   @ResponseMessage('Manga updated successfully')
   @UseGuards(RolesGuard)
   @UseGuards(AuthGuard)
   @Roles({ action: 'updateAny', resource: 'Manga' })
   async updateManga(
     @Param('id', ParseIntPipe) id: number,
-    @Body(new AtLeastOneFieldPipe()) updateMangaDto: UpdateMangaDto, // need to check at least one value
+    @Body(new AtLeastOneFieldPipe({ removeAllEmptyField: true }))
+    updateMangaDto: UpdateMangaDto, // need to check at least one value
+    @UploadedFile() file: Express.Multer.File,
   ) {
     return {
-      metadata: await this.mangaService.updateManga(id, updateMangaDto),
+      metadata: await this.mangaService.updateManga(id, updateMangaDto, file),
     };
   }
 
@@ -125,14 +133,16 @@ export class MangaController {
   @UseGuards(AuthGuard)
   @Roles({ action: 'updateAny', resource: 'Manga' })
   async addMangaCategory(
+    @Req() req: Request,
     @Param('id') id: number,
     @Body() updateMangaCategoryDto: UpdateMangaCategoryDto,
   ) {
+    const { mangaCategories } = await this.mangaService.addMangaCategory(
+      updateMangaCategoryDto.category_id,
+      id,
+    );
     return {
-      metadata: await this.mangaService.addMangaCategory(
-        updateMangaCategoryDto.category_id,
-        id,
-      ),
+      metadata: req['permission'].filter(mangaCategories),
     };
   }
 
@@ -357,6 +367,7 @@ export class MangaController {
     description: `
   - **${SwaggerApiOperation.NEED_AUTH}**
   - Only **admin** can use this API.
+  - If you want to delete manga, you need to change manga to draft first
       `,
   })
   @ApiParam({
@@ -375,14 +386,14 @@ export class MangaController {
     };
   }
 
-  @ApiOperation({
-    summary: 'Test web3',
-  })
-  @Get('/TestWeb3')
-  @ResponseMessage('Test web3 successful')
-  async testWeb3() {
-    return {
-      metadata: await this.mangaService.testWeb3(),
-    };
-  }
+  // @ApiOperation({
+  //   summary: 'Test web3',
+  // })
+  // @Get('/TestWeb3')
+  // @ResponseMessage('Test web3 successful')
+  // async testWeb3() {
+  //   return {
+  //     metadata: await this.mangaService.testWeb3(),
+  //   };
+  // }
 }

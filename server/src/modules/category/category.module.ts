@@ -10,5 +10,6 @@ import { CacheModule } from 'src/shared/cache/cache.module';
   imports: [SequelizeModule.forFeature([Category]), CacheModule],
   controllers: [CategoryController],
   providers: [CategoryService, CategoryRepo],
+  exports: [CategoryService],
 })
 export class CategoryModule {}

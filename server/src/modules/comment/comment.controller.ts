@@ -52,7 +52,7 @@ export class CommentController {
       req['user']['sub'],
     );
     return {
-      metadata: comment,
+      metadata: req['permission'].filter(comment),
     };
   }
 

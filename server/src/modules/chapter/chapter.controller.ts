@@ -122,7 +122,6 @@ export class ChapterController {
     );
     return {
       metadata: result,
-      // metadata: 1,
     };
   }
 

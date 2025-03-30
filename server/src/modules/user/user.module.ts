@@ -6,9 +6,10 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { UserRepo } from './user.repo';
 import { AuthModule } from '@modules/auth/auth.module';
 import { FavoriteModule } from '@modules/favorite/favorite.module';
+import { PinataModule } from 'src/shared/pinata/pinata.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User]), FavoriteModule],
+  imports: [SequelizeModule.forFeature([User]), FavoriteModule, PinataModule],
   controllers: [UserController],
   providers: [UserRepo, UserService],
   exports: [SequelizeModule, UserRepo, UserService],

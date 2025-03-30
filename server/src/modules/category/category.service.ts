@@ -77,4 +77,12 @@ export class CategoryService {
     await this.cacheService.set(cacheKey, categories);
     return categories;
   }
+
+  async getCategoryById(categoryId: number): Promise<Category> {
+    const allCategories = await this.getAllCategories();
+    const category = allCategories.find((category) => {
+      return category.category_id === categoryId;
+    });
+    return category;
+  }
 }

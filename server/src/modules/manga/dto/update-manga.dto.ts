@@ -13,9 +13,6 @@ export class UpdateMangaDto extends PartialType(
   @ApiPropertyOptional({
     enum: MangaStatus,
     description: 'The status of the manga',
-    example: MangaStatus.ONGOING,
   })
-  @IsEnum(MangaStatus, { message: 'Invalid manga status' })
-  @IsOptional()
   manga_status: MangaStatus;
 }

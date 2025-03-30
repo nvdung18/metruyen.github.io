@@ -12,7 +12,6 @@ import {
 @ApiSchema({ description: 'Description of the CreateMangaDto schema' })
 export class CreateMangaDto {
   @ApiProperty()
-  @IsNotEmpty()
   @IsString({ message: 'Invalid format' })
   manga_title: string;
 
@@ -20,7 +19,6 @@ export class CreateMangaDto {
   manga_thumb: Express.Multer.File;
 
   @ApiProperty()
-  @IsNotEmpty()
   @IsString({ message: 'Invalid format' })
   manga_author: string;
 
