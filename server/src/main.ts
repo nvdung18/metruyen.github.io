@@ -47,6 +47,11 @@ async function bootstrap() {
     SwaggerConfig.SwaggerCustomOptions,
   );
 
-  await app.listen(configService.get('PORT') ?? 3000);
+  const port = configService.get('PORT') ?? 3000;
+  await app.listen(port);
+
+  if (configService.get('NODE_ENV') === 'development') {
+    console.log(`📖 Swagger UI is available at: http://localhost:${port}/api`);
+  }
 }
 bootstrap();

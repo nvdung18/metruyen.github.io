@@ -21,6 +21,7 @@ import { ContractTransaction } from 'ethers';
 import { CacheService } from 'src/shared/cache/cache.service';
 import { omit } from 'lodash';
 import { CategoryService } from '@modules/category/category.service';
+import { UserService } from '@modules/user/user.service';
 
 @Injectable()
 export class MangaService {
@@ -306,6 +307,9 @@ export class MangaService {
         folderName,
         { changes: [] },
       );
+      // delete cache
+      const cacheKey = `manga:unpublish:${mangaId}`;
+      await this.cacheService.delete(cacheKey);
 
       return isPublishedManga;
     });
@@ -370,6 +374,7 @@ export class MangaService {
   }
 
   async searchManga(
+    publish: boolean = false,
     paginateDto: PaginatedDto<MangaDto>,
     searchMangaDto: SearchMangaDto,
   ): Promise<PaginatedDto<MangaDto>> {
@@ -385,9 +390,10 @@ export class MangaService {
       manga_number_of_followers,
     } = searchMangaDto;
     // Where condition array
-    const whereConditions: any[] = [
-      { is_deleted: false, is_draft: false, is_published: true },
-    ];
+    const whereConditions: any[] =
+      publish == true
+        ? [{ is_deleted: false, is_draft: false, is_published: true }]
+        : [{ is_deleted: false, is_draft: true, is_published: false }];
 
     // Full-text search condition if keyword is provided
     if (keyword) {
@@ -474,6 +480,28 @@ export class MangaService {
 
     const foundManga = await this.mangaRepo.getDetailsManga(mangaId, [
       { is_deleted: false, is_draft: false, is_published: true },
+    ]);
+    if (!foundManga)
+      throw new HttpException('Not found manga', HttpStatus.BAD_REQUEST);
+    await this.cacheService.set(
+      cacheKey,
+      foundManga.get({ plain: true }),
+      '1d',
+    );
+    return foundManga.get({ plain: true });
+  }
+
+  async getDetailsUnpublishManga(mangaId: number): Promise<Manga> {
+    const cacheKey = `manga:unpublish:${mangaId}`;
+    const cacheManga = await this.cacheService.get(cacheKey);
+    if (cacheManga) {
+      const manga = new Manga({ ...(cacheManga as object) });
+      manga.setDataValue('categories', cacheManga['categories']);
+      return manga.get({ plain: true });
+    }
+
+    const foundManga = await this.mangaRepo.getDetailsManga(mangaId, [
+      { is_deleted: false, is_draft: true, is_published: false },
     ]);
     if (!foundManga)
       throw new HttpException('Not found manga', HttpStatus.BAD_REQUEST);

@@ -16,6 +16,14 @@ import { Transform } from 'class-transformer';
 import { OnlyOneFieldValidator } from 'src/shared/dto/only-one-field.validator';
 
 export class SearchMangaDto {
+  // @ApiProperty({
+  //   required: true,
+  //   description: 'Manga is publish or unpublish',
+  //   example: false,
+  // })
+  // @IsBoolean()
+  // is_draft: boolean;
+
   @ApiPropertyOptional({
     enum: MangaStatus,
     description: 'The status of the manga',
@@ -44,7 +52,7 @@ export class SearchMangaDto {
 
   @ApiProperty({
     required: false,
-    description: 'New updated',
+    description: 'Sort By new updated',
   })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
@@ -53,7 +61,7 @@ export class SearchMangaDto {
 
   @ApiProperty({
     required: false,
-    description: 'New created',
+    description: 'Sort by new created',
   })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)

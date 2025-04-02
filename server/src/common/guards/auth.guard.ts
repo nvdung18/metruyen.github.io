@@ -82,7 +82,10 @@ export class AuthGuard implements CanActivate {
           decodeUser.sub,
         );
         if (!(roleSlug == RoleSlug.ADMIN)) {
-          throw new HttpException('Invalid user', HttpStatus.UNAUTHORIZED);
+          throw new HttpException(
+            'You do not have permission to access this resource.',
+            HttpStatus.UNAUTHORIZED,
+          );
         }
       }
       request.keyStore = keyStore;

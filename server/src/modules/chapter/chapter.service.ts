@@ -12,6 +12,9 @@ import { Web3Service } from 'src/shared/web3/web3.service';
 import CommonUtil from 'src/shared/utils/common.util';
 import { Sequelize } from 'sequelize-typescript';
 import { CacheService } from 'src/shared/cache/cache.service';
+import { UserService } from '@modules/user/user.service';
+import { RoleSlug } from '@common/constants';
+import { Manga } from '@modules/manga/models/manga.model';
 
 @Injectable()
 export class ChapterService {
@@ -109,6 +112,7 @@ export class ChapterService {
       const chapterContent = await this.pinataService.getFileByCid(
         foundChapter.chap_content,
       );
+      chapterContent['data'] = chapterContent['data'] as Array<any>;
 
       const folderName = `${nameManga}/${foundChapter.chap_number}`;
 
@@ -123,7 +127,11 @@ export class ChapterService {
       }));
 
       updateChapterDto.chap_img_pages.forEach((value, index) => {
-        chapterContent['data'][value] = secureUrls[index];
+        if (chapterContent['data'][value] == undefined) {
+          chapterContent['data'].push(secureUrls[index]);
+        } else {
+          chapterContent['data'][value] = secureUrls[index];
+        }
       });
 
       const jsonBufferUrls = Buffer.from(
@@ -187,10 +195,21 @@ export class ChapterService {
     return foundChapter;
   }
 
-  async getAllChaptersByMangaId(mangaId: number): Promise<Chapter[]> {
-    await this.mangaService.findMangaById(mangaId);
+  async getAllChaptersByMangaId(
+    mangaId: number,
+    role: string,
+  ): Promise<Chapter[]> {
+    let foundManga: Manga;
+    if (role == RoleSlug.ADMIN) {
+      foundManga =
+        await this.mangaService.findMangaByIdCanPublishOrUnPublish(mangaId);
+    } else {
+      foundManga = await this.mangaService.findMangaById(mangaId);
+    }
 
-    const cacheKey = `list_chapter:${mangaId}`;
+    const cacheKey = foundManga.is_draft
+      ? `list_chapter_unpublish:${mangaId}`
+      : `list_chapter:${mangaId}`;
     const cacheListChapters = await this.cacheService.get(cacheKey);
     if (cacheListChapters) {
       const listChapters = (cacheListChapters as Chapter[]).map(
@@ -224,10 +243,19 @@ export class ChapterService {
     mangaId: number,
     chapNumber: number,
     userId: number,
+    role: string,
   ): Promise<Chapter> {
-    await this.mangaService.findMangaById(mangaId);
+    let foundManga: Manga;
+    if (role == RoleSlug.ADMIN) {
+      foundManga =
+        await this.mangaService.findMangaByIdCanPublishOrUnPublish(mangaId);
+    } else {
+      foundManga = await this.mangaService.findMangaById(mangaId);
+    }
 
-    const cacheKey = `chapter_details:${mangaId}:chapters:${chapNumber}`;
+    const cacheKey = foundManga.is_draft
+      ? `chapter_details_unpublish:${mangaId}:chapters:${chapNumber}`
+      : `chapter_details:${mangaId}:chapters:${chapNumber}`;
     const cacheChapter = await this.cacheService.get(cacheKey);
     if (cacheChapter) {
       const chapter = new Chapter({ ...(cacheChapter as object) });

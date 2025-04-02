@@ -3,7 +3,10 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
+  HttpStatus,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -29,7 +32,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { SwaggerApiOperation } from '@common/constants';
+import { RoleSlug, SwaggerApiOperation } from '@common/constants';
 import { MangaStatus, UpdateMangaDto } from './dto/update-manga.dto';
 import { AtLeastOneFieldPipe } from '@common/pipes/at-least-one-field.pipe';
 import Util from '@common/services/util.service';
@@ -42,12 +45,16 @@ import { SearchMangaDto } from './dto/search-manga.dto';
 import { AuthorizeAction } from '@common/decorators/authorize-action.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadDto } from './dto/test.dto';
+import { UserService } from '@modules/user/user.service';
 
 @ApiBearerAuth()
 @ApiTags('Manga')
 @Controller('manga')
 export class MangaController {
-  constructor(private readonly mangaService: MangaService) {}
+  constructor(
+    private readonly mangaService: MangaService,
+    private userService: UserService,
+  ) {}
 
   @ApiOperation({
     summary: 'Admin create Manga',
@@ -237,16 +244,35 @@ export class MangaController {
       `,
   })
   @Get('/search')
+  @ApiQuery({
+    name: 'publish',
+    required: true,
+    description: 'Get manga publish or unpublish',
+    type: Boolean,
+    example: true,
+  })
   @ResponseMessage('Search manga successful')
   @AuthorizeAction({ action: 'readAny', resource: 'Manga' })
   @ApiPaginateQuery()
   @GuestRole(true)
   async searchManga(
     @Req() req: Request,
+    @Query('publish', ParseBoolPipe) publish: boolean,
     @Query() paginateDto: PaginatedDto<MangaDto>,
     @Query() searchMangaDto: SearchMangaDto,
   ) {
+    const roleSlug = await this.userService.getRoleSlugOfUser(
+      req['user']['sub'],
+    );
+    if (!publish && !(roleSlug == RoleSlug.ADMIN)) {
+      throw new HttpException(
+        'You do not have permission to access this resource.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     const data: PaginatedDto<MangaDto> = await this.mangaService.searchManga(
+      publish,
       paginateDto,
       searchMangaDto,
     );
@@ -335,6 +361,27 @@ export class MangaController {
     @Param('id', ParseIntPipe) id: number,
   ) {
     const data = await this.mangaService.getDetailsManga(id);
+    return {
+      metadata: req['permission'].filter(data),
+    };
+  }
+
+  @ApiOperation({
+    summary: 'View Details Unpublish (draft) Manga',
+    description: `
+  - **${SwaggerApiOperation.NOT_NEED_AUTH}**
+  - This route just use to find manga **not deleted, not published and draft**
+      `,
+  })
+  @Get('/details/manga/unpublish/:id')
+  @ResponseMessage('Get details unpublish manga successful')
+  @AuthorizeAction({ action: 'readAny', resource: 'Manga' })
+  @ArchivedResourceAccess(true)
+  async getDetailsUnpublishManga(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    const data = await this.mangaService.getDetailsUnpublishManga(id);
     return {
       metadata: req['permission'].filter(data),
     };

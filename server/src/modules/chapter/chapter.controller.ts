@@ -145,7 +145,11 @@ export class ChapterController {
     @Req() req: Request,
     @Param('id') mangaId: number,
   ) {
-    const data = await this.chapterService.getAllChaptersByMangaId(mangaId);
+    const role = req['permission']['_']['role'];
+    const data = await this.chapterService.getAllChaptersByMangaId(
+      mangaId,
+      role,
+    );
     return {
       metadata: req['permission'].filter(data),
     };
@@ -178,10 +182,12 @@ export class ChapterController {
     @Query('chapter') chapter: number,
   ) {
     const userId = req['user']['sub'];
+    const role = req['permission']['_']['role'];
     const data = await this.chapterService.getDetailsOfChapterByChapNumber(
       mangaId,
       chapter,
       userId,
+      role,
     );
     return {
       metadata: req['permission'].filter(data),
