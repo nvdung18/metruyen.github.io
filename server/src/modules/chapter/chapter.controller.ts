@@ -31,6 +31,8 @@ import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { AtLeastOneFieldPipe } from '@common/pipes/at-least-one-field.pipe';
 import { GuestRole } from '@common/decorators/roles.decorator';
 import { PinataService } from 'src/shared/pinata/pinata.service';
+import { FilesValidationPipe } from '@common/pipes/files-validation.pipe';
+import { IMAGE_TYPES } from '@common/constants/file-type.constant';
 
 @ApiBearerAuth()
 @Controller('chapter')
@@ -74,7 +76,8 @@ export class ChapterController {
   async createChapterForManga(
     @Req() req: Request,
     @Body() createChapterDto: CreateChapterDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles(new FilesValidationPipe(5, IMAGE_TYPES))
+    files: Express.Multer.File[],
     @Param('id') mangaId: number,
   ) {
     const data = await this.chapterService.createChapterForManga(
@@ -112,7 +115,8 @@ export class ChapterController {
     @Req() req: Request,
     @Body(new AtLeastOneFieldPipe({ removeAllEmptyField: true }))
     updateChapterDto: UpdateChapterDto,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles(new FilesValidationPipe(5, IMAGE_TYPES))
+    files: Express.Multer.File[],
     @Param('id') chapterId: number,
   ) {
     const result = await this.chapterService.updateChapterForManga(
@@ -162,30 +166,30 @@ export class ChapterController {
   - Admin can See more information.
     `,
   })
-  @Get('/details/:id')
+  @Get('/details/:chapterId/manga/:mangaId')
   @ApiParam({
-    name: 'id',
+    name: 'mangaId',
     type: Number,
     description: 'Manga id',
   })
-  @ApiQuery({
-    name: 'chapter',
+  @ApiParam({
+    name: 'chapterId',
     type: Number,
-    description: 'Chapter of manga',
+    description: 'Chapter id',
   })
   @ResponseMessage('Get details chapter of manga successful')
   @AuthorizeAction({ action: 'readAny', resource: 'Chapters' })
   @GuestRole(true)
-  async getDetailsOfChapterByChapNumber(
+  async getDetailsOfChapter(
     @Req() req: Request,
-    @Param('id') mangaId: number,
-    @Query('chapter') chapter: number,
+    @Param('mangaId') mangaId: number,
+    @Param('chapterId') chapterId: number,
   ) {
-    const userId = req['user']['sub'];
+    const userId = req['user']?.['sub'] ?? null;
     const role = req['permission']['_']['role'];
-    const data = await this.chapterService.getDetailsOfChapterByChapNumber(
+    const data = await this.chapterService.getDetailsOfChapterByChapterId(
       mangaId,
-      chapter,
+      chapterId,
       userId,
       role,
     );
@@ -248,33 +252,4 @@ export class ChapterController {
       metadata: data,
     };
   }
-
-  // @Post('upload')
-  // @ApiOperation({ summary: 'Upload chapter images' })
-  // @ApiConsumes('multipart/form-data')
-  // @ApiBody({
-  //   description: 'Upload multiple images for a chapter',
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       chap_title: { type: 'string', example: 'Chapter 1: The Beginning' },
-  //       chap_number: { type: 'integer', example: 1 },
-  //       chap_content: {
-  //         type: 'array',
-  //         items: { type: 'string', format: 'binary' },
-  //       },
-  //     },
-  //   },
-  // })
-  // @UseInterceptors(FilesInterceptor('chap_content', 10))
-  // async uploadFiles(
-  //   @Body() body: CreateChapterDto,
-  //   @UploadedFiles() files: Express.Multer.File[],
-  // ) {
-  //   return {
-  //     metadata: {
-  //       ...body,
-  //     },
-  //   };
-  // }
 }

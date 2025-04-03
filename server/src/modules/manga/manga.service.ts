@@ -135,6 +135,20 @@ export class MangaService {
           newValue: value,
         });
         foundManga[key] = value; // Only replace keys with new values
+
+        // check and update manga_slug when manga_title is updated
+        if (key == 'manga_title') {
+          const newMangaSlug = this.util.generateSlug([
+            updateMangaDto.manga_title,
+            Math.floor(mangaId / 1000).toString(),
+          ]);
+          changes.push({
+            field: 'manga_slug',
+            oldValue: foundManga.manga_slug,
+            newValue: newMangaSlug,
+          });
+          foundManga.manga_slug = newMangaSlug;
+        }
       }
     });
 
@@ -176,7 +190,9 @@ export class MangaService {
     });
 
     // delete cache
-    const cacheKey = `manga:${mangaId}`;
+    const cacheKey = foundManga.is_draft
+      ? `manga:unpublish:${mangaId}`
+      : `manga:${mangaId}`;
     await this.cacheService.delete(cacheKey);
 
     return result;
@@ -234,7 +250,9 @@ export class MangaService {
     }
 
     // delete cache
-    const cacheKey = `manga:${mangaId}`;
+    const cacheKey = foundManga.is_draft
+      ? `manga:unpublish:${mangaId}`
+      : `manga:${mangaId}`;
     await this.cacheService.delete(cacheKey);
 
     return { mangaCategories, changes };
@@ -281,7 +299,9 @@ export class MangaService {
     });
 
     // delete cache
-    const cacheKey = `manga:${mangaId}`;
+    const cacheKey = foundManga.is_draft
+      ? `manga:unpublish:${mangaId}`
+      : `manga:${mangaId}`;
     await this.cacheService.delete(cacheKey);
 
     return result;
@@ -562,8 +582,11 @@ export class MangaService {
         folderName,
         { changes: [] },
       );
+
       // delete cache
-      const cacheKey = `manga:${mangaId}`;
+      const cacheKey = foundManga.is_draft
+        ? `manga:unpublish:${mangaId}`
+        : `manga:${mangaId}`;
       await this.cacheService.delete(cacheKey);
 
       return isDeleted;

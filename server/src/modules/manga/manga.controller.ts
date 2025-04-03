@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -46,6 +47,9 @@ import { AuthorizeAction } from '@common/decorators/authorize-action.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadDto } from './dto/test.dto';
 import { UserService } from '@modules/user/user.service';
+import { FileValidationPipe } from '@common/pipes/file-validation.pipe';
+import { IMAGE_TYPES } from '@common/constants/file-type.constant';
+import { isEmpty } from 'lodash';
 
 @ApiBearerAuth()
 @ApiTags('Manga')
@@ -76,7 +80,8 @@ export class MangaController {
   @Roles({ action: 'createAny', resource: 'Manga' })
   async createManga(
     @Body() createMangaDto: CreateMangaDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(new FileValidationPipe(5, IMAGE_TYPES)) // 5MB
+    file: Express.Multer.File,
   ) {
     return {
       metadata: await this.mangaService.createManga(createMangaDto, file),
@@ -112,10 +117,23 @@ export class MangaController {
   @Roles({ action: 'updateAny', resource: 'Manga' })
   async updateManga(
     @Param('id', ParseIntPipe) id: number,
-    @Body(new AtLeastOneFieldPipe({ removeAllEmptyField: true }))
+    // @Body()
+    @Body(
+      new AtLeastOneFieldPipe({
+        removeAllEmptyField: true,
+        acceptEmptyValue: true,
+      }),
+    )
     updateMangaDto: UpdateMangaDto, // need to check at least one value
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(new FileValidationPipe(5, IMAGE_TYPES))
+    file: Express.Multer.File,
   ) {
+    // Kiểm tra nếu body rỗng & không có file nào thì báo lỗi
+    if (isEmpty(updateMangaDto) && isEmpty(file)) {
+      throw new BadRequestException(
+        'At least one field or image must be provided.',
+      );
+    }
     return {
       metadata: await this.mangaService.updateManga(id, updateMangaDto, file),
     };
@@ -261,14 +279,17 @@ export class MangaController {
     @Query() paginateDto: PaginatedDto<MangaDto>,
     @Query() searchMangaDto: SearchMangaDto,
   ) {
-    const roleSlug = await this.userService.getRoleSlugOfUser(
-      req['user']['sub'],
-    );
-    if (!publish && !(roleSlug == RoleSlug.ADMIN)) {
-      throw new HttpException(
-        'You do not have permission to access this resource.',
-        HttpStatus.UNAUTHORIZED,
+    const userId = req['user']?.['sub'] ?? null;
+    if (userId) {
+      const roleSlug = await this.userService.getRoleSlugOfUser(
+        req['user']['sub'],
       );
+      if (!publish && !(roleSlug == RoleSlug.ADMIN)) {
+        throw new HttpException(
+          'You do not have permission to access this resource.',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
     }
 
     const data: PaginatedDto<MangaDto> = await this.mangaService.searchManga(
@@ -352,7 +373,7 @@ export class MangaController {
   - This route just use to find manga **not deleted, not draft, and published**
       `,
   })
-  @Get('/details/manga/:id')
+  @Get('/details/:id')
   @ResponseMessage('Get details manga successful')
   @AuthorizeAction({ action: 'readAny', resource: 'Manga' })
   @GuestRole(true)
@@ -373,7 +394,7 @@ export class MangaController {
   - This route just use to find manga **not deleted, not published and draft**
       `,
   })
-  @Get('/details/manga/unpublish/:id')
+  @Get('/details/unpublish/:id')
   @ResponseMessage('Get details unpublish manga successful')
   @AuthorizeAction({ action: 'readAny', resource: 'Manga' })
   @ArchivedResourceAccess(true)

@@ -226,7 +226,7 @@ export class ChapterService {
       {
         options: {
           raw: true,
-          attributes: ['chap_id', 'chap_manga_id', 'chap_number'],
+          attributes: { exclude: ['chap_content'] },
         },
       },
     );
@@ -239,9 +239,9 @@ export class ChapterService {
     return await this.chapterRepo.getNumberOfChapters(mangaId);
   }
 
-  async getDetailsOfChapterByChapNumber(
+  async getDetailsOfChapterByChapterId(
     mangaId: number,
-    chapNumber: number,
+    chapterId: number,
     userId: number,
     role: string,
   ): Promise<Chapter> {
@@ -254,25 +254,26 @@ export class ChapterService {
     }
 
     const cacheKey = foundManga.is_draft
-      ? `chapter_details_unpublish:${mangaId}:chapters:${chapNumber}`
-      : `chapter_details:${mangaId}:chapters:${chapNumber}`;
+      ? `chapter_details_unpublish:${mangaId}:chapters:${chapterId}`
+      : `chapter_details:${mangaId}:chapters:${chapterId}`;
     const cacheChapter = await this.cacheService.get(cacheKey);
     if (cacheChapter) {
       const chapter = new Chapter({ ...(cacheChapter as object) });
-      // delete and save Chapter user being read
-      await this.mangaService.deleteChapterUserBeingRead({ mangaId, userId });
-      await this.mangaService.saveChapterUserBeingRead({
-        mangaId,
-        chapNumber,
-        userId,
-      });
+      if (userId && role == RoleSlug.USER) {
+        // delete and save Chapter user being read
+        await this.mangaService.deleteChapterUserBeingRead({ mangaId, userId });
+        await this.mangaService.saveChapterUserBeingRead({
+          mangaId,
+          chapNumber: chapter.chap_number,
+          userId,
+        });
+      }
 
       return chapter.get({ plain: true });
     }
 
-    const foundChapter = await this.chapterRepo.getDetailsOfChapterByChapNumber(
-      mangaId,
-      chapNumber,
+    const foundChapter = await this.chapterRepo.getDetailsOfChapterByChapterId(
+      chapterId,
       {
         options: { raw: true },
       },
@@ -282,13 +283,15 @@ export class ChapterService {
 
     await this.cacheService.set(cacheKey, foundChapter, '1d');
 
-    // delete and save Chapter user being read
-    await this.mangaService.deleteChapterUserBeingRead({ mangaId, userId });
-    await this.mangaService.saveChapterUserBeingRead({
-      mangaId,
-      chapNumber,
-      userId,
-    });
+    if (userId && role == RoleSlug.USER) {
+      // delete and save Chapter user being read
+      await this.mangaService.deleteChapterUserBeingRead({ mangaId, userId });
+      await this.mangaService.saveChapterUserBeingRead({
+        mangaId,
+        chapNumber: foundChapter.chap_number,
+        userId,
+      });
+    }
 
     return foundChapter;
   }

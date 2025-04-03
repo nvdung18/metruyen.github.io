@@ -66,9 +66,8 @@ export class ChapterRepo {
     });
   }
 
-  async getDetailsOfChapterByChapNumber(
-    mangaId: number,
-    chapNumber: number,
+  async getDetailsOfChapterByChapterId(
+    chapterId: number,
     {
       isDeleted = false,
       options = {},
@@ -76,8 +75,7 @@ export class ChapterRepo {
   ): Promise<Chapter> {
     return await this.chapterModel.findOne({
       where: {
-        chap_manga_id: mangaId,
-        chap_number: chapNumber,
+        chap_id: chapterId,
         is_deleted: isDeleted,
       },
       ...options,
