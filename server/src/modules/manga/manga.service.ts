@@ -249,11 +249,13 @@ export class MangaService {
       });
     }
 
-    // delete cache
-    const cacheKey = foundManga.is_draft
-      ? `manga:unpublish:${mangaId}`
-      : `manga:${mangaId}`;
-    await this.cacheService.delete(cacheKey);
+    if (!isCreateManga) {
+      // delete cache
+      const cacheKey = foundManga.is_draft
+        ? `manga:unpublish:${mangaId}`
+        : `manga:${mangaId}`;
+      await this.cacheService.delete(cacheKey);
+    }
 
     return { mangaCategories, changes };
   }
