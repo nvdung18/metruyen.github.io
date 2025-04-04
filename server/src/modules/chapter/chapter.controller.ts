@@ -257,10 +257,10 @@ export class ChapterController {
   }
 
   @ApiOperation({
-    summary: 'Delete chapter content by admin',
+    summary: 'Delete image in chapter content by admin',
     description: `
   - **${SwaggerApiOperation.NEED_AUTH}**
-  - Admin can delete chapter content
+  - Admin can delete image in chapter content
     `,
   })
   @Delete('/:id/content')
@@ -271,19 +271,19 @@ export class ChapterController {
     description: 'Chapter id',
   })
   @ApiBody({
-    description: 'Delete chapter content',
+    description: 'Delete image in chapter content',
     type: DeleteChapterContentDto,
   })
-  @ResponseMessage('Delete chapter content successful')
+  @ResponseMessage('Delete image in chapter content successful')
   @AuthorizeAction({ action: 'deleteAny', resource: 'Chapters' })
-  async deleteChapterContent(
+  async deleteImageInChapterContent(
     @Req() req: Request,
     @Body(new AtLeastOneFieldPipe({ removeAllEmptyField: true }))
     deleteChapterContentDto: DeleteChapterContentDto,
     @Param('id') chapterId: number,
   ) {
     return {
-      metadata: await this.chapterService.deleteChapterContent(
+      metadata: await this.chapterService.deleteImageInChapterContent(
         chapterId,
         deleteChapterContentDto,
       ),

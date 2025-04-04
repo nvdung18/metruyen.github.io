@@ -11,4 +11,5 @@ export enum HistoryType {
   CreateChapter = 'Create new Chapter',
   UpdateChapter = 'Update Chapter',
   DeleteChapter = 'Delete Chapter',
+  DeleteImageInChapterContent = 'Delete Image In Chapter Content',
 }

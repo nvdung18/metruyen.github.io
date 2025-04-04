@@ -100,7 +100,7 @@ export class ChapterService {
   ) {
     // Check chapter is exists
     let foundChapter = await this.findChapterById(chapId);
-    // Get nameManga
+    // Get nameManga and make sure manga is not deleted
     const foundManga =
       await this.mangaService.findMangaByIdCanPublishOrUnPublish(
         foundChapter.chap_manga_id,
@@ -162,7 +162,9 @@ export class ChapterService {
     }
 
     const result = this.sequelize.transaction(async (t) => {
-      const isUpdated = await this.chapterRepo.updateChapter(foundChapter);
+      const isUpdated = await this.chapterRepo.updateChapter(foundChapter, {
+        transaction: t,
+      });
       if (!isUpdated)
         throw new HttpException(
           'Can not update Chapter',
@@ -180,8 +182,10 @@ export class ChapterService {
       );
 
       // delete cache
-      const cacheKey = `chapter_details:${foundChapter.chap_manga_id}:chapters:${foundChapter.chap_number}`;
-      await this.cacheService.delete(cacheKey);
+      const cacheKeyChapterDetails = foundManga.is_draft
+        ? `chapter_details_unpublish:${mangaId}:chapters:${chapId}`
+        : `chapter_details:${mangaId}:chapters:${chapId}`;
+      await this.cacheService.delete(cacheKeyChapterDetails);
 
       // if we update base info of chapter like title, number then delete cache of list chapters
       if (!updateBaseInfoOfChapter) {
@@ -338,13 +342,22 @@ export class ChapterService {
   async deleteChapter(chapId: number): Promise<number> {
     // Check chapter is exists
     const foundChapter = await this.findChapterById(chapId);
+
     // Check manga is not deleted then get nameManga
-    const nameManga = await this.mangaService.getNameMangaById(
-      foundChapter.chap_manga_id,
-      {
-        canPublishOrUnpublish: true,
-      },
-    );
+    const foundManga =
+      await this.mangaService.findMangaByIdCanPublishOrUnPublish(
+        foundChapter.chap_manga_id,
+      );
+    const nameManga = foundManga.manga_title;
+    const isDraft = foundManga.is_draft;
+    const mangaId = foundManga.manga_id;
+
+    // const nameManga = await this.mangaService.getNameMangaById(
+    //   foundChapter.chap_manga_id,
+    //   {
+    //     canPublishOrUnpublish: true,
+    //   },
+    // );
 
     const result = this.sequelize.transaction(async (t) => {
       const isDeleted = await this.chapterRepo.deleteChapterById(chapId, {
@@ -365,6 +378,16 @@ export class ChapterService {
           changes: [],
         },
       );
+
+      const cacheKeyListOfChapter = isDraft
+        ? `list_chapter_unpublish:${mangaId}`
+        : `list_chapter:${mangaId}`;
+      await this.cacheService.delete(cacheKeyListOfChapter);
+
+      const cacheKeyChapterDetails = isDraft
+        ? `chapter_details_unpublish:${mangaId}:chapters:${chapId}`
+        : `chapter_details:${mangaId}:chapters:${chapId}`;
+      await this.cacheService.delete(cacheKeyChapterDetails);
 
       return isDeleted;
     });
@@ -411,7 +434,7 @@ export class ChapterService {
     return tx;
   }
 
-  async deleteChapterContent(
+  async deleteImageInChapterContent(
     chapId: number,
     deleteChapterContentDto: DeleteChapterContentDto,
   ): Promise<number> {
@@ -428,6 +451,81 @@ export class ChapterService {
     const chapterContent = await this.pinataService.getFileByCid(
       foundChapter.chap_content,
     );
-    return 1;
+
+    const chapterContentFiltered = this.deleteImageInContentObjectByCid(
+      chapterContent['data'],
+      deleteChapterContentDto.chap_content_cid,
+    );
+
+    if (chapterContentFiltered.length == 0)
+      throw new HttpException('Not thing to delete', HttpStatus.BAD_REQUEST);
+
+    const folderName = `${nameManga}/${foundChapter.chap_number}`;
+    const jsonBufferUrls = Buffer.from(JSON.stringify(chapterContentFiltered));
+    const uploadJsonUrls = await this.pinataService.uploadFile(
+      jsonBufferUrls,
+      `${new Date().toISOString()}-${foundChapter.chap_number}-content`,
+      folderName,
+    );
+
+    const changes: { field: string; oldValue: any; newValue: any }[] = [];
+    changes.push({
+      field: 'chap_content',
+      oldValue: foundChapter.chap_content,
+      newValue: uploadJsonUrls['IpfsHash'],
+    });
+    foundChapter.chap_content = uploadJsonUrls['IpfsHash'];
+
+    const result = this.sequelize.transaction(async (t) => {
+      const isUpdated = await this.chapterRepo.updateChapter(foundChapter, {
+        transaction: t,
+      });
+      if (!isUpdated)
+        throw new HttpException(
+          'Can not update Chapter',
+          HttpStatus.BAD_REQUEST,
+        );
+
+      const folderHistoryName = `${nameManga}-history`;
+      await this.createHistoryOfUpdateChapter(
+        HistoryType.DeleteImageInChapterContent,
+        foundChapter.chap_manga_id,
+        folderHistoryName,
+        {
+          changes: changes,
+        },
+      );
+
+      // delete cache
+      const cacheKey = `chapter_details:${foundChapter.chap_manga_id}:chapters:${foundChapter.chap_number}`;
+      await this.cacheService.delete(cacheKey);
+
+      return isUpdated;
+    });
+    return result;
+  }
+
+  deleteImageInContentObjectByCid(
+    contentObj: string[],
+    listCidBeDeleted: string[],
+  ) {
+    if (!Array.isArray(contentObj) || contentObj.length === 0) return [];
+
+    let decreasePageNumber = 0;
+    // Extract CIDs from IPFS URLs
+    const contentObjFiltered = contentObj.filter((content) => {
+      const url = content['image'];
+      const page = content['page'];
+      // Check if the URL contains 'ipfs/' and extract the CID part
+      const match = url.match(/ipfs\/([a-zA-Z0-9]+)/);
+      if (listCidBeDeleted.includes(match[1])) {
+        decreasePageNumber++;
+        return;
+      }
+      content['page'] = page - decreasePageNumber;
+      return content;
+    });
+
+    return contentObjFiltered;
   }
 }
