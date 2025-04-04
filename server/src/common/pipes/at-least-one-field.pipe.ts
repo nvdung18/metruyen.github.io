@@ -23,12 +23,11 @@ export class AtLeastOneFieldPipe implements PipeTransform {
   transform(value: any, metadata: ArgumentMetadata) {
     if (this.removeAllEmptyField)
       value = this.executeRemoveAllEmptyField(value);
-
     if (Object.values(value).some((val) => val === undefined || val === null)) {
       throw new BadRequestException('Some value is undefined, null');
     }
 
-    if (!this.acceptEmptyValue && Object.keys(value).length === 0) {
+    if (!this.acceptEmptyValue && Object.keys(value).length == 0) {
       throw new BadRequestException('At least one field must be provided');
     }
     return value;

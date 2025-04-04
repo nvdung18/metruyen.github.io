@@ -33,6 +33,7 @@ import { GuestRole } from '@common/decorators/roles.decorator';
 import { PinataService } from 'src/shared/pinata/pinata.service';
 import { FilesValidationPipe } from '@common/pipes/files-validation.pipe';
 import { IMAGE_TYPES } from '@common/constants/file-type.constant';
+import { DeleteChapterContentDto } from './dto/delete-chapter-content.dto';
 
 @ApiBearerAuth()
 @Controller('chapter')
@@ -76,7 +77,7 @@ export class ChapterController {
   async createChapterForManga(
     @Req() req: Request,
     @Body() createChapterDto: CreateChapterDto,
-    @UploadedFiles(new FilesValidationPipe(5, IMAGE_TYPES))
+    @UploadedFiles(new FilesValidationPipe({}, 5, IMAGE_TYPES))
     files: Express.Multer.File[],
     @Param('id') mangaId: number,
   ) {
@@ -115,7 +116,9 @@ export class ChapterController {
     @Req() req: Request,
     @Body(new AtLeastOneFieldPipe({ removeAllEmptyField: true }))
     updateChapterDto: UpdateChapterDto,
-    @UploadedFiles(new FilesValidationPipe(5, IMAGE_TYPES))
+    @UploadedFiles(
+      new FilesValidationPipe({ isRequired: false }, 5, IMAGE_TYPES),
+    )
     files: Express.Multer.File[],
     @Param('id') chapterId: number,
   ) {
@@ -250,6 +253,40 @@ export class ChapterController {
     const data = await this.chapterService.deleteChapter(chapId);
     return {
       metadata: data,
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Delete chapter content by admin',
+    description: `
+  - **${SwaggerApiOperation.NEED_AUTH}**
+  - Admin can delete chapter content
+    `,
+  })
+  @Delete('/:id/content')
+  @ApiConsumes('application/x-www-form-urlencoded')
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Chapter id',
+  })
+  @ApiBody({
+    description: 'Delete chapter content',
+    type: DeleteChapterContentDto,
+  })
+  @ResponseMessage('Delete chapter content successful')
+  @AuthorizeAction({ action: 'deleteAny', resource: 'Chapters' })
+  async deleteChapterContent(
+    @Req() req: Request,
+    @Body(new AtLeastOneFieldPipe({ removeAllEmptyField: true }))
+    deleteChapterContentDto: DeleteChapterContentDto,
+    @Param('id') chapterId: number,
+  ) {
+    return {
+      metadata: await this.chapterService.deleteChapterContent(
+        chapterId,
+        deleteChapterContentDto,
+      ),
     };
   }
 }

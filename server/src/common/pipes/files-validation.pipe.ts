@@ -10,6 +10,7 @@ import { ParseFilePipeBuilder } from '@nestjs/common';
 @Injectable()
 export class FilesValidationPipe implements PipeTransform {
   constructor(
+    private readonly options: { isRequired?: boolean } = { isRequired: true },
     // maxSize is in MB, for example we pass 1, it means 1MB
     private readonly maxSize: number = 1 * 1024 * 1024, // Mặc định 1MB
     private readonly fileTypes: string[] = ['jpeg'],
@@ -17,7 +18,7 @@ export class FilesValidationPipe implements PipeTransform {
   ) {}
 
   transform(files: Express.Multer.File[]) {
-    if (!files || files.length === 0) {
+    if (this.options.isRequired && (!files || files.length === 0)) {
       throw new BadRequestException('At least one file is required');
     }
 

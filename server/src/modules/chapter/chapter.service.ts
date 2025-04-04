@@ -15,6 +15,7 @@ import { CacheService } from 'src/shared/cache/cache.service';
 import { UserService } from '@modules/user/user.service';
 import { RoleSlug } from '@common/constants';
 import { Manga } from '@modules/manga/models/manga.model';
+import { DeleteChapterContentDto } from './dto/delete-chapter-content.dto';
 
 @Injectable()
 export class ChapterService {
@@ -33,9 +34,12 @@ export class ChapterService {
     files: Express.Multer.File[],
     mangaId: number,
   ): Promise<Chapter> {
-    const nameManga = await this.mangaService.getNameMangaById(mangaId, {
-      canPublishOrUnpublish: true,
-    });
+    const foundManga =
+      await this.mangaService.findMangaByIdCanPublishOrUnPublish(mangaId);
+    const nameManga = foundManga.manga_title;
+    // const nameManga = await this.mangaService.getNameMangaById(mangaId, {
+    //   canPublishOrUnpublish: true,
+    // });
     const folderName = `${nameManga}/${createChapterDto.chap_number}`;
 
     const uploadResults = await this.pinataService.uploadManyFiles(
@@ -78,7 +82,10 @@ export class ChapterService {
         },
       );
       // delete cache
-      const cacheKey = `list_chapter:${mangaId}`;
+      // const cacheKey = `list_chapter:${mangaId}`;
+      const cacheKey = foundManga.is_draft
+        ? `list_chapter_unpublish:${mangaId}`
+        : `list_chapter:${mangaId}`;
       await this.cacheService.delete(cacheKey);
 
       return newChapter.get({ plain: true });
@@ -94,12 +101,12 @@ export class ChapterService {
     // Check chapter is exists
     let foundChapter = await this.findChapterById(chapId);
     // Get nameManga
-    const nameManga = await this.mangaService.getNameMangaById(
-      foundChapter.chap_manga_id,
-      {
-        canPublishOrUnpublish: true,
-      },
-    );
+    const foundManga =
+      await this.mangaService.findMangaByIdCanPublishOrUnPublish(
+        foundChapter.chap_manga_id,
+      );
+    const nameManga = foundManga.manga_title;
+    const mangaId = foundManga.manga_id;
 
     // Replace data of dto to old value
     const { changes, updatedObject } = this.util.replaceDataObjectByKey({
@@ -107,6 +114,8 @@ export class ChapterService {
       objWillBeReplace: foundChapter,
     });
     foundChapter = updatedObject;
+
+    const updateBaseInfoOfChapter = changes.length == 0 ? true : false;
 
     if (files.length != 0 && updateChapterDto.chap_img_pages.length != 0) {
       const chapterContent = await this.pinataService.getFileByCid(
@@ -173,6 +182,14 @@ export class ChapterService {
       // delete cache
       const cacheKey = `chapter_details:${foundChapter.chap_manga_id}:chapters:${foundChapter.chap_number}`;
       await this.cacheService.delete(cacheKey);
+
+      // if we update base info of chapter like title, number then delete cache of list chapters
+      if (!updateBaseInfoOfChapter) {
+        const cacheKeyListOfChapter = foundManga.is_draft
+          ? `list_chapter_unpublish:${mangaId}`
+          : `list_chapter:${mangaId}`;
+        await this.cacheService.delete(cacheKeyListOfChapter);
+      }
 
       return isUpdated;
     });
@@ -392,5 +409,25 @@ export class ChapterService {
         );
       });
     return tx;
+  }
+
+  async deleteChapterContent(
+    chapId: number,
+    deleteChapterContentDto: DeleteChapterContentDto,
+  ): Promise<number> {
+    // Check chapter is exists
+    const foundChapter = await this.findChapterById(chapId);
+    // Check manga is not deleted then get nameManga
+    const nameManga = await this.mangaService.getNameMangaById(
+      foundChapter.chap_manga_id,
+      {
+        canPublishOrUnpublish: true,
+      },
+    );
+
+    const chapterContent = await this.pinataService.getFileByCid(
+      foundChapter.chap_content,
+    );
+    return 1;
   }
 }
