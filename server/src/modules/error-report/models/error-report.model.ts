@@ -30,7 +30,10 @@ export class ErrorReport extends Model {
   @Column(DataType.BIGINT)
   report_user_id: number;
 
-  @BelongsTo(() => User, { foreignKey: 'report_user_id' })
+  @BelongsTo(() => User, {
+    as: 'UserReportError',
+    foreignKey: 'report_user_id',
+  })
   user: User;
 
   @ForeignKey(() => Chapter)
@@ -46,7 +49,10 @@ export class ErrorReport extends Model {
   @Column(DataType.BIGINT)
   report_admin_id: number | null;
 
-  @BelongsTo(() => User, { foreignKey: 'report_admin_id' })
+  @BelongsTo(() => User, {
+    as: 'AdminManageError',
+    foreignKey: 'report_admin_id',
+  })
   admin: User | null;
 
   @AllowNull(false)

@@ -352,13 +352,6 @@ export class ChapterService {
     const isDraft = foundManga.is_draft;
     const mangaId = foundManga.manga_id;
 
-    // const nameManga = await this.mangaService.getNameMangaById(
-    //   foundChapter.chap_manga_id,
-    //   {
-    //     canPublishOrUnpublish: true,
-    //   },
-    // );
-
     const result = this.sequelize.transaction(async (t) => {
       const isDeleted = await this.chapterRepo.deleteChapterById(chapId, {
         transaction: t,
@@ -440,13 +433,13 @@ export class ChapterService {
   ): Promise<number> {
     // Check chapter is exists
     const foundChapter = await this.findChapterById(chapId);
-    // Check manga is not deleted then get nameManga
-    const nameManga = await this.mangaService.getNameMangaById(
-      foundChapter.chap_manga_id,
-      {
-        canPublishOrUnpublish: true,
-      },
-    );
+    // Get nameManga and make sure manga is not deleted
+    const foundManga =
+      await this.mangaService.findMangaByIdCanPublishOrUnPublish(
+        foundChapter.chap_manga_id,
+      );
+    const nameManga = foundManga.manga_title;
+    const mangaId = foundManga.manga_id;
 
     const chapterContent = await this.pinataService.getFileByCid(
       foundChapter.chap_content,
@@ -497,8 +490,10 @@ export class ChapterService {
       );
 
       // delete cache
-      const cacheKey = `chapter_details:${foundChapter.chap_manga_id}:chapters:${foundChapter.chap_number}`;
-      await this.cacheService.delete(cacheKey);
+      const cacheKeyChapterDetails = foundManga.is_draft
+        ? `chapter_details_unpublish:${mangaId}:chapters:${chapId}`
+        : `chapter_details:${mangaId}:chapters:${chapId}`;
+      await this.cacheService.delete(cacheKeyChapterDetails);
 
       return isUpdated;
     });

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ErrorReport } from './models/error-report.model';
 import PaginateUtil from 'src/shared/utils/paginate.util';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class ErrorReportRepo {
@@ -18,15 +19,25 @@ export class ErrorReportRepo {
 
   async getListOfErrorReportWithPaginate(
     isFixed: boolean,
+    isManaged: boolean,
     page: number,
     limit: number,
-    option: object = {},
+    options: object = {},
   ): Promise<any> {
     const offset = (page - 1) * limit;
+    const whereCondition: any = { is_fixed: isFixed };
+
+    // Nếu isManaged = true, lấy các report đã có admin xử lý
+    // Nếu isManaged = false, lấy các report chưa có admin xử lý
+    if (isManaged) {
+      whereCondition.report_admin_id = { [Op.ne]: null };
+    } else {
+      whereCondition.report_admin_id = null;
+    }
     const { rows: data, count: total } =
       await this.errorReportModel.findAndCountAll({
-        where: { is_fixed: isFixed },
-        ...option,
+        where: whereCondition,
+        ...options,
         limit,
         offset,
         order: [['updatedAt', 'DESC']],

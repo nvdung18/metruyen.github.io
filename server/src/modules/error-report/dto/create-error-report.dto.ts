@@ -5,13 +5,13 @@ import { Transform } from 'class-transformer';
 
 @ApiSchema({ description: 'Description of the CreateErrorReportDto schema' })
 export class CreateErrorReportDto {
-  @ApiProperty({ description: 'Report user ID' })
-  @IsNumber({}, { message: 'Report user ID must be a number' })
-  @Transform(({ value }) => {
-    if (value === '') return -1;
-    return Number(value);
-  })
-  report_user_id: number;
+  // @ApiProperty({ description: 'Report user ID' })
+  // @IsNumber({}, { message: 'Report user ID must be a number' })
+  // @Transform(({ value }) => {
+  //   if (value === '') return -1;
+  //   return Number(value);
+  // })
+  // report_user_id: number;
 
   @ApiProperty({ description: 'Report chapter ID' })
   @IsNumber({}, { message: 'Report chapter ID must be a number' })

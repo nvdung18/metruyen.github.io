@@ -19,6 +19,7 @@ import {
   ApiConsumes,
   ApiOperation,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { SwaggerApiOperation } from '@common/constants';
 import { ResponseMessage } from '@common/decorators/response-message.decorator';
@@ -52,8 +53,11 @@ export class ErrorReportController {
     @Req() req: Request,
     @Body() createErrorReport: CreateErrorReportDto,
   ) {
-    const data =
-      await this.errorReportService.createErrorReport(createErrorReport);
+    const userId = req['user']['sub'];
+    const data = await this.errorReportService.createErrorReport(
+      createErrorReport,
+      userId,
+    );
     return {
       metadata: req['permission'].filter(data),
     };
@@ -66,6 +70,18 @@ export class ErrorReportController {
   - Only admin can use this api
         `,
   })
+  @ApiQuery({
+    name: 'isFixed',
+    type: Boolean,
+    example: false,
+    required: true,
+  })
+  @ApiQuery({
+    name: 'isManaged',
+    type: Boolean,
+    example: false,
+    required: true,
+  })
   @Get('reports')
   @ResponseMessage('Get list error reports successfully')
   @AuthorizeAction({ action: 'readAny', resource: 'Error Reports' })
@@ -73,12 +89,14 @@ export class ErrorReportController {
   async getListErrorReports(
     @Req() req: Request,
     @Query('isFixed', ParseBoolPipe) isFixed: boolean,
+    @Query('isManaged', ParseBoolPipe) isManaged: boolean,
     @Query() paginateDto: PaginatedDto<ErrorReportDto>,
   ) {
     const data: PaginatedDto<ErrorReportDto> =
       await this.errorReportService.getListErrorReportWithPaginate(
         paginateDto,
         isFixed,
+        isManaged,
       );
     const { results, ...pagination } = data;
     return {
@@ -104,9 +122,44 @@ export class ErrorReportController {
   })
   @ResponseMessage('Confirm fix error report successfully')
   @AuthorizeAction({ action: 'updateAny', resource: 'Error Reports' })
-  async confirmFixErrorReport(@Param('id') reportId: number) {
+  async confirmFixErrorReport(
+    @Req() req: Request,
+    @Param('id') reportId: number,
+  ) {
+    const adminId = req['user']['sub'];
     return {
-      metadata: await this.errorReportService.confirmFixErrorReport(reportId),
+      metadata: await this.errorReportService.confirmFixErrorReport(
+        reportId,
+        adminId,
+      ),
+    };
+  }
+
+  @ApiOperation({
+    summary: 'The admin confirmed that he is managing this error report.',
+    description: `
+  - **${SwaggerApiOperation.NEED_AUTH}**
+  - Only admin can use this api
+        `,
+  })
+  @Patch('manage/:id')
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Id of error report',
+  })
+  @ResponseMessage('Confirm manage error report successfully')
+  @AuthorizeAction({ action: 'updateAny', resource: 'Error Reports' })
+  async confirmManageErrorReportByAdmin(
+    @Req() req: Request,
+    @Param('id') reportId: number,
+  ) {
+    const adminId = req['user']['sub'];
+    return {
+      metadata: await this.errorReportService.confirmManageErrorReportByAdmin(
+        reportId,
+        adminId,
+      ),
     };
   }
 
@@ -128,6 +181,32 @@ export class ErrorReportController {
   async deleteErrorReport(@Param('id') reportId: number) {
     return {
       metadata: await this.errorReportService.deleteErrorReportById(reportId),
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Admin view details error of error report ',
+    description: `
+  - **${SwaggerApiOperation.NEED_AUTH}**
+  - Only admin can use this api
+        `,
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Id of error report',
+  })
+  @Get('reports/:id')
+  @ResponseMessage('Get details error report successfully')
+  @AuthorizeAction({ action: 'readAny', resource: 'Error Reports' })
+  async getDetailsErrorReport(
+    @Req() req: Request,
+    @Param('id') errorReportId: number,
+  ) {
+    const data =
+      await this.errorReportService.getDetailsErrorReport(errorReportId);
+    return {
+      metadata: req['permission'].filter(data),
     };
   }
 }
