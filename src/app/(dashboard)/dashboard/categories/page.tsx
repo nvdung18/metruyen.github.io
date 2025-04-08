@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +54,31 @@ import {
 import { toast } from 'sonner';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
+// Import React Hook Form and Zod
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+
+// Define Zod schema for category validation
+const categorySchema = z.object({
+  category_name: z
+    .string()
+    .min(1, { message: 'Category name is required' })
+    .max(50, { message: 'Category name must be less than 50 characters' })
+});
+
+// Type for our form values
+type CategoryFormValues = z.infer<typeof categorySchema>;
+
 interface CategoryPageProps {
   className?: string;
   variant?: 'default' | 'compact';
@@ -80,10 +105,6 @@ const CategoryPage = ({
   const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
   const [categoryToEdit, setCategoryToEdit] = useState<Category | null>(null);
 
-  // Form state
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryDescription, setNewCategoryDescription] = useState('');
-
   // RTK Query hooks
   const {
     data: categories = [],
@@ -98,6 +119,38 @@ const CategoryPage = ({
     useUpdateCategoryMutation();
   const [deleteCategory, { isLoading: isDeleting }] =
     useDeleteCategoryMutation();
+
+  // Create form for adding a new category
+  const addForm = useForm<CategoryFormValues>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: {
+      category_name: ''
+    }
+  });
+
+  // Create form for editing a category
+  const editForm = useForm<CategoryFormValues>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: {
+      category_name: ''
+    }
+  });
+
+  // Reset add form when dialog closes
+  useEffect(() => {
+    if (!isAddDialogOpen) {
+      addForm.reset();
+    }
+  }, [isAddDialogOpen, addForm]);
+
+  // Set edit form values when a category is selected for editing
+  useEffect(() => {
+    if (categoryToEdit && isEditDialogOpen) {
+      editForm.reset({
+        category_name: categoryToEdit.category_name
+      });
+    }
+  }, [categoryToEdit, isEditDialogOpen, editForm]);
 
   // Filter and sort categories
   const filteredAndSortedCategories = [...categories]
@@ -132,23 +185,18 @@ const CategoryPage = ({
   }, [isError]);
 
   // Handle category creation
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) return;
-
+  const handleAddCategory = async (data: CategoryFormValues) => {
     try {
       const result = await createCategory({
-        category_name: newCategoryName.trim(),
-        category_description: newCategoryDescription.trim() || undefined
+        category_name: data.category_name.trim()
       }).unwrap();
 
       toast.success('Category added', {
-        description: `${newCategoryName} has been created successfully.`,
+        description: `${data.category_name} has been created successfully.`,
         icon: <CheckCircle2 className="h-5 w-5 text-green-500" />
       });
 
-      // Reset form
-      setNewCategoryName('');
-      setNewCategoryDescription('');
+      // Close dialog
       setIsAddDialogOpen(false);
     } catch (err: any) {
       toast.error('Failed to add category', {
@@ -159,18 +207,17 @@ const CategoryPage = ({
   };
 
   // Handle category update
-  const handleUpdateCategory = async () => {
-    if (!categoryToEdit || !categoryToEdit.category_name.trim()) return;
+  const handleUpdateCategory = async (data: CategoryFormValues) => {
+    if (!categoryToEdit) return;
 
     try {
       const result = await updateCategory({
         category_id: categoryToEdit.category_id,
-        category_name: categoryToEdit.category_name.trim(),
-        category_description: categoryToEdit.category_description || undefined
+        category_name: data.category_name.trim()
       }).unwrap();
 
       toast.success('Category updated', {
-        description: `${categoryToEdit.category_name} has been updated successfully.`,
+        description: `${data.category_name} has been updated successfully.`,
         icon: <CheckCircle2 className="h-5 w-5 text-green-500" />
       });
 
@@ -272,14 +319,18 @@ const CategoryPage = ({
     // Show results
     if (successCount > 0) {
       toast.success('Categories deleted', {
-        description: `${successCount} ${successCount === 1 ? 'category has' : 'categories have'} been deleted.`,
+        description: `${successCount} ${
+          successCount === 1 ? 'category has' : 'categories have'
+        } been deleted.`,
         icon: <CheckCircle2 className="h-5 w-5 text-green-500" />
       });
     }
 
     if (errorCount > 0) {
       toast.error('Deletion incomplete', {
-        description: `Failed to delete ${errorCount} ${errorCount === 1 ? 'category' : 'categories'}.`,
+        description: `Failed to delete ${errorCount} ${
+          errorCount === 1 ? 'category' : 'categories'
+        }.`,
         icon: <XCircle className="h-5 w-5 text-red-500" />
       });
     }
@@ -532,7 +583,7 @@ const CategoryPage = ({
         )}
       </CardContent>
 
-      {/* Add Category Dialog */}
+      {/* Add Category Dialog with React Hook Form */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="bg-card/90 border-manga-600/40 backdrop-blur-xl">
           <DialogHeader>
@@ -540,55 +591,64 @@ const CategoryPage = ({
               Add New Category
             </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="name" className="text-right">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="name"
-                placeholder="Category name"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="description" className="text-right">
-                Description
-              </label>
-              <Textarea
-                id="description"
-                placeholder="Category description (optional)"
-                value={newCategoryDescription}
-                onChange={(e) => setNewCategoryDescription(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-manga-600 hover:bg-manga-700"
-              onClick={handleAddCategory}
-              disabled={isCreating || !newCategoryName.trim()}
+          <Form {...addForm}>
+            <form
+              onSubmit={addForm.handleSubmit(handleAddCategory)}
+              className="space-y-6"
             >
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Add Category'
-              )}
-            </Button>
-          </DialogFooter>
+              <FormField
+                control={addForm.control}
+                name="category_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Category name"
+                        autoComplete="off"
+                        autoFocus
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Enter a unique name for this category.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-manga-600 hover:bg-manga-700"
+                  disabled={isCreating || addForm.formState.isSubmitting}
+                >
+                  {isCreating || addForm.formState.isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Add Category'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Category Dialog */}
+      {/* Edit Category Dialog with React Hook Form */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="bg-card/90 border-manga-600/40 backdrop-blur-xl">
           <DialogHeader>
@@ -596,64 +656,60 @@ const CategoryPage = ({
               Edit Category
             </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-name" className="text-right">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="edit-name"
-                placeholder="Category name"
-                value={categoryToEdit?.category_name || ''}
-                onChange={(e) =>
-                  setCategoryToEdit((prev) =>
-                    prev ? { ...prev, category_name: e.target.value } : null
-                  )
-                }
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="edit-description" className="text-right">
-                Description
-              </label>
-              <Textarea
-                id="edit-description"
-                placeholder="Category description (optional)"
-                value={categoryToEdit?.category_description || ''}
-                onChange={(e) =>
-                  setCategoryToEdit((prev) =>
-                    prev
-                      ? { ...prev, category_description: e.target.value }
-                      : null
-                  )
-                }
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
+          <Form {...editForm}>
+            <form
+              onSubmit={editForm.handleSubmit(handleUpdateCategory)}
+              className="space-y-6"
             >
-              Cancel
-            </Button>
-            <Button
-              className="bg-manga-600 hover:bg-manga-700"
-              onClick={handleUpdateCategory}
-              disabled={isUpdating || !categoryToEdit?.category_name?.trim()}
-            >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                'Update Category'
-              )}
-            </Button>
-          </DialogFooter>
+              <FormField
+                control={editForm.control}
+                name="category_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Category name"
+                        autoComplete="off"
+                        autoFocus
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Enter a unique name for this category.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-manga-600 hover:bg-manga-700"
+                  disabled={isUpdating || editForm.formState.isSubmitting}
+                >
+                  {isUpdating || editForm.formState.isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Category'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 

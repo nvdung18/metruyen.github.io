@@ -4,15 +4,15 @@ const apiBaseQuery = fetchBaseQuery({
   baseUrl: 'http://localhost:8080',
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as any;
-    const token = state.auth?.token;
-    const user = state.auth?.user;
-
+    const token = state.auth?.tokens;
+    const clientId = state.auth?.clientId;
+    console.log('State:', state.auth);
     // Set auth headers if token exists
     if (token?.access_token) {
       headers.set('Authorization', `Bearer ${token.access_token}`);
-      console.log('user', user);
+      console.log('user', clientId);
       // Use user ID if available, fallback to "2" for testing
-      headers.set('x-client-id', user.id);
+      headers.set('x-client-id', clientId);
 
       console.log('Request headers include auth token');
     }
@@ -40,7 +40,7 @@ export interface MangaAdmin {
   manga_description?: string;
   manga_thumb?: string;
   manga_author?: string;
-  manga_status?: 'published' | 'draft' | 'unpublished' | 'ongoing';
+  manga_status?: 'completed' | 'draft' | 'ongoing' | 'hiatus';
   manga_views?: number;
   manga_total_star_rating?: number;
   manga_number_of_followers: number;
@@ -48,9 +48,9 @@ export interface MangaAdmin {
   createdAt?: string;
   updatedAt?: string;
   manga_slug?: string; // Added this field
-  is_deleted?: number;
-  is_draft?: number;
-  is_published?: number;
+  is_deleted?: number | number;
+  is_draft?: number | number;
+  is_published?: number | boolean;
 }
 
 export interface MangaCategory {
@@ -63,17 +63,14 @@ export interface MangaChapter {
   chap_manga_id: number;
   chap_number: number;
   chap_title?: string;
-  created_at?: string;
-  updated_at?: string;
   chap_views?: number;
-  chap_content?: MangaChapterImage;
   createdAt?: string;
   updatedAt?: string;
-  isDeleted?: number;
+  is_deleted?: number;
 }
 
 export interface MangaChapterDetail extends MangaChapter {
-  images: MangaImage[];
+  chap_content?: string;
 }
 
 export interface MangaChapterImage {
@@ -103,29 +100,37 @@ export interface MangaListResult {
   totalPages: number;
 }
 
-export interface MangaCreateRequest {
+type MangaCreateRequestObject = {
   manga_title: string;
   manga_description: string;
   manga_author: string;
-  manga_thumbnail: File; // URL or base64
-  category_ids?: number[];
-}
+  manga_thumb: File;
+  category_id: number[];
+};
 
-export interface MangaUpdateRequest extends Partial<MangaCreateRequest> {
+// Use the union for the full type
+export type MangaCreateRequest = MangaCreateRequestObject | FormData;
+
+// Extend the object part only
+export interface MangaUpdateRequest extends Partial<MangaCreateRequestObject> {
   manga_id: number;
+  formData: FormData;
 }
 
-export interface ChapterCreateRequest {
+type ChapterCreateRequestObject = {
+  chap_number: number;
+  chap_title: string;
+  chap_content: File[];
+};
+
+// This type should include the manga_id
+export type ChapterCreateRequest = {
   manga_id: number;
-  chapter_number: number;
-  chapter_title?: string;
-  images?: { image_url: string; image_order: number }[];
-}
-
+  formData: FormData;
+};
 export interface ChapterUpdateRequest {
-  chapter_id: number;
-  chapter_title?: string;
-  chapter_number?: number;
+  chap_id: number;
+  formData: FormData;
 }
 
 export interface ChapterImageUploadRequest {
@@ -163,10 +168,6 @@ export const mangaApi = createApi({
         // Add required parameters with defaults
         queryParams.append('page', String(params.page || 1));
         queryParams.append('limit', String(params.limit || 20));
-
-        console.log(
-          `Request: /manga/${params.sort || 'publish'}?${queryParams.toString()}`
-        );
         return {
           url: `/manga/${params.sort === 'unpublished' ? 'unpublish' : 'publish'}?${queryParams.toString()}`,
           method: 'GET'
@@ -216,24 +217,9 @@ export const mangaApi = createApi({
             created_at: manga.createdAt,
             updated_at: manga.updatedAt,
             manga_slug: manga.manga_slug,
-            is_published:
-              typeof manga.is_published === 'boolean'
-                ? manga.is_published
-                  ? 1
-                  : 0
-                : manga.is_published,
-            is_draft:
-              typeof manga.is_draft === 'boolean'
-                ? manga.is_draft
-                  ? 1
-                  : 0
-                : manga.is_draft,
-            is_deleted:
-              typeof manga.is_deleted === 'boolean'
-                ? manga.is_deleted
-                  ? 1
-                  : 0
-                : manga.is_deleted
+            is_deleted: manga.is_deleted,
+            is_draft: manga.is_draft,
+            is_published: manga.is_published
           })),
           total: pagination.total || mangas.length,
           page: pagination.page || 1,
@@ -254,9 +240,55 @@ export const mangaApi = createApi({
     }),
 
     // Then update your getMangaById query to use this interface
-    getMangaById: builder.query<MangaDetail, number>({
-      query: (id) => `/manga/details/manga/${id}`,
+    getMangaById: builder.query<
+      MangaDetail,
+      {
+        id: number;
+        isPublished?: string | null;
+      }
+    >({
+      query: (params) => {
+        const { id, isPublished } = params;
+
+        // Check the isPublished parameter value
+        // Convert different input types to consistent values for comparison
+        if (isPublished === null || isPublished === undefined) {
+          // Default case - use published endpoint if no preference specified
+          return {
+            url: `/manga/details/${id}`
+          };
+        }
+
+        // Handle string values like 'published'/'unpublished'
+        if (typeof isPublished === 'string') {
+          if (isPublished === 'publish') {
+            return {
+              url: `/manga/details/${id}`
+            };
+          } else if (isPublished === 'unpublish') {
+            return {
+              url: `/manga/details/unpublish/${id}`
+            };
+          }
+        }
+
+        // Handle boolean/number values (true/false/1/0)
+        const isPublishedBoolean =
+          isPublished === '1' || isPublished === 'true';
+
+        if (isPublishedBoolean) {
+          return {
+            url: `/manga/details/${id}`
+          };
+        }
+
+        // For all other cases (false, 0, etc.) use unpublished endpoint
+        return {
+          url: `/manga/details/unpublish/${id}`
+        };
+      },
       transformResponse: (response: ApiResponse<any>) => {
+        console.log(response);
         if (!response.metadata) {
           throw new Error('Manga not found');
         }
@@ -272,7 +304,7 @@ export const mangaApi = createApi({
 
         return mangaDetail;
       },
-      providesTags: (result, error, id) => [{ type: 'MangaAdmin', id }]
+      providesTags: (result, error, arg) => [{ type: 'MangaAdmin', id: arg.id }]
     }),
 
     // Get manga by category ID
@@ -324,22 +356,10 @@ export const mangaApi = createApi({
     // Create manga
     createManga: builder.mutation<MangaAdmin, MangaCreateRequest>({
       query: (manga) => {
-        const formData = new FormData();
-        formData.append('manga_title', manga.manga_title);
-        formData.append('manga_description', manga.manga_description);
-        formData.append('manga_author', manga.manga_author);
-        formData.append('manga_thumbnail', manga.manga_thumbnail);
-
-        if (manga.category_ids) {
-          // Format category IDs as needed by your API
-          formData.append('category_ids', JSON.stringify(manga.category_ids));
-        }
-
         return {
           url: '/manga',
           method: 'POST',
-          body: formData,
-          // Don't set Content-Type, browser will set it with correct boundary
+          body: manga,
           formData: true
         };
       },
@@ -354,11 +374,12 @@ export const mangaApi = createApi({
     }),
 
     // Update manga
-    updateManga: builder.mutation<MangaAdmin, MangaUpdateRequest>({
-      query: ({ manga_id, ...patch }) => ({
+    updateMangaById: builder.mutation<MangaAdmin, MangaUpdateRequest>({
+      query: ({ manga_id, formData }) => ({
         url: `/manga/${manga_id}`,
-        method: 'PUT',
-        body: patch
+        method: 'PATCH',
+        body: formData,
+        formData: true
       }),
       transformResponse: (response: ApiResponse<MangaAdmin>) => {
         if (!response.metadata) {
@@ -412,12 +433,23 @@ export const mangaApi = createApi({
 
     // Get manga chapters
     getMangaChapters: builder.query<MangaChapter[], number>({
-      query: (mangaId) => `/chapter/${mangaId}}`,
+      query: (mangaId) => `/chapter/${mangaId}`,
       transformResponse: (response: ApiResponse<MangaChapter[]>) => {
-        if (!response.metadata) {
+        if (!response.metadata || !Array.isArray(response.metadata)) {
           return [];
         }
-        return response.metadata;
+
+        return response.metadata.map((chapter) => ({
+          chap_id: chapter.chap_id,
+          chap_manga_id: chapter.chap_manga_id,
+          chap_number: chapter.chap_number,
+          chap_title: chapter.chap_title || 'xzcasd',
+          chap_views: chapter.chap_views || 0,
+          // Add any other properties that might be present in some responses
+          createdAt: chapter.createdAt,
+          updatedAt: chapter.updatedAt,
+          isDeleted: chapter.is_deleted
+        }));
       },
       providesTags: (result, error, mangaId) => [
         { type: 'Chapter', id: `MANGA_${mangaId}` }
@@ -430,7 +462,7 @@ export const mangaApi = createApi({
       { mangaId: number; chapterId: number }
     >({
       query: ({ mangaId, chapterId }) =>
-        `/manga/${mangaId}/chapters/${chapterId}`,
+        `/chapter/details/${chapterId}/manga/${mangaId}`,
       transformResponse: (response: ApiResponse<MangaChapterDetail>) => {
         if (!response.metadata) {
           throw new Error('Chapter not found');
@@ -444,10 +476,11 @@ export const mangaApi = createApi({
 
     // Create chapter
     createChapter: builder.mutation<MangaChapter, ChapterCreateRequest>({
-      query: (chapter) => ({
-        url: `/manga/${chapter.manga_id}/chapters`,
+      query: ({ formData, manga_id }) => ({
+        url: `/chapter/${manga_id}`,
         method: 'POST',
-        body: chapter
+        body: formData,
+        formData: true // Some RTK Query configurations might need this flag
       }),
       transformResponse: (response: ApiResponse<MangaChapter>) => {
         if (!response.metadata) {
@@ -462,33 +495,37 @@ export const mangaApi = createApi({
     }),
 
     // Update chapter
-    updateChapter: builder.mutation<MangaChapter, ChapterUpdateRequest>({
-      query: ({ chapter_id, ...patch }) => ({
-        url: `/chapters/${chapter_id}`,
-        method: 'PUT',
-        body: patch
+    updateChapter: builder.mutation<MangaChapterDetail, ChapterUpdateRequest>({
+      query: ({ chap_id, formData }) => ({
+        url: `/chapter/${chap_id}`,
+        method: 'PATCH',
+        body: formData,
+        formData: true
       }),
-      transformResponse: (response: ApiResponse<MangaChapter>) => {
+      transformResponse: (response: ApiResponse<MangaChapterDetail>) => {
         if (!response.metadata) {
           throw new Error('Failed to update chapter');
         }
         return response.metadata;
       },
-      invalidatesTags: (result, error, { chapter_id }) => [
-        { type: 'Chapter', id: chapter_id }
+      invalidatesTags: (result, error, { chap_id }) => [
+        { type: 'Chapter', id: chap_id }
       ]
     }),
 
-    // Delete chapter
+    // Fix deleteChapter mutation
     deleteChapter: builder.mutation<
       { success: boolean; message: string },
       { mangaId: number; chapterId: number }
     >({
-      query: ({ mangaId, chapterId }) => ({
-        url: `/manga/${mangaId}/chapters/${chapterId}`,
+      query: ({ chapterId }) => ({
+        url: `/chapter/${chapterId}`,
         method: 'DELETE'
       }),
       transformResponse: (response: ApiResponse<null>) => {
+        if (!response.metadata) {
+          throw new Error('Failed to delete chapter');
+        }
         return {
           success: response.status,
           message: response.message
@@ -500,54 +537,38 @@ export const mangaApi = createApi({
         { type: 'MangaAdmin', id: mangaId }
       ]
     }),
-
-    // Upload chapter images
-    uploadChapterImages: builder.mutation<
-      MangaImage[],
-      ChapterImageUploadRequest
+    // Format like this to delete chap_content_cid: bafkreih5wq6wcy7q25swk4oucbs2byukg3kvh4b6dfokxpqvx2hmlaraxu,bafybeib6qac4acmoalpr4vt3hn3oxwwm2zswu77tys5tihkcdxbai4fqre
+    deleteImageInChapter: builder.mutation<
+      { success: boolean; message: string },
+      { chapterId: number; contentCids: string[] }
     >({
-      query: ({ chapter_id, images }) => {
-        const formData = new FormData();
-        images.forEach((image, index) => {
-          formData.append('images', image);
-          formData.append('orders', index.toString());
-        });
+      query: ({ chapterId, contentCids }) => {
+        // Join the CIDs with commas
+        const cidString = contentCids.join(',');
+
+        // Create URLSearchParams instead of FormData for x-www-form-urlencoded
+        const params = new URLSearchParams();
+        params.append('chap_content_cid', cidString);
 
         return {
-          url: `/chapters/${chapter_id}/images`,
-          method: 'POST',
-          body: formData,
-          // Remove Content-Type header so that browser sets it with boundary for FormData
+          url: `/chapter/${chapterId}/content`,
+          method: 'DELETE',
+          body: params.toString(), // Convert to string format
           headers: {
-            'Content-Type': undefined
+            'Content-Type': 'application/x-www-form-urlencoded'
           }
         };
       },
-      transformResponse: (response: ApiResponse<MangaImage[]>) => {
+      transformResponse: (response: ApiResponse<null>) => {
         if (!response.metadata) {
-          throw new Error('Failed to upload images');
+          throw new Error('Failed to delete image');
         }
-        return response.metadata;
+        return {
+          success: response.status,
+          message: response.message
+        };
       },
-      invalidatesTags: (result, error, { chapter_id }) => [
-        { type: 'Chapter', id: chapter_id }
-      ]
-    }),
-
-    // Get manga chapter images
-    getMangaChapterImages: builder.query<
-      MangaImage[],
-      { mangaId: number; chapterId: number }
-    >({
-      query: ({ mangaId, chapterId }) =>
-        `/manga/${mangaId}/chapters/${chapterId}/images`,
-      transformResponse: (response: ApiResponse<MangaImage[]>) => {
-        if (!response.metadata) {
-          return [];
-        }
-        return response.metadata;
-      },
-      providesTags: (result, error, { chapterId }) => [
+      invalidatesTags: (result, error, { chapterId }) => [
         { type: 'Chapter', id: chapterId }
       ]
     })
@@ -561,7 +582,7 @@ export const {
   useGetMangaByCategoryQuery,
   useSearchMangaQuery,
   useCreateMangaMutation,
-  useUpdateMangaMutation,
+  useUpdateMangaByIdMutation,
   usePublishMangaMutation,
   useDeleteMangaMutation,
   useGetMangaChaptersQuery,
@@ -569,6 +590,5 @@ export const {
   useCreateChapterMutation,
   useUpdateChapterMutation,
   useDeleteChapterMutation,
-  useUploadChapterImagesMutation,
-  useGetMangaChapterImagesQuery
+  useDeleteImageInChapterMutation
 } = mangaApi;

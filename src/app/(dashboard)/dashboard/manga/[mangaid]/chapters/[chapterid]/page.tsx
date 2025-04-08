@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,22 +12,23 @@ import {
   ChevronRight,
   Edit,
   Eye,
-  FileText,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+  FileText
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+  CardTitle
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useGetChapterDetailQuery } from '@/services/apiManga';
 
 export default function ChapterViewPage() {
   const params = useParams();
@@ -36,58 +37,91 @@ export default function ChapterViewPage() {
 
   const [currentPage, setCurrentPage] = useState(0);
   const [direction, setDirection] = useState(0); // -1 for previous, 1 for next
+  const [images, setImages] = useState<{ url: string; page: number }[]>([]);
 
-  // Mock chapter data
-  const chapter = {
-    chapterNumber: 1,
-    title: "Mock Chapter Title",
-    releaseDate: "2025-03-07",
-    views: 1234,
-    status: "published",
-    description: "This is a mock description of the chapter.",
-    images: [
-      {
-        id: "1",
-        url: "https://laodongnhatban.com.vn/images/2018/12/28/7acd1f89-c39e-4381-a33e-3da33b39c6ac.jpg",
-        pageNumber: 1,
-      },
-      {
-        id: "2",
-        url: "https://toquoc.mediacdn.vn/280518851207290880/2023/10/29/photo-1698382908617-1698382908759950746948-1698560683705-1698560683879344298607.png",
-        pageNumber: 2,
-      },
-      {
-        id: "3",
-        url: "https://cdn2.tuoitre.vn/zoom/700_700/471584752817336320/2024/11/2/1-17304432133401727596968-0-0-628-1200-crop-1730517845910432434004.jpg",
-        pageNumber: 3,
-      },
-    ],
-  };
-  const manga = {
-    title: "Mock Manga Title",
-  };
-  const isChapterLoading = false;
-  const isMangaLoading = false;
-  const chapterError = null;
-  const mangaError = null;
+  const router = useRouter();
+  const {
+    data: chapter,
+    isLoading: chapterLoading,
+    error: chapterError
+  } = useGetChapterDetailQuery({
+    mangaId: parseInt(mangaid),
+    chapterId: parseInt(chapterid)
+  });
+
+  // Generate page URLs from IPFS CID when chapter data is loaded
+  useEffect(() => {
+    if (chapter?.chap_content) {
+      // Use the CID from chap_content
+      const cid = chapter.chap_content;
+
+      // Fetch the JSON data from IPFS
+      const fetchIPFSData = async () => {
+        try {
+          // Ensure URL includes protocol (https://)
+          const response = await fetch(`https://ipfs.io/ipfs/${cid}`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch IPFS content: ${response.status}`);
+          }
+
+          // Parse the JSON response which should contain the array of images
+          const data = await response.json();
+
+          // Format the data to match our expected format
+          // Ensuring all URLs include protocol (https://)
+          const formattedImages = Array.isArray(data)
+            ? data.map((item) => {
+                // Ensure the image URL has a protocol
+                let imageUrl = item.image;
+                if (imageUrl && !imageUrl.startsWith('http')) {
+                  // If URL doesn't have protocol, add https://
+                  imageUrl = imageUrl.startsWith('//')
+                    ? `https:${imageUrl}`
+                    : `https://${imageUrl}`;
+                }
+
+                return {
+                  url: imageUrl,
+                  page: item.page
+                };
+              })
+            : [];
+
+          // Check if the data is in the expected format
+          console.log('Formatted Images:', formattedImages);
+
+          // Sort by page number if needed
+          formattedImages.sort((a, b) => a.page - b.page);
+
+          setImages(formattedImages);
+        } catch (error) {
+          console.error('Error fetching IPFS data:', error);
+          // Fallback to empty array if there's an error
+          setImages([]);
+        }
+      };
+
+      fetchIPFSData();
+    }
+  }, [chapter]);
 
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         handleNextPage();
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         handlePrevPage();
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentPage, chapter]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentPage, images.length]);
 
   // Handle page navigation
   const handleNextPage = () => {
-    if (chapter && currentPage < chapter.images.length - 1) {
+    if (currentPage < images.length - 1) {
       setDirection(1);
       setCurrentPage(currentPage + 1);
     }
@@ -100,7 +134,7 @@ export default function ChapterViewPage() {
     }
   };
 
-  if (isChapterLoading || isMangaLoading) {
+  if (chapterLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -117,7 +151,7 @@ export default function ChapterViewPage() {
     );
   }
 
-  if (chapterError || mangaError) {
+  if (chapterError) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -137,7 +171,7 @@ export default function ChapterViewPage() {
     );
   }
 
-  if (!chapter || !manga) {
+  if (!chapter) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -168,9 +202,9 @@ export default function ChapterViewPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {manga.title} - Chapter {chapter.chapterNumber}
+              Number Chapter: {chapter.chap_number}
             </h1>
-            <p className="text-muted-foreground">{chapter.title}</p>
+            <p className="text-muted-foreground">{chapter.chap_title}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -203,39 +237,22 @@ export default function ChapterViewPage() {
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {new Date(chapter.releaseDate).toLocaleDateString()}
+                {chapter.updatedAt &&
+                  `${new Date(chapter.updatedAt).getDate()}/${
+                    new Date(chapter.updatedAt).getMonth() + 1
+                  }`}{' '}
               </Badge>
               <Badge variant="outline" className="flex items-center gap-1">
                 <Eye className="h-3 w-3" />
-                {chapter.views.toLocaleString()} views
-              </Badge>
-              <Badge
-                variant={
-                  chapter.status === "published"
-                    ? "default"
-                    : chapter.status === "draft"
-                    ? "secondary"
-                    : "outline"
-                }
-              >
-                {chapter.status.charAt(0).toUpperCase() +
-                  chapter.status.slice(1)}
+                {chapter.chap_views} views
               </Badge>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {chapter.description && (
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground">
-                {chapter.description}
-              </p>
-            </div>
-          )}
-          <Separator className="my-4" />
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm text-muted-foreground">
-              Page {currentPage + 1} of {chapter.images.length}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-muted-foreground text-sm">
+              Page {currentPage + 1} of {images.length}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -251,8 +268,7 @@ export default function ChapterViewPage() {
                 size="icon"
                 onClick={handleNextPage}
                 disabled={
-                  chapter.images.length === 0 ||
-                  currentPage === chapter.images.length - 1
+                  images.length === 0 || currentPage === images.length - 1
                 }
               >
                 <ChevronRight className="h-4 w-4" />
@@ -260,12 +276,12 @@ export default function ChapterViewPage() {
             </div>
           </div>
 
-          {chapter.images.length === 0 ? (
+          {!chapter?.chap_content || images.length === 0 ? (
             <div className="flex h-[50vh] items-center justify-center rounded-md border border-dashed">
               <div className="text-center">
-                <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No images uploaded yet
+                <FileText className="text-muted-foreground mx-auto h-10 w-10" />
+                <p className="text-muted-foreground mt-2 text-sm">
+                  No images available
                 </p>
               </div>
             </div>
@@ -280,37 +296,35 @@ export default function ChapterViewPage() {
                       enter: (direction) => ({
                         x: direction > 0 ? 300 : -300,
                         opacity: 0,
-                        scale: 0.95,
+                        scale: 0.95
                       }),
                       center: {
                         x: 0,
                         opacity: 1,
-                        scale: 1,
+                        scale: 1
                       },
                       exit: (direction) => ({
                         x: direction < 0 ? 300 : -300,
                         opacity: 0,
-                        scale: 0.95,
-                      }),
+                        scale: 0.95
+                      })
                     }}
                     initial="enter"
                     animate="center"
                     exit="exit"
                     transition={{
                       x: {
-                        type: "spring",
+                        type: 'spring',
                         stiffness: 500,
                         damping: 25,
-                        mass: 0.8,
+                        mass: 0.8
                       },
-                      opacity: { duration: 0.01 },
+                      opacity: { duration: 0.01 }
                     }}
-                    className="relative w-full h-full"
+                    className="relative h-full w-full"
                   >
                     <Image
-                      src={
-                        chapter.images[currentPage]?.url || "/placeholder.svg"
-                      }
+                      src={images[currentPage]?.url || '/placeholder.svg'}
                       alt={`Page ${currentPage + 1}`}
                       width={800}
                       height={1200}
@@ -321,15 +335,15 @@ export default function ChapterViewPage() {
 
                 {/* Click areas for navigation */}
                 <button
-                  className="absolute left-0 top-0 h-full w-1/2 cursor-w-resize"
+                  className="absolute top-0 left-0 h-full w-1/2 cursor-w-resize"
                   onClick={handlePrevPage}
                   disabled={currentPage === 0}
                   aria-label="Previous page"
                 />
                 <button
-                  className="absolute right-0 top-0 h-full w-1/2 cursor-e-resize"
+                  className="absolute top-0 right-0 h-full w-1/2 cursor-e-resize"
                   onClick={handleNextPage}
-                  disabled={currentPage === chapter.images.length - 1}
+                  disabled={currentPage === images.length - 1}
                   aria-label="Next page"
                 />
               </div>
@@ -347,10 +361,7 @@ export default function ChapterViewPage() {
           </Button>
           <Button
             onClick={handleNextPage}
-            disabled={
-              chapter.images.length === 0 ||
-              currentPage === chapter.images.length - 1
-            }
+            disabled={images.length === 0 || currentPage === images.length - 1}
           >
             Next Page
             <ChevronRight className="ml-2 h-4 w-4" />

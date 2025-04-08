@@ -1,249 +1,347 @@
-"use client";
+'use client';
 
-import type React from "react";
+import type React from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { type DropResult } from '@hello-pangea/dnd';
+import { toast } from 'sonner';
 
-import { useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import { ArrowLeft, Save, Upload, X } from "lucide-react";
+// --- UI Imports ---
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button'; // Keep for error state button
+import { Card, CardContent, CardHeader } from '@/components/ui/card'; // Keep for error state card
+import { ArrowLeft } from 'lucide-react'; // Keep for error state icon
+
+// --- Service Imports ---
 import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  type DropResult,
-} from "@hello-pangea/dnd";
+  useGetChapterDetailQuery,
+  useUpdateChapterMutation,
+  useDeleteImageInChapterMutation
+} from '@/services/apiManga'; // Assuming correct path
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { useAppDispatch } from "@/lib/redux/hook";
+// --- Component Imports ---
+import { ChapterHeader } from '@/components/chapter/ChapterHeader'; // Adjust path as needed
+import { ImageGrid } from '@/components/chapter/ImageGrid'; // Adjust path as needed
+import { DeleteConfirmationDialog } from '@/components/custom-component/DeleteConfirmationDialog'; // Adjust path as needed
+import { UploadImagesDialog } from '@/components/custom-component/UploadImagesDialog';
+import { fetchAndParseIPFSData } from '@/lib/utils';
 
+// --- Type Imports ---
+// Consider moving these to a shared types file (e.g., types/chapter.ts)
+export interface ChapterImage {
+  id: string; // Use string ID consistent with draggable
+  url: string;
+  pageNumber: number;
+}
+
+interface UpdateImageData extends ChapterImage {
+  newFile?: File;
+}
+
+// --- Main Component ---
 export default function ChapterImagesPage() {
   const params = useParams();
-  const mangaId = params.mangaId as string;
-  const chapterId = params.chapterId as string;
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const mangaId = Number(params.mangaid);
+  const chapterId = Number(params.chapterid);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // --- State ---
+  const [images, setImages] = useState<ChapterImage[]>([]);
+  const [chapterDetails, setChapterDetails] = useState<{
+    number: number | null;
+    title: string | null;
+  }>({ number: null, title: null });
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [imageToDelete, setImageToDelete] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
+  const [imageToDeleteId, setImageToDeleteId] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<UpdateImageData[]>([]);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isLoadingIPFS, setIsLoadingIPFS] = useState(false);
 
-  // Make chapter data stateful so we can update it
-  const [chapter, setChapter] = useState({
-    chapterNumber: 1,
-    title: "Mock Chapter Title",
-    images: [
-      {
-        id: "1",
-        url: "https://laodongnhatban.com.vn/images/2018/12/28/7acd1f89-c39e-4381-a33e-3da33b39c6ac.jpg",
-        pageNumber: 1,
-      },
-      {
-        id: "2",
-        url: "https://toquoc.mediacdn.vn/280518851207290880/2023/10/29/photo-1698382908617-1698382908759950746948-1698560683705-1698560683879344298607.png",
-        pageNumber: 2,
-      },
-      {
-        id: "3",
-        url: "https://cdn2.tuoitre.vn/zoom/700_700/471584752817336320/2024/11/2/1-17304432133401727596968-0-0-628-1200-crop-1730517845910432434004.jpg",
-        pageNumber: 3,
-      },
-    ],
-  });
-  const isChapterLoading = false;
-  const chapterError = null;
+  // --- RTK Query Hooks ---
+  const {
+    data: chapterData,
+    isLoading: isChapterLoading,
+    error: chapterError,
+    refetch: refetchChapterData
+  } = useGetChapterDetailQuery(
+    { mangaId, chapterId },
+    { skip: !mangaId || !chapterId }
+  );
 
-  // Handle file upload
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const [updateChapter, { isLoading: isUpdatingChapter }] =
+    useUpdateChapterMutation(); // Use mutation state if needed
 
-    setIsUploading(true);
-    setUploadProgress(0);
+  const [deleteImageInChapter, { isLoading: isDeletingImages }] =
+    useDeleteImageInChapterMutation();
 
-    try {
-      const formData = new FormData();
-
-      // Append all files to form data
-      for (let i = 0; i < files.length; i++) {
-        formData.append("images", files[i]);
-      }
-
-      // Simulate progress (in a real app, you'd use an upload progress event)
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 300);
-
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      // Complete progress
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }, 500);
-
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (error) {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
-  // Handle image deletion
-  const confirmDeleteImage = (imageId: string) => {
-    setImageToDelete(imageId);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteImage = async () => {
-    if (!imageToDelete) return;
-
-    try {
-      // Filter out the deleted image
-      const updatedImages = chapter.images.filter(img => img.id !== imageToDelete);
-      
-      // Update page numbers
-      const renumberedImages = updatedImages.map((image, index) => ({
-        ...image,
-        pageNumber: index + 1,
-      }));
-      
-      // Update chapter state
-      setChapter({
-        ...chapter,
-        images: renumberedImages
+  // --- Effects ---
+  // Effect to fetch and process IPFS data when chapterData loads/changes
+  useEffect(() => {
+    if (chapterData?.chap_content) {
+      setChapterDetails({
+        number: chapterData.chap_number,
+        title: chapterData.chap_title || null
       });
-
-      setIsDeleteDialogOpen(false);
-      setImageToDelete(null);
-      setHasChanges(true);
-    } catch (error) {
-      console.error("Error deleting image:", error);
+      const cid = chapterData.chap_content;
+      setIsLoadingIPFS(true);
+      fetchAndParseIPFSData(cid)
+        .then((parsedImages) => {
+          setImages(parsedImages);
+          setHasChanges(false); // Reset changes when data is loaded initially
+        })
+        .catch((err) => {
+          console.error('IPFS fetch failed:', err);
+          setImages([]); // Clear images on error
+        })
+        .finally(() => setIsLoadingIPFS(false));
+    } else if (chapterData) {
+      // Handle case where chapter exists but has no content CID
+      setChapterDetails({
+        number: chapterData.chap_number,
+        title: chapterData.chap_title || null
+      });
+      setImages([]);
+      setIsLoadingIPFS(false);
     }
-  };
+  }, [chapterData]);
 
-  // Handle drag and drop reordering - FIXED
-  const handleDragEnd = (result: DropResult) => {
+  // --- Callback Handlers ---
+  const handleDragEnd = useCallback((result: DropResult) => {
     const { destination, source } = result;
-    
-    // Return if dropped outside the list or at the same position
-    if (!destination || 
-        (destination.droppableId === source.droppableId && 
-         destination.index === source.index)) {
+    if (!destination || destination.index === source.index) {
       return;
     }
 
-    // Create a copy of the images array
-    const items = Array.from(chapter.images);
-    
-    // Remove the dragged item
-    const [reorderedItem] = items.splice(source.index, 1);
-    
-    // Insert it at the destination
-    items.splice(destination.index, 0, reorderedItem);
+    setImages((prevImages) => {
+      const items = Array.from(prevImages);
+      const [reorderedItem] = items.splice(source.index, 1);
+      items.splice(destination.index, 0, reorderedItem);
 
-    // Update page numbers based on new order
-    const updatedItems = items.map((item, index) => ({
-      ...item,
-      pageNumber: index + 1,
-    }));
-
-    // Update chapter state with the new order
-    setChapter({
-      ...chapter,
-      images: updatedItems
-    });
-    
-    // Mark that we have unsaved changes
-    setHasChanges(true);
-  };
-
-  // Save reordered images
-  const saveImageOrder = async () => {
-    try {
-      const imageOrder = chapter.images.map((image, index) => ({
-        id: image.id,
-        pageNumber: index + 1,
+      // Re-assign page numbers based on the new order
+      const updatedItems = items.map((item, index) => ({
+        ...item,
+        pageNumber: index + 1
       }));
+      return updatedItems;
+    });
 
-      console.log("Saving new image order:", imageOrder);
-      
-      // Simulate API call to save order
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    setHasChanges(true);
+  }, []);
 
-      // In a real app, you would update your backend here
+  const confirmDeleteImage = useCallback((imageId: string) => {
+    setImageToDeleteId(imageId);
+    setIsDeleteDialogOpen(true);
+  }, []);
 
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedImages.length === 0) return;
+    setIsDeleteDialogOpen(true);
+  }, [selectedImages]);
+
+  const handleDeleteImage = useCallback(async () => {
+    try {
+      if (selectedImages.length > 0) {
+        // Extract CIDs from the image URLs
+        const contentCids = selectedImages.map((img) => {
+          // Extract CID from URL format: ipfs.io/ipfs/CID or just CID
+          const url = img.url;
+          if (url.includes('ipfs.io/ipfs/')) {
+            return url.split('ipfs.io/ipfs/')[1];
+          }
+          return url; // Assume it's already a CID
+        });
+
+        // Call the API to delete the images
+        await deleteImageInChapter({
+          chapterId,
+          contentCids
+        }).unwrap();
+
+        // Update UI after successful deletion
+        const deletedIds = selectedImages.map((img) => img.id);
+        const updatedImages = images.filter(
+          (img) => !deletedIds.includes(img.id)
+        );
+
+        // Renumber remaining images
+        const renumberedImages = updatedImages.map((image, index) => ({
+          ...image,
+          pageNumber: index + 1
+        }));
+
+        setImages(renumberedImages);
+        setSelectedImages([]);
+        toast.success(`${selectedImages.length} images deleted successfully`);
+      }
+      // Handle single image deletion if needed
+      else if (imageToDeleteId) {
+        const imageToDelete = images.find((img) => img.id === imageToDeleteId);
+        if (!imageToDelete) return;
+
+        // Extract CID from URL
+        const url = imageToDelete.url;
+        let cid = url;
+        if (url.includes('ipfs.io/ipfs/')) {
+          cid = url.split('ipfs.io/ipfs/')[1];
+        }
+
+        // Call the API
+        await deleteImageInChapter({
+          chapterId,
+          contentCids: [cid]
+        }).unwrap();
+
+        // Update local state
+        const updatedImages = images.filter(
+          (img) => img.id !== imageToDeleteId
+        );
+        const renumberedImages = updatedImages.map((image, index) => ({
+          ...image,
+          pageNumber: index + 1
+        }));
+
+        setImages(renumberedImages);
+        setImageToDeleteId(null);
+        toast.success('Image deleted successfully');
+      }
+    } catch (error) {
+      console.error('Failed to delete images:', error);
+      toast.error('Failed to delete images. Please try again.');
+    }
+  }, [
+    selectedImages,
+    imageToDeleteId,
+    chapterId,
+    deleteImageInChapter,
+    images
+  ]);
+
+  const saveImageOrder = useCallback(async () => {
+    // Check if already saving
+    if (isUpdatingChapter) return;
+
+    try {
+      const formData = new FormData();
+      images.forEach((img) => {
+        formData.append('chap_img_pages', img.pageNumber.toString());
+      });
+
+      const response = await fetch(
+        `http://localhost:8080/chapter/${chapterId}/reorder`,
+        {
+          method: 'PATCH',
+          body: formData
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(
+          `Failed to save order: ${response.status} ${errorData}`
+        );
+      }
+
+      toast.success('Image order saved successfully!');
       setHasChanges(false);
     } catch (error) {
-      console.error("Error saving image order:", error);
+      console.error('Failed to save image order:', error);
+      toast.error(
+        `Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }, [images, chapterId, isUpdatingChapter]);
+
+  const toggleImageSelection = useCallback((image: ChapterImage) => {
+    setSelectedImages((prev) => {
+      const isSelected = prev.some((img) => img.id === image.id);
+      if (isSelected) {
+        return prev.filter((img) => img.id !== image.id);
+      } else {
+        return [...prev, { ...image }];
+      }
+    });
+  }, []);
+
+  const startImageUpdate = useCallback(() => {
+    if (selectedImages.length === 0) {
+      toast.warning('Please select at least one image to update.');
+      return;
+    }
+    setIsUpdateDialogOpen(true);
+  }, [selectedImages]);
+
+  const handleUploadDialogClose = (open: boolean) => {
+    setIsUploadDialogOpen(open);
+    if (!open) {
+      setSelectedImages([]); // Clear selection after upload/update actions
+    }
+  };
+  const handleUpdateDialogClose = (open: boolean) => {
+    setIsUpdateDialogOpen(open);
+    if (!open) {
+      setSelectedImages([]); // Clear selection after upload/update actions
     }
   };
 
+  const handleViewChapter = () => {
+    router.push(`/dashboard/manga/${mangaId}/chapters/${chapterId}`);
+  };
+
+  // --- Render Logic ---
   if (isChapterLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 md:p-6">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" disabled>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-10 rounded-md" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-96 w-full" />
-        </div>
+        <Skeleton className="ml-auto h-10 w-32" />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-64" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (chapterError) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 md:p-6">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" asChild>
-            <Link href={`/dashboard/manga/${mangaId}/chapters`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
+          <Button variant="outline" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Error</h1>
+          <h1 className="text-destructive text-2xl font-semibold">
+            Error Loading Chapter
+          </h1>
         </div>
-        <Card>
+        <Card className="border-destructive bg-destructive/10">
           <CardContent className="pt-6">
-            <p>Failed to load chapter details. Please try again later.</p>
+            <p className="text-destructive-foreground">
+              Failed to load chapter details. Please check the console for more
+              information or try again later.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => refetchChapterData()}
+              className="mt-4"
+            >
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -251,173 +349,74 @@ export default function ChapterImagesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" asChild>
-            <Link href={`/dashboard/manga/${mangaId}/chapters/${chapterId}`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Manage Chapter Images
-            </h1>
-            <p className="text-muted-foreground">
-              Chapter {chapter?.chapterNumber}: {chapter?.title}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {hasChanges && (
-            <Button onClick={saveImageOrder}>
-              <Save className="mr-2 h-4 w-4" />
-              Save Order
-            </Button>
-          )}
-          <Button onClick={() => fileInputRef.current?.click()}>
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Images
-          </Button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            multiple
-            accept="image/*"
-            onChange={handleFileChange}
-          />
-        </div>
-      </div>
+    <div className="space-y-6 p-4 md:p-6">
+      <ChapterHeader
+        mangaId={mangaId}
+        chapterId={chapterId}
+        chapterNumber={chapterDetails.number ?? 0}
+        title={chapterDetails.title}
+        hasChanges={hasChanges}
+        selectedImagesCount={selectedImages.length}
+        onSaveOrder={saveImageOrder}
+        onUploadClick={() => setIsUploadDialogOpen(true)}
+        onUpdateClick={startImageUpdate}
+        onCancelSelection={() => setSelectedImages([])}
+        onDeleteSelected={handleDeleteSelected}
+      />
 
-      {isUploading && (
+      {isLoadingIPFS ? (
         <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Uploading images...</p>
-                <p className="text-sm text-muted-foreground">
-                  {uploadProgress}%
-                </p>
-              </div>
-              <Progress value={uploadProgress} />
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-64" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {Array.from({ length: images.length || 6 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-[2/3] w-full rounded-md" />
+              ))}
             </div>
           </CardContent>
         </Card>
+      ) : (
+        <ImageGrid
+          images={images}
+          selectedImages={selectedImages}
+          onDragEnd={handleDragEnd}
+          onToggleSelection={toggleImageSelection}
+          onConfirmDelete={confirmDeleteImage}
+          mangaId={mangaId}
+          chapterId={chapterId}
+          onViewChapterClick={handleViewChapter}
+        />
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Chapter Images</CardTitle>
-          <CardDescription>
-            {chapter?.images.length === 0
-              ? "No images uploaded yet. Click 'Upload Images' to add images to this chapter."
-              : `${chapter?.images.length} images. Drag and drop to reorder.`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {chapter?.images.length === 0 ? (
-            <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
-              <div className="text-center">
-                <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No images uploaded yet
-                </p>
-              </div>
-            </div>
-          ) : (
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="chapter-images" direction="horizontal">
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
-                  >
-                    {chapter?.images.map((image, index) => (
-                      <Draggable
-                        key={image.id}
-                        draggableId={image.id}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className="group relative aspect-[2/3] overflow-hidden rounded-md border"
-                          >
-                            <div className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white">
-                              {index + 1}
-                            </div>
-                            <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => confirmDeleteImage(image.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <Image
-                              src={image.url || "/placeholder.svg"}
-                              alt={`Page ${image.pageNumber}`}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <p className="text-sm text-muted-foreground">
-            {chapter?.images.length}{" "}
-            {chapter?.images.length === 1 ? "image" : "images"}
-          </p>
-          {chapter?.images.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() =>
-                router.push(`/dashboard/manga/${mangaId}/chapters/${chapterId}`)
-              }
-            >
-              View Chapter
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
+      <DeleteConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDeleteImage}
+        itemName={
+          selectedImages.length > 0
+            ? `${selectedImages.length} selected images`
+            : 'image'
+        }
+      />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Image</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this image? This action cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteImage}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <UploadImagesDialog
+        open={isUploadDialogOpen}
+        onOpenChange={handleUploadDialogClose}
+        chapterId={chapterId}
+        currentImages={images}
+      />
+
+      <UploadImagesDialog
+        open={isUpdateDialogOpen}
+        onOpenChange={handleUpdateDialogClose}
+        chapterId={chapterId}
+        currentImages={images}
+        selectedImages={selectedImages}
+        updateMode={true}
+      />
     </div>
   );
 }

@@ -1,51 +1,57 @@
-"use client";
+'use client';
 
-import MangaGrid from "@/components/manga/MangaGrid";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Filter, X, ChevronDown } from "lucide-react";
+import MangaGrid from '@/components/manga/MangaGrid';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Search, Filter, X, ChevronDown } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  PopoverTrigger
+} from '@/components/ui/popover';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useGetAllMangaQuery } from "@/services/api";
-import { mockGenres } from "@/data/mockData";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hook";
+  AccordionTrigger
+} from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
+import { MangaType, useGetAllMangaQuery } from '@/services/api';
+import { mockGenres } from '@/data/mockData';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hook';
 import {
   clearFilters,
   setSearchQuery,
   setSortBy,
   toggleGenre,
-  toggleStatus,
-} from "@/lib/redux/slices/uiSlice";
+  toggleStatus
+} from '@/lib/redux/slices/uiSlice';
 
 const Library = () => {
   const dispatch = useAppDispatch();
+
   const { searchQuery, selectedGenres, status, sortBy } = useAppSelector(
-    (state) => state.ui,
+    (state) => state.ui
   );
 
-  const { data: allManga = [], isLoading } = useGetAllMangaQuery();
+  const { data, isLoading } = useGetAllMangaQuery({
+    limit: 20
+  });
+
+  const allManga = data?.items || [];
 
   // Filter manga based on search, genres, status
-  const filteredManga = allManga.filter((manga) => {
+  const filteredManga = allManga.filter((manga: MangaType) => {
     // Search filter
     const matchesSearch = manga.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
 
-    // Genre filter
+    // Genre filter - Check if manga has genres property
+    const mangaGenres = manga.genres || [];
     const matchesGenres =
       selectedGenres.length === 0 ||
-      selectedGenres.some((genre) => manga.genres.includes(genre));
+      selectedGenres.some((genre) => mangaGenres.includes(genre));
 
     // Status filter
     const matchesStatus = status.length === 0 || status.includes(manga.status);
@@ -56,15 +62,15 @@ const Library = () => {
   // Sort manga
   const sortedManga = [...filteredManga].sort((a, b) => {
     switch (sortBy) {
-      case "a-z":
+      case 'a-z':
         return a.title.localeCompare(b.title);
-      case "z-a":
+      case 'z-a':
         return b.title.localeCompare(a.title);
-      case "rating":
+      case 'rating':
         return b.rating - a.rating;
-      case "popular":
+      case 'popular':
         return b.views - a.views;
-      case "latest":
+      case 'latest':
       default:
         return b.publicationYear - a.publicationYear;
     }
@@ -100,11 +106,11 @@ const Library = () => {
               <PopoverContent className="w-48 p-0">
                 <div className="p-2">
                   {[
-                    { id: "latest", label: "Latest" },
-                    { id: "popular", label: "Most Popular" },
-                    { id: "rating", label: "Highest Rated" },
-                    { id: "a-z", label: "A to Z" },
-                    { id: "z-a", label: "Z to A" },
+                    { id: 'latest', label: 'Latest' },
+                    { id: 'popular', label: 'Most Popular' },
+                    { id: 'rating', label: 'Highest Rated' },
+                    { id: 'a-z', label: 'A to Z' },
+                    { id: 'z-a', label: 'Z to A' }
                   ].map((option) => (
                     <Button
                       key={option.id}
@@ -112,8 +118,8 @@ const Library = () => {
                       onClick={() => dispatch(setSortBy(option.id))}
                       className={`w-full justify-start ${
                         sortBy === option.id
-                          ? "bg-accent text-accent-foreground"
-                          : ""
+                          ? 'bg-accent text-accent-foreground'
+                          : ''
                       }`}
                     >
                       {option.label}
@@ -148,13 +154,14 @@ const Library = () => {
                 <div className="max-h-[60vh] overflow-auto">
                   <Accordion type="single" collapsible className="w-full">
                     {/* Status Filter */}
+
                     <AccordionItem value="status">
                       <AccordionTrigger className="px-4">
                         Status
                       </AccordionTrigger>
                       <AccordionContent className="px-4 pt-2 pb-4">
                         <div className="space-y-2">
-                          {["ongoing", "completed", "hiatus"].map(
+                          {['ongoing', 'completed', 'hiatus'].map(
                             (statusOption) => (
                               <div
                                 key={statusOption}
@@ -175,13 +182,14 @@ const Library = () => {
                                   {statusOption}
                                 </label>
                               </div>
-                            ),
+                            )
                           )}
                         </div>
                       </AccordionContent>
                     </AccordionItem>
 
                     {/* Genres Filter */}
+
                     <AccordionItem value="genres">
                       <AccordionTrigger className="px-4">
                         Genres

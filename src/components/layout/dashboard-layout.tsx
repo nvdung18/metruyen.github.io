@@ -1,6 +1,6 @@
 'use client';
 
-import type React from 'react';
+import React, { useEffect } from 'react';
 import {
   BarChart3,
   Bookmark,
@@ -22,13 +22,13 @@ import {
   DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import Link from 'next/link';
-import ProtectedRoute from '@/middleware/protectRoute';
-import { useAppDispatch } from '@/lib/redux/hook';
-import { useEffect } from 'react';
-import { hydrate, logout } from '@/lib/redux/slices/authSlice';
+
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
 import { SidebarTrigger } from '../ui/sidebar';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hook';
+import { getUserCurrent, logout } from '@/lib/redux/slices/authSlice';
+import DashboardSkeleton from '../skeleton/DashboardSkeleton';
 
 interface NavItem {
   title: string;
@@ -69,79 +69,84 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const auth = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    // This only runs on the client after hydration
-    dispatch(hydrate());
-  }, [dispatch]);
+    dispatch(getUserCurrent());
+  }, []);
+
+  console.log('auth', auth);
+
+  if (!auth.isAuthenticated) {
+    return <DashboardSkeleton />;
+  }
+
   return (
-    <ProtectedRoute>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar />
-        <main className="flex flex-1 overflow-hidden p-4">
-          <div className="w-full">
-            {/* User Dropdown */}
-            <div className="flex items-center justify-between">
-              <SidebarTrigger>
-                <div className="block md:hidden">
-                  <Menu className="h-10 w-10" />
-                </div>
-              </SidebarTrigger>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  {/* <Button variant="ghost" size="lg" className="rounded-full"> */}
-                  <div className="mb-3">
-                    <div className="hover:bg-manga/50 border-manga-200 ml-auto inline-flex cursor-pointer rounded-full border-2 p-1">
-                      <User className="h-7 w-7" />
-                    </div>
+    <div className="flex min-h-screen w-full">
+      <AppSidebar />
+      <main className="flex flex-1 overflow-hidden p-4">
+        <div className="w-full">
+          {/* User Dropdown */}
+          <div className="flex items-center justify-between">
+            <SidebarTrigger>
+              <div className="block md:hidden">
+                <Menu className="h-10 w-10" />
+              </div>
+            </SidebarTrigger>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                {/* <Button variant="ghost" size="lg" className="rounded-full"> */}
+                <div className="mb-3">
+                  <div className="hover:bg-manga/50 border-manga-200 ml-auto inline-flex cursor-pointer rounded-full border-2 p-1">
+                    <User className="h-7 w-7" />
                   </div>
-                  {/* </Button> */}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="w-full cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/bookmarks" className="w-full cursor-pointer">
-                      <Bookmark className="mr-2 h-4 w-4" />
-                      <span>Bookmarks</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="w-full cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        'w-full cursor-pointer justify-start border-0'
-                      )}
-                      onClick={() => dispatch(logout())}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Logout</span>
-                    </Button>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="min-h-screen flex-grow overflow-y-auto transition-all duration-500 ease-in-out">
-              {children}
-            </div>
+                </div>
+                {/* </Button> */}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="w-full cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/bookmarks" className="w-full cursor-pointer">
+                    <Bookmark className="mr-2 h-4 w-4" />
+                    <span>Bookmarks</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="w-full cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      'w-full cursor-pointer justify-start border-0'
+                    )}
+                    onClick={() => dispatch(logout())}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </Button>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </main>
-      </div>
-    </ProtectedRoute>
+          <div className="min-h-screen flex-grow overflow-y-auto transition-all duration-500 ease-in-out">
+            {children}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }

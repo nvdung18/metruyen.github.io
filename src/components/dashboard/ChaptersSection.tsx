@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Plus,
   Filter,
@@ -9,9 +9,9 @@ import {
   Trash,
   Copy,
   Eye,
-  BarChart2,
-  Heart,
-  MessageCircle
+  X,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import {
@@ -61,69 +61,85 @@ import {
   PaginationPrevious
 } from '@/components/ui/pagination';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useGetMangaChaptersQuery } from '@/services/apiManga';
-
-// Status badge component
-const StatusBadge = ({ status }: { status: string }) => {
-  return (
-    <span
-      className={`rounded-full px-2 py-1 text-xs font-medium ${
-        status === 'published'
-          ? 'border border-green-500/30 bg-green-500/20 text-green-400'
-          : 'border border-amber-500/30 bg-amber-500/20 text-amber-400'
-      }`}
-    >
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
-  );
-};
+import {
+  useGetMangaChaptersQuery,
+  useCreateChapterMutation,
+  useDeleteChapterMutation
+} from '@/services/apiManga';
+import { toast } from 'sonner'; // Assuming you use sonner for toasts
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '../ui/dropdown-menu';
+import { useRouter } from 'next/navigation';
 
 const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
   const {
-    data: chapters,
+    data: chapters = [],
     isLoading: chaptersLoading,
     error: chaptersError
   } = useGetMangaChaptersQuery(Number(mangaid));
 
-  console.log(chapters);
+  const navigate = useRouter();
+
+  console.log('Chapters', chapters);
+  // Add create chapter mutation
+  const [createChapter, { isLoading: isCreating }] = useCreateChapterMutation();
+  const [deleteChapter, { isLoading: isDeleting }] = useDeleteChapterMutation();
 
   const [selectedChapters, setSelectedChapters] = useState<number[]>([]);
-  const [activeTab, setActiveTab] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  // State for file uploads
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  const [sortedChapters, setSortedChapters] = useState<any[]>([]);
+
   const form = useForm({
     defaultValues: {
-      mangaTitle: '',
-      chapterNumber: '',
-      chapterTitle: '',
-      releaseDate: '',
+      chap_number: '',
+      chap_title: '',
       status: 'draft'
     }
   });
 
-  // Filter chapters based on active tab and search query
-  const filteredChapters =
-    chapters &&
-    chapters.filter((chapter) => {
+  // Filter and sort chapters based on search query and sort order
+  const getFilteredAndSortedChapters = () => {
+    // First filter by search query
+    const filtered = chapters.filter((chapter) => {
       const matchesSearch =
         chapter.chap_title &&
         chapter.chap_title.toLowerCase().includes(searchQuery.toLowerCase());
-
       return matchesSearch;
     });
 
+    // Then sort based on sort order
+    if (sortOrder === 'asc') {
+      return [...filtered].sort((a, b) => a.chap_number - b.chap_number);
+    } else if (sortOrder === 'desc') {
+      return [...filtered].sort((a, b) => b.chap_number - a.chap_number);
+    }
+
+    // Default sort (by chapter number ascending)
+    return [...filtered].sort((a, b) => a.chap_number - b.chap_number);
+  };
+
+  // Get filtered and sorted chapters
+  const filteredChapters = getFilteredAndSortedChapters();
+
   const itemsPerPage = 10;
-  const totalPages =
-    filteredChapters && Math.ceil(filteredChapters!!.length / itemsPerPage);
-  const paginatedChapters =
-    filteredChapters &&
-    filteredChapters.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
-    );
+  const totalPages = Math.ceil(filteredChapters.length / itemsPerPage);
+  console.log('FilterChapters', filteredChapters);
+  const paginatedChapters = filteredChapters.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const toggleSelectChapter = (id: number) => {
     if (selectedChapters.includes(id)) {
@@ -148,14 +164,68 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
     setCurrentPage(1); // Reset to first page on search
   };
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setCurrentPage(1); // Reset to first page on tab change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setSelectedFiles((prev) => [...prev, ...filesArray]);
+    }
   };
 
-  const onSubmit = (data: any) => {
-    console.log('Form submitted:', data);
-    setDialogOpen(false);
+  const removeFile = (indexToRemove: number) => {
+    setSelectedFiles(
+      selectedFiles.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onSubmit = async (data: any) => {
+    try {
+      // Create FormData object to handle file uploads
+      const formData = new FormData();
+
+      // Add chapter details
+      formData.append('chap_title', data.chap_title);
+      formData.append('chap_number', data.chap_number);
+
+      // Add each file to formData with the same field name (chap_content)
+      selectedFiles.forEach((file) => {
+        formData.append('chap_content', file);
+      });
+
+      // Call the mutation with the FormData
+      await createChapter({
+        manga_id: Number(mangaid),
+        formData
+      }).unwrap();
+
+      // Success handling
+      toast.success('Chapter created successfully');
+      setDialogOpen(false);
+      form.reset();
+      setSelectedFiles([]);
+    } catch (error) {
+      console.error('Failed to create chapter:', error);
+      toast.error('Failed to create chapter. Please try again.');
+    }
+  };
+
+  const handleDeleteChapter = async (chapterId: number) => {
+    if (confirm('Are you sure you want to delete this chapter?')) {
+      try {
+        // Call the delete mutation here (assuming you have a deleteChapter mutation)
+        await deleteChapter({
+          mangaId: Number(mangaid),
+          chapterId
+        }).unwrap();
+        toast.success('Chapter deleted successfully');
+      } catch (error) {
+        console.error('Failed to delete chapter:', error);
+        toast.error('Failed to delete chapter. Please try again.');
+      }
+    }
   };
 
   return (
@@ -193,46 +263,27 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-4"
                 >
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="mangaTitle"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Manga Title</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Select manga title"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="chapterNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Chapter Number</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="e.g. 1"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="chap_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Chapter Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="e.g. 1"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}
-                    name="chapterTitle"
+                    name="chap_title"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Chapter Title</FormLabel>
@@ -244,47 +295,26 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                     )}
                   />
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="releaseDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Release Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <FormControl>
-                            <select
-                              className="border-input bg-background ring-offset-background file:text-foreground placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-base file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="draft">Draft</option>
-                              <option value="published">Published</option>
-                            </select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
                   <div className="mt-6">
                     <FormLabel className="mb-2 block">
                       Upload Chapter Images
                     </FormLabel>
-                    <div className="border-manga-600/40 hover:bg-manga-500/10 cursor-pointer rounded-md border border-dashed p-8 text-center transition-colors">
+
+                    {/* Hidden file input */}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+
+                    {/* Click to upload area */}
+                    <div
+                      className="border-manga-600/40 hover:bg-manga-500/10 cursor-pointer rounded-md border border-dashed p-8 text-center transition-colors"
+                      onClick={triggerFileInput}
+                    >
                       <Upload className="text-manga-400 mx-auto mb-2 h-10 w-10" />
                       <p className="text-muted-foreground text-sm">
                         Drag and drop image files here, or click to browse
@@ -293,6 +323,39 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                         Supports: JPG, PNG, WEBP (Max 5MB per image)
                       </span>
                     </div>
+
+                    {/* Preview of selected files */}
+                    {selectedFiles.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-sm font-medium">
+                          Selected Files ({selectedFiles.length})
+                        </p>
+                        <div className="max-h-40 overflow-y-auto">
+                          {selectedFiles.map((file, index) => (
+                            <div
+                              key={index}
+                              className="bg-muted/30 flex items-center justify-between rounded-md p-2 text-sm"
+                            >
+                              <div className="flex-1 truncate">
+                                <span className="font-medium">
+                                  Page {index + 1}:
+                                </span>{' '}
+                                {file.name}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => removeFile(index)}
+                              >
+                                <X size={14} />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <DialogFooter className="mt-6">
@@ -304,8 +367,9 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                     <Button
                       type="submit"
                       className="bg-manga-500 hover:bg-manga-600"
+                      disabled={isCreating || selectedFiles.length === 0}
                     >
-                      Save Chapter
+                      {isCreating ? 'Uploading...' : 'Save Chapter'}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -313,10 +377,40 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" className="gap-2">
-            <Filter size={16} />
-            Filter
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Filter size={16} />
+                {sortOrder
+                  ? `Filter (${sortOrder === 'asc' ? 'A→Z' : 'Z→A'})`
+                  : 'Filter'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setSortOrder('asc');
+                  // Reset to page 1 when sorting changes
+                  setCurrentPage(1);
+                }}
+                className="flex items-center gap-2"
+              >
+                <ArrowUp size={16} />
+                <span>Ascending</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setSortOrder('desc');
+                  // Reset to page 1 when sorting changes
+                  setCurrentPage(1);
+                }}
+                className="flex items-center gap-2"
+              >
+                <ArrowDown size={16} />
+                <span>Descending</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -352,14 +446,14 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                 <input
                   type="checkbox"
                   checked={
-                    selectedChapters.length === paginatedChapters?.length &&
+                    selectedChapters.length === paginatedChapters.length &&
                     paginatedChapters.length > 0
                   }
                   onChange={selectAllChapters}
                   className="border-manga-600/40 text-manga-500 focus:ring-manga-500/40 rounded"
                 />
               </TableHead>
-              <TableHead>Manga</TableHead>
+              <TableHead>MangaID</TableHead>
               <TableHead>Ch. No.</TableHead>
               <TableHead className="hidden md:table-cell">Title</TableHead>
               <TableHead className="hidden md:table-cell">
@@ -370,7 +464,13 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedChapters && paginatedChapters.length > 0 ? (
+            {chaptersLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center">
+                  Loading chapters...
+                </TableCell>
+              </TableRow>
+            ) : paginatedChapters.length > 0 ? (
               paginatedChapters.map((chapter) => (
                 <TableRow
                   key={chapter.chap_id}
@@ -388,7 +488,7 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                     <Link
                       href={`/dashboard/manga/${mangaid}/chapters/${chapter.chap_id}`}
                     >
-                      {chapter.chap_title}
+                      {chapter.chap_manga_id}
                     </Link>
                   </TableCell>
                   <TableCell>{chapter.chap_number}</TableCell>
@@ -426,13 +526,27 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                           className="text-muted-foreground hover:text-foreground"
                         />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() =>
+                          navigate.push(
+                            `/dashboard/manga/${mangaid}/chapters/${chapter.chap_id}`
+                          )
+                        }
+                      >
                         <Edit
                           size={16}
                           className="text-muted-foreground hover:text-foreground"
                         />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleDeleteChapter(chapter.chap_id)}
+                      >
                         <Trash
                           size={16}
                           className="text-destructive hover:text-destructive"
@@ -454,7 +568,7 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
       </Card>
 
       {/* Pagination */}
-      {filteredChapters && filteredChapters.length > 0 && (
+      {filteredChapters.length > 0 && (
         <Pagination className="mt-4">
           <PaginationContent>
             <PaginationItem>

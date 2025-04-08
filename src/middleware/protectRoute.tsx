@@ -26,7 +26,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Get all relevant auth state from Redux
   const {
     isAuthenticated,
-    token,
+    tokens,
     isTokenExpired: tokenExpired
   } = useAppSelector((state) => state.auth);
 
@@ -34,8 +34,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     const verifyAuth = async () => {
       // If we have a token, check if it's valid
-      if (token) {
-        if (isTokenExpired(token.access_token)) {
+      if (tokens) {
+        if (isTokenExpired(tokens.access_token)) {
           console.log('Token is expired, logging out');
           dispatch(logout());
           router.replace(redirectTo);
@@ -65,7 +65,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [isAuthenticated, token, router, dispatch, redirectTo]);
+  }, [isAuthenticated, tokens, router, dispatch, redirectTo]);
 
   // Show loading indicator while verifying
   if (isVerifying) {

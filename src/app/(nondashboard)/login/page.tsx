@@ -9,7 +9,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAppDispatch } from '@/lib/redux/hook';
 import { useLoginMutation } from '@/services/apiAuth';
-import { loginSuccess } from '@/lib/redux/slices/authSlice';
 
 const AuthPage = () => {
   const navigate = useRouter();
@@ -44,21 +43,6 @@ const AuthPage = () => {
       if (result.status && result.statusCode == 200) {
         const { metadata } = result;
         // Dispatch login success action with the token and user data
-        console.log(metadata);
-        dispatch(
-          loginSuccess({
-            token: {
-              access_token: metadata.token.access_token,
-              refresh_token: metadata.token.refresh_token
-            },
-            user: {
-              id: metadata.user.usr_id.toString(),
-              name: metadata.user.usr_name,
-              email: metadata.user.usr_email
-            }
-          })
-        );
-
         toast.success('Login successfully!');
         if (metadata.user.usr_id === 1) navigate.push('/dashboard');
         else navigate.push('/');

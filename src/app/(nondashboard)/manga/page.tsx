@@ -4,45 +4,51 @@ import { Button } from '@/components/ui/button';
 import { ChevronRight, TrendingUp } from 'lucide-react';
 import FeaturedManga from '@/components/manga/FeatureManga';
 import Link from 'next/link';
-import {
-  useGetAllMangaQuery,
-  useGetLatestUpdatesQuery,
-  useGetNewReleasesQuery,
-  useGetPopularMangaQuery
-} from '@/services/api';
-import { useState } from 'react';
+import { useGetAllMangaQuery } from '@/services/api';
+import { useState, useMemo } from 'react';
 import { useAppSelector } from '@/lib/redux/hook';
-import { processMangaData, sortMangaData } from '@/lib/utils';
+
+// Define a type for the manga item
+interface MangaItem {
+  id: string;
+  title: string;
+  coverImage: string;
+  author: string;
+  averageRating: string;
+  createdAt: string;
+  updatedAt: string;
+  followers: number;
+  views: number;
+  status: string;
+  [key: string]: any;
+}
 
 const Index = () => {
-  const [sortOption, setSortOption] = useState('popularity');
-  const [isAscending, setIsAscending] = useState(false);
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(15);
-  const authState = useAppSelector((state) => state.auth);
-  console.log(authState);
+  const [limit, setLimit] = useState(20);
   const { data, error, isLoading } = useGetAllMangaQuery({
     page,
     limit
   });
 
-  const { data: popularManga, isLoading: isPopularLoading } =
-    useGetPopularMangaQuery({ limit: 20 });
+  // Sort the data client-side
+  const sortedByPopularity = useMemo(() => {
+    if (!data?.items) return [];
+    return [...data.items].sort((a, b) => b.views - a.views);
+  }, [data?.items]);
 
-  const { data: latestUpdates, isLoading: isLatestLoading } =
-    useGetLatestUpdatesQuery({ limit: 20 });
+  const sortedByLatest = useMemo(() => {
+    if (!data?.items) return [];
+    return [...data.items].sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }, [data?.items]);
 
-  const { data: newReleases, isLoading: isNewLoading } = useGetNewReleasesQuery(
-    { limit: 20 }
-  );
-
-  const mangaData = processMangaData(popularManga, latestUpdates, newReleases, {
-    sortBy: sortOption,
-    ascending: isAscending,
-    limit: 20
-  });
-
-  console.log('Mangadata', mangaData);
+  const sortedByFavorite = useMemo(() => {
+    if (!data?.items) return [];
+    return [...data.items].sort((a, b) => b.followers - a.followers);
+  }, [data?.items]);
 
   return (
     <>
@@ -51,7 +57,8 @@ const Index = () => {
         <section className="manga-section container">
           <MangaGrid
             title="Popular Manga"
-            manga={mangaData.popular || []}
+            manga={sortedByPopularity}
+            isLoading={isLoading}
             action={
               <Button
                 variant="link"
@@ -71,8 +78,8 @@ const Index = () => {
           <div className="container">
             <MangaGrid
               title="Latest Updates"
-              manga={mangaData.latest || []}
-              isLoading={isLatestLoading}
+              manga={sortedByLatest}
+              isLoading={isLoading}
               action={
                 <Button
                   variant="link"
@@ -90,9 +97,9 @@ const Index = () => {
 
         <section className="manga-section container">
           <MangaGrid
-            title="New Releases"
-            manga={mangaData.newReleases || []}
-            isLoading={isNewLoading}
+            title="Favorite"
+            manga={sortedByFavorite}
+            isLoading={isLoading}
             action={
               <Button
                 variant="link"

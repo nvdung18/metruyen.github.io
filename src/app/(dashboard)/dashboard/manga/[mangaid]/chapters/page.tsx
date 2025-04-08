@@ -3,7 +3,6 @@ import { Separator } from '@/components/ui/separator';
 import { BookOpen } from 'lucide-react';
 import ChaptersSection from '@/components/dashboard/ChaptersSection';
 import { useParams } from 'next/navigation';
-import { useGetMangaChaptersQuery } from '@/services/apiManga';
 const DashboardChapters = () => {
   const params = useParams();
   const mangaId = params?.mangaid ? parseInt(params.mangaid as string) : 0;

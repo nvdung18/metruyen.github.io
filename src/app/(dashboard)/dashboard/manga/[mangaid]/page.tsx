@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   BookOpen,
@@ -46,15 +46,19 @@ import {
 // Mock data for a single manga
 export default function MangaDetailPage() {
   const params = useParams();
-  console.log(params);
+  const searchParams = useSearchParams(); // Get search params from URL
+
   const mangaId = params.mangaid;
 
   const {
     data: manga,
     isLoading,
     error
-  } = useGetMangaByIdQuery(Number(mangaId));
-  console.log('Thumb', manga?.manga_thumb);
+  } = useGetMangaByIdQuery({
+    id: Number(mangaId),
+    isPublished: searchParams.get('status')
+  });
+  console.log('Thumb', manga);
   const {
     data: chapters,
     isLoading: chaptersLoading,
@@ -112,12 +116,14 @@ export default function MangaDetailPage() {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {manga.manga_name}
+            {manga.manga_title}
           </h1>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/dashboard/manga/${mangaId}/edit`}>
+            <Link
+              href={`/dashboard/manga/${mangaId}/edit?status=${searchParams.get('status')}`}
+            >
               <Edit className="mr-2 h-4 w-4" />
               Edit Manga
             </Link>
@@ -134,9 +140,16 @@ export default function MangaDetailPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <div className="relative aspect-[2/3] overflow-hidden rounded-lg border">
           <Image
-            src={manga.manga_thumb || './placedholder.svg'}
-            alt="maihuy"
+            src={
+              !manga.manga_thumb
+                ? '/placeholder.jpg'
+                : `https://ipfs.io/ipfs/${manga.manga_thumb}`
+            }
+            alt={manga.manga_title}
             fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover"
+            priority
           />
           <div className="absolute right-0 bottom-0 left-0 bg-gradient-to-t from-black/80 to-transparent p-4">
             <div className="flex items-center gap-2">
@@ -153,7 +166,9 @@ export default function MangaDetailPage() {
               >
                 <Eye className="mr-1 h-3 w-3" />
                 {manga.createdAt &&
-                  `${new Date(manga.createdAt).getDate()}/${new Date(manga.createdAt).getMonth() + 1}`}{' '}
+                  `${new Date(manga.createdAt).getDate()}/${
+                    new Date(manga.createdAt).getMonth() + 1
+                  }`}{' '}
               </Badge>
               <Badge
                 variant="secondary"
@@ -252,73 +267,78 @@ export default function MangaDetailPage() {
             <CardContent>
               <div className="space-y-4">
                 {chapters &&
-                  chapters.map((chapter, index: number) => (
-                    <div key={chapter.chap_id}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Link
-                            href={`/dashboard/manga/${mangaId}/chapters/${chapter.chap_id}`}
-                            className="font-medium hover:underline"
-                          >
-                            Chapter {chapter.chap_number}: {chapter.chap_title}
-                          </Link>
-                          <p className="text-muted-foreground text-sm">
-                            Released on{' '}
-                            {chapter?.createdAt
-                              ? new Date(chapter.createdAt).toLocaleDateString()
-                              : 'unknown date'}
-                          </p>
+                  [...chapters] // Create a shallow copy
+                    .sort((a, b) => a.chap_number - b.chap_number)
+                    .map((chapter, index: number) => (
+                      <div key={chapter.chap_id}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Link
+                              href={`/dashboard/manga/${mangaId}/chapters/${chapter.chap_id}`}
+                              className="font-medium hover:underline"
+                            >
+                              Chapter {chapter.chap_number}:{' '}
+                              {chapter.chap_title}
+                            </Link>
+                            <p className="text-muted-foreground text-sm">
+                              Released on{' '}
+                              {chapter?.createdAt
+                                ? new Date(
+                                    chapter.createdAt
+                                  ).toLocaleDateString()
+                                : 'unknown date'}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground flex items-center text-sm">
+                              <Eye className="mr-1 inline-block h-3 w-3" />
+                              {chapter.chap_views}
+                            </span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Actions</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/dashboard/manga/${mangaId}/chapters/${chapter.chap_id}`}
+                                  >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/dashboard/manga/${mangaId}/chapters/${chapter.chap_id}/edit`}
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive">
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground text-sm">
-                            <Eye className="mr-1 inline-block h-3 w-3" />
-                            {chapter.chap_views}
-                          </span>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/dashboard/manga/${mangaId}/chapters/${chapter.chap_id}`}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/dashboard/manga/${mangaId}/chapters/${chapter.chap_id}/edit`}
-                                >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive">
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                        {index < chapters.length - 1 && (
+                          <Separator className="mt-4" />
+                        )}
                       </div>
-                      {index < chapters.length - 1 && (
-                        <Separator className="mt-4" />
-                      )}
-                    </div>
-                  ))}
+                    ))}
               </div>
             </CardContent>
             <CardFooter>
               <Button className="w-full" asChild>
-                <Link href={`/dashboard/manga/${mangaId}/chapters/new`}>
+                <Link href={`/dashboard/manga/${mangaId}/chapters`}>
                   Add New Chapter
                 </Link>
               </Button>

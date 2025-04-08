@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useRefreshTokenMutation } from '@/services/apiAuth';
+import { ChapterImage } from '@/app/(dashboard)/dashboard/manga/[mangaid]/chapters/[chapterid]/images/page';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -108,49 +110,6 @@ export const formatMangaData = (response: any) => {
 };
 
 /**
- * Combines and sorts data from multiple manga data sources
- * @param {Object} popularManga - Popular manga data
- * @param {Object} latestUpdates - Latest updates data
- * @param {Object} newReleases - New releases data
- * @param {Object} options - Sorting options
- * @returns {Object} - Object with sorted data for each category
- */
-export const processMangaData = (
-  popularManga: any,
-  latestUpdates: any,
-  newReleases: any,
-  options = { sortBy: 'popularity', ascending: false, limit: 20 }
-) => {
-  const { sortBy, ascending, limit } = options;
-
-  // Format data from each source
-  const formattedPopular = formatMangaData(popularManga);
-  const formattedLatest = formatMangaData(latestUpdates);
-  const formattedNew = formatMangaData(newReleases);
-  console.log('Popular', formattedPopular);
-  // Sort each dataset
-  const sortedPopular = sortMangaData(
-    formattedPopular,
-    sortBy,
-    ascending
-  ).slice(0, limit);
-  const sortedLatest = sortMangaData(formattedLatest, 'latest', false).slice(
-    0,
-    limit
-  );
-  const sortedNew = sortMangaData(formattedNew, 'created', false).slice(
-    0,
-    limit
-  );
-
-  return {
-    popular: sortedPopular,
-    latest: sortedLatest,
-    newReleases: sortedNew
-  };
-};
-
-/**
  * Enhanced version with better types and additional sort options
  */
 export interface MangaItem {
@@ -167,6 +126,7 @@ export interface MangaItem {
   manga_number_of_followers: number;
   createdAt: string;
   updatedAt: string;
+
   [key: string]: any; // For additional properties
 }
 
@@ -284,5 +244,76 @@ export function isTokenExpired(token: string, bufferSeconds = 60): boolean {
   } catch (error) {
     console.error('Error checking token expiration:', error);
     return true; // If there's any error, consider the token expired
+  }
+}
+
+export function handleRefreshToken(refreshToken: string) {
+  const [handleRefreshToken] = useRefreshTokenMutation();
+  const result = handleRefreshToken(refreshToken).unwrap();
+  console.log(result);
+}
+
+export async function fetchAndParseIPFSData(
+  cid: string
+): Promise<ChapterImage[]> {
+  if (!cid) return [];
+  try {
+    const response = await fetch(`https://ipfs.io/ipfs/${cid}`);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch IPFS content (${response.status}) for CID: ${cid}`
+      );
+    }
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      console.warn('IPFS data is not an array:', data);
+      return [];
+    }
+
+    const formattedImages = data
+      .map((item: any, index: number): ChapterImage | null => {
+        let imageUrl = item.image || item.url; // Allow 'url' as fallback
+        const pageNumber = item.page || index + 1;
+
+        if (!imageUrl || typeof imageUrl !== 'string') {
+          console.warn(
+            `Missing or invalid image URL for item at index ${index}`,
+            item
+          );
+          return null; // Skip invalid items
+        }
+        if (
+          typeof pageNumber !== 'number' ||
+          isNaN(pageNumber) ||
+          pageNumber <= 0
+        ) {
+          console.warn(`Invalid page number for item at index ${index}:`, item);
+          return null; // Skip items with invalid page numbers
+        }
+
+        if (!imageUrl.startsWith('http')) {
+          imageUrl = imageUrl.startsWith('//')
+            ? `https:${imageUrl}`
+            : imageUrl.includes('ipfs.io/ipfs/')
+              ? // Don't add prefix to URLs that already have the IPFS gateway
+                imageUrl
+              : // Otherwise add the IPFS gateway
+                `https://ipfs.io/ipfs/${imageUrl}`;
+        }
+
+        return {
+          id: `${pageNumber}-${index}`, // Create a more stable ID if possible, otherwise use index
+          url: imageUrl,
+          pageNumber: pageNumber
+        };
+      })
+      .filter((img): img is ChapterImage => img !== null); // Filter out nulls
+
+    formattedImages.sort((a, b) => a.pageNumber - b.pageNumber);
+    return formattedImages;
+  } catch (error) {
+    console.error('Error fetching or parsing IPFS data:', error);
+    return []; // Return empty array on error
   }
 }

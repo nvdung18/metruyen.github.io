@@ -44,6 +44,7 @@ import {
 } from '@/services/apiManga';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface MangaSectionProps {
   className?: string;
@@ -330,24 +331,6 @@ const MangaSection = ({
           </div>
         )}
 
-        {/* Error state */}
-        {/* {isError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertTitle>Error loading manga</AlertTitle>
-            <AlertDescription>
-              There was a problem loading the manga list.
-              <Button
-                variant="outline"
-                size="sm"
-                className="ml-2"
-                onClick={() => refetch()}
-              >
-                Try Again
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )} */}
-
         {/* Mobile selected items action bar */}
         {!isLoading &&
           !isError &&
@@ -415,10 +398,20 @@ const MangaSection = ({
                       <td className="px-4 py-3">
                         <Link href={`/dashboard/manga/${item.manga_id}/`}>
                           <div className="flex items-center gap-3">
-                            <img
-                              src={item.manga_thumb || '/placeholder-manga.jpg'}
+                            <Image
+                              src={
+                                item.manga_thumb
+                                  ? '/placeholder.jpg'
+                                  : `https://ipfs.io/ipfs/${item.manga_thumb}`
+                              }
                               alt={item.manga_title}
-                              className="h-12 w-8 rounded-sm object-cover"
+                              width={48}
+                              height={72}
+                              className="border-manga-600/20 h-12 w-8 rounded-sm border object-cover shadow-sm"
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder-manga.jpg';
+                                e.currentTarget.style.opacity = '0.8';
+                              }}
                             />
                             <span className="line-clamp-1 font-medium">
                               {item.manga_title}
@@ -433,20 +426,18 @@ const MangaSection = ({
                       )}
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
-                          {/* Publication status badge - use proper status logic */}
-                          {item.is_draft == 1 ? (
+                          {item.is_published || item.is_published == 1 ? (
                             <Badge
                               variant="outline"
-                              className="border-slate-400 text-slate-400"
+                              className="border-green-500 text-green-500"
                             >
-                              Draft
-                            </Badge>
-                          ) : item.is_published == 1 ? (
-                            <Badge variant="default" className="bg-green-600">
                               Published
                             </Badge>
                           ) : (
-                            <Badge variant="default" className="bg-amber-600">
+                            <Badge
+                              variant="outline"
+                              className="border-red-500 text-red-500"
+                            >
                               Unpublished
                             </Badge>
                           )}
@@ -493,7 +484,12 @@ const MangaSection = ({
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
                                 <Link
-                                  href={`/dashboard/manga/${item.manga_id}/`}
+                                  href={`/dashboard/manga/${item.manga_id}?status=${
+                                    item.is_published == 1 || item.is_published
+                                      ? 'publish'
+                                      : 'unpublish'
+                                  }`}
+                                  className="w-full cursor-pointer"
                                 >
                                   <BookOpen className="mr-2 h-4 w-4" />
                                   View Details

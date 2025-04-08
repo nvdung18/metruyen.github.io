@@ -5,17 +5,14 @@ const apiBaseQuery = fetchBaseQuery({
   baseUrl: 'http://localhost:8080',
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as any;
-    const token = state.auth?.token;
-    const user = state.auth?.user;
+    const token = state.auth?.tokens;
+    const clientId = state.auth?.clientId;
     // Set auth headers if token exists
     if (token?.access_token) {
       headers.set('Authorization', `Bearer ${token.access_token}`);
       // Use user ID if available
-      if (user?.id) {
-        headers.set('x-client-id', user.id);
-      }
+      headers.set('x-client-id', clientId);
     }
-
     return headers;
   }
 });

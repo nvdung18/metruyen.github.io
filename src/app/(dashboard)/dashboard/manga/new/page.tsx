@@ -50,7 +50,15 @@ export default function NewMangaPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
+    // Map input ids to corresponding state property names
+    const fieldMap: Record<string, string> = {
+      title: 'manga_title',
+      author: 'manga_author',
+      description: 'manga_description'
+    };
+
+    const stateField = fieldMap[id] || id;
+    setFormData((prev) => ({ ...prev, [stateField]: value }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,18 +82,32 @@ export default function NewMangaPage() {
     setIsSubmitting(true);
 
     try {
-      if (coverImage) {
-        const mangaData = {
-          manga_title: formData.manga_title,
-          manga_author: formData.manga_author,
-          manga_description: formData.manga_description,
-          category_ids: selectedCategories.map(Number),
-          manga_thumbnail: coverImage
-        };
+      const submissionData = new FormData();
 
-        await createManga(mangaData).unwrap();
-        router.push('/dashboard/manga');
+      // Append text fields correctly from state
+      submissionData.append('manga_title', formData.manga_title);
+      submissionData.append('manga_author', formData.manga_author);
+      submissionData.append(
+        'manga_description',
+        formData.manga_description || ''
+      );
+
+      // Append cover image if available
+      if (coverImage) {
+        submissionData.append('manga_thumb', coverImage);
+      } else {
+        console.error('Cover image is required');
+        setIsSubmitting(false);
+        return;
       }
+
+      // Append categories individually to match backend DTO expectation
+      selectedCategories.forEach((categoryId) => {
+        submissionData.append('category_id', categoryId);
+      });
+
+      await createManga(submissionData).unwrap();
+      router.push('/dashboard/manga');
     } catch (error) {
       console.error('Failed to create manga:', error);
     } finally {
@@ -171,24 +193,29 @@ export default function NewMangaPage() {
                   </SelectContent>
                 </Select>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedCategories.map((category) => (
-                    <div
-                      key={category}
-                      className="bg-primary/10 flex items-center rounded-full px-3 py-1 text-sm"
-                    >
-                      {category}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="ml-1 h-4 w-4"
-                        onClick={() => handleRemoveCategory(category)}
+                  {selectedCategories.map((categoryId) => {
+                    const category = categoriesData?.find(
+                      (c) => c.category_id.toString() === categoryId
+                    );
+                    return (
+                      <div
+                        key={categoryId}
+                        className="bg-primary/10 flex items-center rounded-full px-3 py-1 text-sm"
                       >
-                        <X className="h-3 w-3" />
-                        <span className="sr-only">Remove {category}</span>
-                      </Button>
-                    </div>
-                  ))}
+                        {category ? category.category_name : categoryId}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="ml-1 h-4 w-4"
+                          onClick={() => handleRemoveCategory(categoryId)}
+                        >
+                          <X className="h-3 w-3" />
+                          <span className="sr-only">Remove</span>
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </CardContent>

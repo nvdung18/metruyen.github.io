@@ -2,6 +2,7 @@ import { Star, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export interface MangaCardProps {
   id: string;
@@ -26,12 +27,34 @@ const MangaCard = ({
   isNew,
   isUpdated
 }: MangaCardProps) => {
+  // Format the cover image URL correctly
+  const imageUrl = coverImage.startsWith('http')
+    ? 'https://sonikaagarwal.in/wp-content/uploads/2021/01/b500sample_cover.jpg'
+    : coverImage.includes('ipfs.io/ipfs/')
+      ? coverImage
+      : `https://ipfs.io/ipfs/${coverImage}`;
+
   return (
     <Link href={`/manga/${id}`}>
-      <div className={cn('manga-card group', className)}>
-        <img src={coverImage} alt={title} className="manga-card-image" />
+      <div
+        className={cn(
+          'manga-card group relative aspect-[2/3] overflow-hidden rounded-md',
+          className
+        )}
+      >
+        {/* Single responsive image with proper attributes */}
+        <Image
+          src={imageUrl}
+          alt={title}
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          placeholder="blur"
+          blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        />
 
-        <div className="manga-card-overlay">
+        {/* Gradient overlay for better text readability */}
+        <div className="manga-card-overlay absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4">
           <h3 className="mb-1 line-clamp-2 font-bold text-white">{title}</h3>
 
           {/* Status badges */}
@@ -50,25 +73,6 @@ const MangaCard = ({
               )}
             </div>
           )}
-
-          {/* Genres */}
-          {/* {genres.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-1">
-              {genres.slice(0, 2).map((genre) => (
-                <span
-                  key={genre}
-                  className="bg-secondary/80 text-foreground rounded-full px-2 py-0.5 text-xs"
-                >
-                  {genre}
-                </span>
-              ))}
-              {genres.length > 2 && (
-                <span className="bg-secondary/80 text-foreground rounded-full px-2 py-0.5 text-xs">
-                  +{genres.length - 2}
-                </span>
-              )}
-            </div>
-          )} */}
 
           {/* Rating and chapters */}
           <div className="flex items-center justify-between text-xs text-white">

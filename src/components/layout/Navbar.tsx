@@ -6,7 +6,6 @@ import {
   Menu,
   X,
   BookOpen,
-  Search,
   User,
   Home,
   Bookmark,
@@ -15,8 +14,6 @@ import {
   TrendingUp,
   Settings,
   LogIn,
-  ChevronRight,
-  Tag,
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,7 +30,8 @@ import {
 } from '../ui/dropdown-menu';
 import { ScrollArea } from '../ui/scroll-area';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hook';
-import { logout } from '@/lib/redux/slices/authSlice';
+import { getUserCurrent, logout } from '@/lib/redux/slices/authSlice';
+import { useGetCategoriesQuery } from '@/services/apiCategory';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,6 +41,8 @@ const Navbar = () => {
   const pathname = usePathname();
   const auth = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
+  // RTK Query hooks
+  const { data: categories = [], isLoading, isError } = useGetCategoriesQuery();
   const toggleMenu = () => {
     setIsOpen(!isOpen);
     // When opening the menu, prevent scrolling on the body
@@ -91,6 +91,11 @@ const Navbar = () => {
   useEffect(() => {
     closeMenu();
   }, [pathname]);
+
+  // Run to get current user
+  useEffect(() => {
+    dispatch(getUserCurrent());
+  }, []);
 
   // Sample categories for the mobile menu
   const genreCategories = [
@@ -212,7 +217,7 @@ const Navbar = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/bookmarks" className="w-full cursor-pointer">
+                    <Link href="/" className="w-full cursor-pointer">
                       <Bookmark className="mr-2 h-4 w-4" />
                       <span>Bookmarks</span>
                     </Link>
@@ -227,7 +232,7 @@ const Navbar = () => {
                   <DropdownMenuItem asChild>
                     {
                       /* Replace with logout function */
-                      auth.token ? (
+                      auth.tokens ? (
                         <Button
                           variant="outline"
                           size="sm"
@@ -246,7 +251,7 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              {!auth.token && (
+              {!auth.tokens && (
                 <>
                   <Button variant="outline" size="sm" asChild>
                     <Link href="/login">Sign In</Link>
@@ -349,15 +354,15 @@ const Navbar = () => {
                     </h3>
                     <ScrollArea className="h-[30vh]">
                       <div className="grid grid-cols-2 gap-2 pb-4">
-                        {genreCategories.map((category) => (
+                        {categories.map((category) => (
                           <Link
-                            key={category.id}
-                            href={`/discover?genre=${category.id}`}
+                            key={category.category_id}
+                            href={`/discover?category=${category.category_id}`}
                             className="hover:bg-accent/70 active:bg-accent flex items-center gap-2 rounded-md p-2 transition-all duration-200"
                             onClick={closeMenu}
                           >
                             <span className="truncate text-sm font-medium">
-                              {category.name}
+                              {category.category_name}
                             </span>
                           </Link>
                         ))}
@@ -378,7 +383,7 @@ const Navbar = () => {
             <User className="mr-3 h-5 w-5" />
             Profile
           </Link>
-          {auth.token && (
+          {auth.tokens && (
             <div className="space-y-3 pt-4">
               <Button
                 variant="outline"
