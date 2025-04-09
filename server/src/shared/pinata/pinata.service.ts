@@ -54,6 +54,41 @@ export class PinataService {
     );
   }
 
+  async folderUpload(
+    files: (Express.Multer.File | Buffer)[],
+    groupName: string = '',
+    fileNames: any[] = [],
+    folderName: string = 'folder_from_sdk',
+  ) {
+    let group: PinataResponse = null;
+    if (groupName != '') {
+      const groups = await this.getGroupByName(groupName);
+      if (groups.length === 0) {
+        group = await this.createNewGroup(groupName);
+      } else {
+        group = groups[0];
+      }
+    }
+
+    // Convert files to the format expected by pinata.upload.fileArray
+    const fileObjects = files.map((file, index) => {
+      const fileBuffer = file instanceof Buffer ? file : file.buffer;
+      return Object.assign(new Blob([fileBuffer], { type: 'text/plain' }), {
+        name: fileNames[index]?.toString() || `file-${index}`,
+        lastModified: Date.now(),
+      });
+    });
+
+    const upload = await this.pinata.upload.fileArray(fileObjects, {
+      groupId: group == null ? '' : group['id'],
+      metadata: {
+        name: folderName, // Set custom folder name
+      },
+    });
+
+    return upload;
+  }
+
   async deleteFilesByCid(cid: string[]): Promise<PinataResponse[]> {
     const deleteResponse = await this.pinata.unpin(cid);
     return deleteResponse;

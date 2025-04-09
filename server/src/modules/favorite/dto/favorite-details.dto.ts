@@ -11,12 +11,4 @@ export class FavoriteDetailsDto {
   @IsNumber()
   @Type(() => Number)
   manga_id: number;
-
-  @ApiProperty({
-    example: 1,
-    uniqueItems: true,
-  })
-  @IsNumber()
-  @Type(() => Number)
-  fav_id: number;
 }

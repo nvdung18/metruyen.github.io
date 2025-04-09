@@ -10,6 +10,7 @@ import {
 import { FavoriteService } from './favorite.service';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiTags,
@@ -32,6 +33,7 @@ export class FavoriteController {
   - Users can add manga to their favorites (follow manga)
     `,
   })
+  @ApiConsumes('application/x-www-form-urlencoded')
   @Post('manga-to-favorite')
   @ResponseMessage('Manga added to favorite successfully')
   @AuthorizeAction({ action: 'createOwn', resource: 'Favorites' })
@@ -56,6 +58,7 @@ export class FavoriteController {
   - Users can delete manga from their favorites (unfollow manga)
     `,
   })
+  @ApiConsumes('application/x-www-form-urlencoded')
   @Delete('manga-from-favorite')
   @ResponseMessage('Delete manga from favorite successfully')
   @AuthorizeAction({ action: 'updateOwn', resource: 'Favorites' })
@@ -80,21 +83,14 @@ export class FavoriteController {
   - Users can get list manga from their favorites (list followed manga)
     `,
   })
-  @Get('/manga-from-favorite/:id')
-  @ApiParam({
-    name: 'id',
-    type: Number,
-    description: 'Favorite id',
-  })
+  @Get('/manga-from-favorite')
   @ResponseMessage('Get list manga from favorite successfully')
-  @AuthorizeAction({ action: 'updateOwn', resource: 'Favorites' })
+  @AuthorizeAction({ action: 'readOwn', resource: 'Favorites' })
   async getListMangaFromFavorite(
     // list followed manga
-    @Param('id') id: number,
     @Req() req: Request,
   ) {
     const data = await this.favoriteService.getListMangaFromFavorite(
-      id,
       req['user']['sub'],
     );
     return {

@@ -523,4 +523,19 @@ export class ChapterService {
 
     return contentObjFiltered;
   }
+
+  async testFolderUpload(files: Express.Multer.File[] = []) {
+    const groupName = `test-folder-upload`;
+    // const groupName = '';
+    const filesName = ['abc', 'def', 'ghi', 'klm', 'nop'];
+
+    const uploadResults = await this.pinataService.folderUpload(
+      files,
+      groupName,
+      filesName,
+      'abcd',
+    );
+
+    return uploadResults;
+  }
 }
