@@ -76,8 +76,10 @@ export class FavoriteService {
 
     const listMangaFromFavorite =
       await this.favoriteRepo.getListMangaFromFavorite(foundFavorite.fav_id, {
-        raw: true,
+        nest: true,
       });
-    return listMangaFromFavorite;
+    return listMangaFromFavorite.map((value) => {
+      return value.get({ plain: true });
+    });
   }
 }

@@ -42,7 +42,7 @@ export class CommentController {
   @Post()
   @ResponseMessage('Create Comment successful')
   @AuthorizeAction({ action: 'createOwn', resource: 'Comments' })
-  async updateChapter(
+  async createComment(
     @Req() req: Request,
     @Body(new AtLeastOneFieldPipe({ removeAllEmptyField: true }))
     createCommentDto: CreateCommentDto,

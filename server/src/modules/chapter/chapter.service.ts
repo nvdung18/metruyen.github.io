@@ -37,18 +37,26 @@ export class ChapterService {
     const foundManga =
       await this.mangaService.findMangaByIdCanPublishOrUnPublish(mangaId);
     const nameManga = foundManga.manga_title;
-    // const nameManga = await this.mangaService.getNameMangaById(mangaId, {
-    //   canPublishOrUnpublish: true,
-    // });
     const folderName = `${nameManga}/${createChapterDto.chap_number}`;
 
-    const uploadResults = await this.pinataService.uploadManyFiles(
+    const filesName = files.map((value, index) => {
+      return `page-${index}`;
+    });
+    const uploadResults = await this.pinataService.folderUpload(
       files,
       folderName,
+      filesName,
+      `chapter-content-${createChapterDto.chap_number}`,
     );
-    const secureUrls = uploadResults.map((result, index) => ({
+    const ipfsHash = uploadResults['IpfsHash'];
+    const response = await fetch(`https://ipfs.io/ipfs/${ipfsHash}/`);
+    const data = await response.text();
+
+    const listCids = this.extractCIDFromTextHtml(data);
+
+    const secureUrls = listCids.map((result, index) => ({
       page: index,
-      image: `ipfs.io/ipfs/${result['IpfsHash']}`,
+      image: `ipfs.io/ipfs/${result}`,
     }));
 
     const jsonBufferUrls = Buffer.from(JSON.stringify(secureUrls));
@@ -82,7 +90,6 @@ export class ChapterService {
         },
       );
       // delete cache
-      // const cacheKey = `list_chapter:${mangaId}`;
       const cacheKey = foundManga.is_draft
         ? `list_chapter_unpublish:${mangaId}`
         : `list_chapter:${mangaId}`;
@@ -525,17 +532,34 @@ export class ChapterService {
   }
 
   async testFolderUpload(files: Express.Multer.File[] = []) {
-    const groupName = `test-folder-upload`;
-    // const groupName = '';
-    const filesName = ['abc', 'def', 'ghi', 'klm', 'nop'];
+    // const groupName = `test-folder-upload`;
+    // // const groupName = '';
+    // const filesName = ['abc', 'def', 'ghi', 'klm', 'nop'];
 
-    const uploadResults = await this.pinataService.folderUpload(
-      files,
-      groupName,
-      filesName,
-      'abcd',
+    // const uploadResults = await this.pinataService.folderUpload(
+    //   files,
+    //   groupName,
+    //   filesName,
+    //   'abcde',
+    // );
+    // const ipfsHash = uploadResults['IpfsHash'];
+    // const folder = await this.pinataService.getFileByCid(ipfsHash);
+    const response = await fetch(
+      `https://ipfs.io/ipfs/bafybeigkhr2doeudsznsr47jpuwb4gjg2zc3ryj4eusjyn7sr4yv2rl7fa/`,
     );
+    const data = await response.text();
 
-    return uploadResults;
+    return this.extractCIDFromTextHtml(data);
+  }
+  extractCIDFromTextHtml(html: string): string[] {
+    const cidRegex = /href="\/ipfs\/([a-zA-Z0-9]+)\?filename=/g;
+    const matches = [];
+    let match;
+
+    while ((match = cidRegex.exec(html)) !== null) {
+      matches.push(match[1]); // Extract CID
+    }
+
+    return matches;
   }
 }
