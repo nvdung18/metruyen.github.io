@@ -89,6 +89,7 @@ export class MangaService {
               ...rest,
               manga_id: mangaId,
               manga_slug: mangaSlug,
+              manga_thumb: uploadThumb['IpfsHash'],
               categories: mangaCategories.map((item) => item),
             },
           ],
