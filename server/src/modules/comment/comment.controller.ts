@@ -57,7 +57,7 @@ export class CommentController {
   }
 
   @ApiOperation({
-    summary: 'User get all root comments of chapter',
+    summary: 'User get comments of chapter',
     description: `
    - **${SwaggerApiOperation.NOT_NEED_AUTH}**
      `,

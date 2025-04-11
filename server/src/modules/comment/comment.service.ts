@@ -9,6 +9,7 @@ import { PaginatedDto } from 'src/shared/dto/paginate.dto';
 import { CommentDto } from './dto/comment.dto';
 import PaginateUtil from 'src/shared/utils/paginate.util';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { User } from '@modules/user/models/user.model';
 
 @Injectable()
 export class CommentService {
@@ -102,15 +103,30 @@ export class CommentService {
     }
 
     const { limit, page } = paginateDto;
+    const includeCondition = [
+      {
+        model: User,
+        as: 'user',
+        attributes: ['usr_id', 'usr_name'],
+      },
+    ];
     const { data, pagination } =
       await this.commentRepo.getRootCommentsOfChapterWithPaginate({
         page,
         limit,
         chapterId,
-        options: { raw: true },
+        options: { nest: true, include: includeCondition },
       });
 
-    paginateDto = PaginateUtil.setPaginateDto(paginateDto, data, pagination);
+    const dataToReturn = data.map((item) => {
+      return item.get({ plain: true });
+    });
+
+    paginateDto = PaginateUtil.setPaginateDto(
+      paginateDto,
+      dataToReturn,
+      pagination,
+    );
     return paginateDto;
   }
 
@@ -124,6 +140,13 @@ export class CommentService {
       throw new HttpException('Parent comment not found', HttpStatus.NOT_FOUND);
 
     const { limit, page } = paginateDto;
+    const includeCondition = [
+      {
+        model: User,
+        as: 'user',
+        attributes: ['usr_id', 'usr_name'],
+      },
+    ];
     const { data, pagination } =
       await this.commentRepo.getCommentsByParentIdWithPaginate({
         page,
@@ -131,10 +154,18 @@ export class CommentService {
         chapterId,
         leftValue: parent.comment_left,
         rightValue: parent.comment_right,
-        options: { raw: true },
+        options: { nest: true, include: includeCondition },
       });
 
-    paginateDto = PaginateUtil.setPaginateDto(paginateDto, data, pagination);
+    const dataToReturn = data.map((item) => {
+      return item.get({ plain: true });
+    });
+
+    paginateDto = PaginateUtil.setPaginateDto(
+      paginateDto,
+      dataToReturn,
+      pagination,
+    );
     return paginateDto;
   }
 
