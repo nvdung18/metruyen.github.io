@@ -454,14 +454,15 @@ export class MangaController {
     };
   }
 
-  // @ApiOperation({
-  //   summary: 'Test web3',
-  // })
-  // @Get('/TestWeb3')
-  // @ResponseMessage('Test web3 successful')
-  // async testWeb3() {
-  //   return {
-  //     metadata: await this.mangaService.testWeb3(),
-  //   };
-  // }
+  @ApiOperation({
+    summary: 'Get CIDStorage contract address',
+  })
+  @Get('/contract-address/cid-storage')
+  @AuthorizeAction({ action: 'readAny', resource: 'Web3' })
+  @ResponseMessage('Get CIDStorage contract address successful')
+  async getCidStorageContractAddress() {
+    return {
+      metadata: await this.mangaService.getCidStorageContractAddress(),
+    };
+  }
 }

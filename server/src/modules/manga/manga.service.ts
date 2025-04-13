@@ -22,6 +22,7 @@ import { CacheService } from 'src/shared/cache/cache.service';
 import { omit } from 'lodash';
 import { CategoryService } from '@modules/category/category.service';
 import { UserService } from '@modules/user/user.service';
+import { ContractName as ContractNameConst } from '@common/constants';
 
 @Injectable()
 export class MangaService {
@@ -35,8 +36,10 @@ export class MangaService {
     private categoryService: CategoryService,
   ) {}
 
-  async testWeb3() {
-    return await this.web3Service.getOwner();
+  async getCidStorageContractAddress() {
+    return await this.web3Service.getContractAddressByName(
+      ContractNameConst.CID_STORAGE,
+    );
   }
 
   async createManga(

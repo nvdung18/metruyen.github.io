@@ -7,10 +7,10 @@ import { ApiExcludeController } from '@nestjs/swagger';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
-  getHello(): string {
-    // console.log(`process.env.DATABASE_USER::${process.env.DATABASE_USER}`);
-    // throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
-    return this.appService.getHello();
-  }
+  // @Get()
+  // getHello(): string {
+  //   // console.log(`process.env.DATABASE_USER::${process.env.DATABASE_USER}`);
+  //   // throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+  //   return this.appService.getHello();
+  // }
 }
