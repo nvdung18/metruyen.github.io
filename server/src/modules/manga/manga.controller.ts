@@ -465,4 +465,23 @@ export class MangaController {
       metadata: await this.mangaService.getCidStorageContractAddress(),
     };
   }
+
+  @ApiOperation({
+    summary: 'Increase view of manga',
+    description: `
+  - **${SwaggerApiOperation.NEED_AUTH}**
+      `,
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Id of manga',
+  })
+  @Patch('/views/:id')
+  @ResponseMessage('Increase view of manga successful')
+  async increaseViewOfManga(@Param('id', ParseIntPipe) id: number) {
+    return {
+      metadata: await this.mangaService.increaseViewOfManga(id),
+    };
+  }
 }

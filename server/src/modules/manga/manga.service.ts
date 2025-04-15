@@ -668,4 +668,19 @@ export class MangaService {
       userId,
     });
   }
+
+  async increaseViewOfManga(mangaId: number): Promise<number> {
+    await this.findMangaById(mangaId);
+
+    const isUpdated = await this.mangaRepo.increaseViewOfManga(mangaId, {
+      options: { raw: true },
+    });
+
+    if (!isUpdated)
+      throw new HttpException(
+        'Can not increase view of manga',
+        HttpStatus.BAD_REQUEST,
+      );
+    return isUpdated;
+  }
 }

@@ -219,4 +219,21 @@ export class MangaRepo {
       ...options,
     });
   }
+
+  async increaseViewOfManga(
+    mangaId: number,
+    options: object = {},
+  ): Promise<number> {
+    const [affectedCount] = await this.mangaModel.update(
+      {
+        manga_views: literal('manga_views + 1'), // Tăng giá trị manga_views lên 1
+      },
+      {
+        where: { manga_id: mangaId },
+        ...options,
+      },
+    );
+
+    return affectedCount;
+  }
 }

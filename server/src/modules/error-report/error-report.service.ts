@@ -93,10 +93,18 @@ export class ErrorReportService {
         limit,
         {
           include: includeCondition,
-          raw: true,
+          nest: true,
         },
       );
-    paginateDto = PaginateUtil.setPaginateDto(paginateDto, data, pagination);
+
+    const dataToReturn = data.map((item) => {
+      return item.get({ plain: true });
+    });
+    paginateDto = PaginateUtil.setPaginateDto(
+      paginateDto,
+      dataToReturn,
+      pagination,
+    );
     return paginateDto;
   }
 
