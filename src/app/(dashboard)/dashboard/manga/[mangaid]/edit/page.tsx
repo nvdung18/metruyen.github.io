@@ -132,7 +132,9 @@ export default function EditMangaPage() {
 
       // Set thumbnail preview if available
       if (manga.manga_thumb) {
-        setThumbnailPreview(`https://ipfs.io/ipfs/${manga.manga_thumb}`);
+        setThumbnailPreview(
+          `${process.env.NEXT_PUBLIC_API_URL_IPFS}${manga.manga_thumb}`
+        );
       }
     }
   }, [manga, form]);
@@ -156,7 +158,9 @@ export default function EditMangaPage() {
   const removeThumbnail = () => {
     setThumbnailFile(null);
     setThumbnailPreview(
-      manga?.manga_thumb ? `https://ipfs.io/ipfs/${manga.manga_thumb}` : null
+      manga?.manga_thumb
+        ? `${process.env.NEXT_PUBLIC_API_URL_IPFS}${manga.manga_thumb}`
+        : null
     );
   };
 
@@ -191,7 +195,7 @@ export default function EditMangaPage() {
         `/dashboard/manga/${mangaId}?status=${searchParams.get('status')}`
       );
     } catch (error) {
-      console.error('Failed to update manga:', error);
+      console.log('Failed to update manga:', error);
       toast.error('Failed to update manga. Please try again.');
     }
   };
@@ -396,7 +400,7 @@ export default function EditMangaPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>Categories</CardTitle>
                   <CardDescription>
@@ -465,7 +469,7 @@ export default function EditMangaPage() {
                     )}
                   />
                 </CardContent>
-              </Card>
+              </Card> */}
 
               <Card>
                 <div className="flex w-full items-center justify-between px-6">

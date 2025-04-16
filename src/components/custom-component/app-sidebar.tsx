@@ -8,7 +8,8 @@ import {
   PanelLeft,
   Search,
   Settings,
-  Users
+  Users,
+  Flag
 } from 'lucide-react';
 
 import {
@@ -54,9 +55,9 @@ const navItems: NavItem[] = [
     icon: <Users className="h-5 w-5" />
   },
   {
-    title: 'Settings',
-    href: '/dashboard/settings',
-    icon: <Settings className="h-5 w-5" />
+    title: 'Errors',
+    href: '/dashboard/errors',
+    icon: <Flag className="h-5 w-5" />
   }
 ];
 
@@ -80,7 +81,7 @@ export function AppSidebar() {
               <div className="flex w-full items-center justify-between group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <div className="flex items-center">
                   <Image
-                    src={'/window.svg'}
+                    src={'/MANGA.webp'}
                     alt="Vercel Logo"
                     sizes="25px"
                     width={25}
@@ -89,9 +90,6 @@ export function AppSidebar() {
                       'transition duration-200 group-data-[collapsible=icon]:group-hover:brightness-75'
                     )}
                   />
-                  <p className="pl-2 text-2xl font-bold text-white group-data-[collapsible=icon]:hidden">
-                    User
-                  </p>
                 </div>
                 <PanelLeft
                   size={24}

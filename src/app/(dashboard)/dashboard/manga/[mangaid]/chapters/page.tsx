@@ -1,7 +1,7 @@
 'use client';
 import { Separator } from '@/components/ui/separator';
 import { BookOpen } from 'lucide-react';
-import ChaptersSection from '@/components/dashboard/ChaptersSection';
+import ChaptersSection from '@/components/section/ChaptersSection';
 import { useParams } from 'next/navigation';
 const DashboardChapters = () => {
   const params = useParams();

@@ -1,237 +1,172 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  MoreHorizontal,
-  BookOpen,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Loader2,
-  EyeOff,
-  Eye
-} from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Checkbox } from '@/components/ui/checkbox';
-import Link from 'next/link';
+import { Plus, Filter, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import {
+  useDeleteMangaMutation,
   useGetAllMangaQuery,
-  usePublishMangaMutation
+  usePublishMangaMutation,
+  useUnpublishMangaMutation
 } from '@/services/apiManga';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useMangaPagination } from '@/hooks/useMangaPagination';
+import { useMangaFilters } from '@/hooks/useMangaFilters';
+import { useMangaSelection } from '@/hooks/useMangaSelection';
+import {
+  BulkActions,
+  MobileBulkActions
+} from '@/components/custom-component/BulkActions';
+import { MangaFilters, MangaPagination, MangaTable } from '@/components/admin';
 
-interface MangaSectionProps {
+interface MangaPageProps {
   className?: string;
-  variant?: 'default' | 'compact';
-  limit?: number;
+  variant?: 'default' | 'compact'; // Keep variant if needed for layout differences
+  limit?: number; // Keep limit if needed for compact view
   title?: string;
 }
 
-const MangaSection = ({
+// Renamed component to reflect it's the page content
+export default function MangaManagementPage({
   className = '',
   variant = 'default',
   limit,
   title
-}: MangaSectionProps) => {
-  // Responsive breakpoints
+}: MangaPageProps) {
+  // --- Hooks ---
+  const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const isTablet = useMediaQuery('(min-width: 768px)');
+  const [isMobileFiltersVisible, setIsMobileFiltersVisible] = useState(false);
 
-  // State
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('published');
-  const [selectedManga, setSelectedManga] = useState<number[]>([]);
-  const [isFiltersVisible, setIsFiltersVisible] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  // Determine if we're in compact mode
-  const isCompact = variant === 'compact';
-  const router = useRouter();
-  // Fetch manga data from API
+  // Custom Hooks for State Management
+  const { currentPage, itemsPerPage, goToPage, goToNextPage, goToPrevPage } =
+    useMangaPagination(1, 10); // Pass dependencies if needed, e.g., [sortBy]
+  const { searchTerm, setSearchTerm, sortBy, setSortBy, resetFilters } =
+    useMangaFilters('published');
+
+  // --- Data Fetching ---
   const {
     data: mangaData,
     isLoading,
     isError,
+    error, // Capture error object
     refetch
   } = useGetAllMangaQuery({
     page: currentPage,
     limit: itemsPerPage,
     sort: sortBy
+    // Add search query param if API supports server-side search:
+    // search: searchTerm,
   });
 
   const [publishManga, { isLoading: isPublishing }] = usePublishMangaMutation();
+  const [unpublishManga, { isLoading: isUnpublishing }] =
+    useUnpublishMangaMutation();
+  // Add delete mutation hook here if available
+  const [deleteManga, { isLoading: isDeleting }] = useDeleteMangaMutation();
+  // const [bulkDeleteManga, { isLoading: isBulkDeleting }] = useBulkDeleteMangaMutation();
 
-  // Derived state
-  const manga = mangaData?.mangas || [];
-  const totalItems = mangaData?.total || 0;
-  const totalPages = mangaData?.totalPages || 1;
-  console.log('Manga', manga);
-  // Client-side filtered manga based on search term
-  const filteredManga = useMemo(() => {
-    if (!searchTerm.trim()) return manga;
+  // --- Derived State & Data Processing ---
+  const mangaList = useMemo(() => mangaData?.mangas || [], [mangaData]);
+  const totalItems = useMemo(() => mangaData?.total || 0, [mangaData]);
+  const totalPages = useMemo(() => mangaData?.totalPages || 1, [mangaData]);
 
+  // Client-side filtering (only if API doesn't support server-side search)
+  const filteredMangaList = useMemo(() => {
+    // If API handles search, just return mangaList
+    // if (mangaData?.mangas) return mangaList;
+
+    if (!searchTerm.trim()) return mangaList;
     const searchLower = searchTerm.toLowerCase();
-    return manga.filter((item) => {
-      // Search in multiple fields for better results
-      if (item) {
-        return (
-          item.manga_title.toLowerCase().includes(searchLower) ||
-          (item.manga_author &&
-            item.manga_author.toLowerCase().includes(searchLower)) ||
-          (item.manga_description &&
-            item.manga_description.toLowerCase().includes(searchLower))
-        );
-      }
-    });
-  }, [manga, searchTerm]);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [sortBy]); // Only reset page for sortBy, not searchTerm since we're filtering client-side
-
-  // Handle deletion
-  const handleDelete = (id: number) => {
-    // Implement API delete
-    console.log(`Delete manga with ID: ${id}`);
-    // After delete, refetch data
-    // refetch();
-  };
-
-  // Handle bulk deletion
-  const handleBulkDelete = () => {
-    if (selectedManga.length === 0) return;
-
-    // Implement API delete for multiple items
-    console.log(`Delete multiple manga: ${selectedManga.join(', ')}`);
-    // After delete, refetch data
-    setSelectedManga([]);
-    // refetch();
-  };
-
-  // Handle selection
-  const toggleSelectManga = (id: number, checked: boolean) => {
-    if (checked) {
-      setSelectedManga((prev) => [...prev, id]);
-    } else {
-      setSelectedManga((prev) => prev.filter((mangaId) => mangaId !== id));
-    }
-  };
-
-  // Handle select all
-  const toggleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedManga(filteredManga.map((item) => item.manga_id));
-    } else {
-      setSelectedManga([]);
-    }
-  };
-
-  // Reset filters
-  const resetFilters = () => {
-    setSearchTerm('');
-    setSortBy('published');
-  };
-
-  // Pagination handlers
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
-
-  const goToPrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
-  };
-
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
-  // Generate pagination buttons
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    const maxVisibleButtons = isTablet ? 5 : 3;
-
-    let startPage = Math.max(
-      1,
-      currentPage - Math.floor(maxVisibleButtons / 2)
+    return mangaList.filter(
+      (item) =>
+        item.manga_title.toLowerCase().includes(searchLower) ||
+        item.manga_author?.toLowerCase().includes(searchLower) ||
+        item.manga_description?.toLowerCase().includes(searchLower)
     );
-    let endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1);
+  }, [mangaList, searchTerm /*, mangaData */]); // Add mangaData if checking server-side search support
 
-    // Adjust if we're near the end
-    if (endPage - startPage + 1 < maxVisibleButtons) {
-      startPage = Math.max(1, endPage - maxVisibleButtons + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <Button
-          key={i}
-          variant={i === currentPage ? 'default' : 'outline'}
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={() => goToPage(i)}
-        >
-          {i}
-        </Button>
-      );
-    }
-
-    return buttons;
-  };
-
-  // Get the manga to display with appropriate pagination/limit
   const mangaToShow = useMemo(() => {
-    const dataToUse = searchTerm ? filteredManga : manga;
+    // Use filtered list if client-side filtering, otherwise use raw list
+    const dataToUse = searchTerm ? filteredMangaList : mangaList;
     return limit ? dataToUse.slice(0, limit) : dataToUse;
-  }, [filteredManga, manga, limit, searchTerm]);
+  }, [filteredMangaList, mangaList, limit, searchTerm]);
 
-  const handleTogglePublishStatus = async (id: number, newStatus: string) => {
-    try {
-      console.log(`Toggling manga ${id} to ${newStatus}`);
-      await publishManga(id).unwrap();
+  // Selection Hook
+  const { selectedManga, toggleSelectManga, toggleSelectAll, resetSelection } =
+    useMangaSelection(mangaToShow); // Pass the currently visible list
 
-      toast.success("Manga's publish status updated successfully", {
-        duration: 5000
-      });
+  // --- Event Handlers ---
+  const handleDelete = useCallback(
+    async (id: number) => {
+      // Replace with actual API call using deleteManga mutation
+      console.log(`Delete manga with ID: ${id}`);
+      try {
+        await deleteManga(id).unwrap();
+        toast.success('Manga deleted successfully');
+      } catch (err) {
+        toast.error('Failed to delete manga');
+        console.log('Delete error:', err);
+      }
+      toast.warning(`Delete functionality for ID ${id} implemented.`); // Placeholder
+    },
+    [
+      /* deleteManga, resetSelection, refetch */
+    ]
+  );
 
-      refetch();
-    } catch (error) {
-      console.error('Error publishing manga:', error);
-      toast.error('Failed to update manga status', { duration: 5000 });
-    }
-  };
+  const handleTogglePublishStatus = useCallback(
+    async (id: number, newStatus: string) => {
+      // Assuming 'publishManga' handles both publish/unpublish based on current state
+      // Or you might have separate mutations
+      console.log(`Toggling manga ${id} ${newStatus}status`);
+      try {
+        if (newStatus == 'published') {
+          await publishManga(id).unwrap();
+          toast.success("Manga's publish status updated successfully");
+        } else if (newStatus == 'unpublished') {
+          await unpublishManga(id).unwrap();
+          toast.success("Manga's unpublish status updated successfully");
+        }
+      } catch (err) {
+        toast.error('Failed to update manga status');
+        console.log('Publish/Unpublish error:', err);
+      }
+    },
+    [publishManga]
+  );
+
+  const handleResetFilters = useCallback(() => {
+    resetFilters();
+    // If using client-side search, resetting filters doesn't require page reset
+    // If using server-side search triggered by searchTerm, uncomment below:
+    // setCurrentPage(1);
+  }, [resetFilters /*, setCurrentPage */]);
+
+  // --- Render Logic ---
+  const isCompact = variant === 'compact';
+
+  // Error State
+  if (isError) {
+    return (
+      <Card className="border-destructive/50 bg-destructive/10 text-destructive p-6">
+        <CardHeader>
+          <CardTitle>Error Loading Manga</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Could not fetch manga data. Please try again later.</p>
+          {process.env.NODE_ENV === 'development' && error && (
+            <pre className="mt-2 text-xs">{JSON.stringify(error, null, 2)}</pre>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -242,19 +177,8 @@ const MangaSection = ({
           {title || (isCompact ? 'Top Manga' : 'Manga Management')}
         </CardTitle>
 
+        {/* Header Actions */}
         <div className="flex items-center gap-2">
-          {!isCompact && selectedManga.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleBulkDelete}
-              className="hidden sm:flex"
-            >
-              <Trash2 className="mr-1 h-4 w-4" />
-              Delete ({selectedManga.length})
-            </Button>
-          )}
-
           {!isCompact && (
             <Button
               size="sm"
@@ -267,12 +191,15 @@ const MangaSection = ({
             </Button>
           )}
 
+          {/* Mobile Filter Toggle */}
           {!isCompact && !isTablet && (
             <Button
-              size="sm"
+              size="icon"
               variant="outline"
-              onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+              onClick={() => setIsMobileFiltersVisible(!isMobileFiltersVisible)}
               className="sm:hidden"
+              aria-label="Toggle filters"
+              aria-expanded={isMobileFiltersVisible}
             >
               <Filter className="h-4 w-4" />
             </Button>
@@ -280,50 +207,20 @@ const MangaSection = ({
         </div>
       </CardHeader>
 
-      {/* Search and filters - responsive */}
-      {!isCompact && (isTablet || isFiltersVisible) && (
-        <div
-          className={`flex flex-col gap-3 px-6 pb-2 ${isTablet ? 'sm:flex-row sm:items-center' : ''}`}
-        >
-          <div className="relative flex-grow">
-            <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
-            <Input
-              placeholder="Search manga..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-muted/40 border-manga-600/20 pl-9"
-            />
-          </div>
-
-          <div
-            className={`flex gap-2 ${isTablet ? 'flex-nowrap' : 'flex-wrap'}`}
-          >
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value)}>
-              <SelectTrigger className="bg-muted/40 border-manga-600/20 w-full sm:w-[120px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-card/90 border-manga-600/40 backdrop-blur-xl">
-                <SelectItem value="published">Publish</SelectItem>
-                <SelectItem value="unpublished">UnPublish</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {searchTerm ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={resetFilters}
-                className="h-9 w-9"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            ) : null}
-          </div>
-        </div>
+      {/* Filters */}
+      {!isCompact && (
+        <MangaFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onResetFilters={handleResetFilters}
+          isVisible={isTablet || isMobileFiltersVisible}
+        />
       )}
 
       <CardContent>
-        {/* Loading state */}
+        {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="text-manga-400 h-8 w-8 animate-spin" />
@@ -331,249 +228,47 @@ const MangaSection = ({
           </div>
         )}
 
-        {/* Mobile selected items action bar */}
-        {!isLoading &&
-          !isError &&
-          !isCompact &&
-          !isTablet &&
-          selectedManga.length > 0 && (
-            <div className="bg-muted/40 border-manga-600/20 mb-4 flex items-center justify-between rounded-md p-2 sm:hidden">
-              <span className="text-sm">{selectedManga.length} selected</span>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                <Trash2 className="mr-1 h-4 w-4" />
-                Delete
-              </Button>
-            </div>
-          )}
-
-        {/* Manga table */}
+        {/* Manga Table */}
         {!isLoading && !isError && (
-          <div className="border-manga-600/20 overflow-hidden rounded-md border">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-manga-600/20">
-                  {(!isCompact || isDesktop) && (
-                    <th className="w-[30px] px-4 py-3 text-left">
-                      <Checkbox
-                        checked={
-                          mangaToShow.length > 0 &&
-                          selectedManga.length === mangaToShow.length
-                        }
-                        onCheckedChange={(checked) =>
-                          toggleSelectAll(Boolean(checked))
-                        }
-                      />
-                    </th>
-                  )}
-                  <th className="px-4 py-3 text-left">Title</th>
-                  {isDesktop && <th className="px-4 py-3 text-left">Author</th>}
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Views</th>
-                  {(!isCompact || isDesktop) && (
-                    <th className="w-[80px] px-4 py-3 text-right">Actions</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {mangaToShow.length > 0 ? (
-                  mangaToShow.map((item) => (
-                    <tr
-                      key={item.manga_id}
-                      className="border-manga-600/10 hover:bg-manga-600/5 border-t"
-                    >
-                      {(!isCompact || isDesktop) && (
-                        <td className="px-4 py-3">
-                          <Checkbox
-                            checked={selectedManga.includes(item.manga_id)}
-                            onCheckedChange={(checked) =>
-                              toggleSelectManga(item.manga_id, Boolean(checked))
-                            }
-                          />
-                        </td>
-                      )}
-                      <td className="px-4 py-3">
-                        <Link href={`/dashboard/manga/${item.manga_id}/`}>
-                          <div className="flex items-center gap-3">
-                            <Image
-                              src={
-                                item.manga_thumb
-                                  ? '/placeholder.jpg'
-                                  : `https://ipfs.io/ipfs/${item.manga_thumb}`
-                              }
-                              alt={item.manga_title}
-                              width={48}
-                              height={72}
-                              className="border-manga-600/20 h-12 w-8 rounded-sm border object-cover shadow-sm"
-                              onError={(e) => {
-                                e.currentTarget.src = '/placeholder-manga.jpg';
-                                e.currentTarget.style.opacity = '0.8';
-                              }}
-                            />
-                            <span className="line-clamp-1 font-medium">
-                              {item.manga_title}
-                            </span>
-                          </div>
-                        </Link>
-                      </td>
-                      {isDesktop && (
-                        <td className="px-4 py-3">
-                          {item.manga_author || 'Unknown'}
-                        </td>
-                      )}
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
-                          {item.is_published || item.is_published == 1 ? (
-                            <Badge
-                              variant="outline"
-                              className="border-green-500 text-green-500"
-                            >
-                              Published
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-red-500 text-red-500"
-                            >
-                              Unpublished
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3">
-                        {(item.manga_views || 0).toLocaleString()}
-                      </td>
-                      {(!isCompact || isDesktop) && (
-                        <td className="px-4 py-3 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              className="bg-card/90 border-manga-600/40 backdrop-blur-xl"
-                            >
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              {item.is_published !== 1 && (
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleTogglePublishStatus(
-                                      item.manga_id,
-                                      'published'
-                                    )
-                                  }
-                                >
-                                  <Eye className="mr-2 h-4 w-4 text-green-500" />
-                                  Publish
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/dashboard/manga/${item.manga_id}?status=${
-                                    item.is_published == 1 || item.is_published
-                                      ? 'publish'
-                                      : 'unpublish'
-                                  }`}
-                                  className="w-full cursor-pointer"
-                                >
-                                  <BookOpen className="mr-2 h-4 w-4" />
-                                  View Details
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => handleDelete(item.manga_id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={
-                        isDesktop ? (isCompact ? 5 : 7) : isCompact ? 3 : 4
-                      }
-                      className="text-muted-foreground px-4 py-6 text-center"
-                    >
-                      {searchTerm
-                        ? 'No manga found matching your search criteria.'
-                        : 'No manga available.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <MangaTable
+            mangaToShow={mangaToShow}
+            selectedManga={selectedManga}
+            onSelectAllChange={toggleSelectAll}
+            onRowSelectChange={toggleSelectManga}
+            onTogglePublish={handleTogglePublishStatus}
+            onDelete={handleDelete}
+            isCompact={isCompact}
+            isDesktop={isDesktop}
+            searchTerm={searchTerm}
+          />
         )}
 
-        {/* Pagination - only show in full view with server pagination */}
+        {/* Pagination */}
         {!isLoading &&
           !isError &&
           !isCompact &&
           totalPages > 1 &&
-          !searchTerm && (
-            <div className="text-muted-foreground mt-4 flex flex-col items-center justify-between gap-4 text-sm sm:flex-row">
-              <div className="order-2 sm:order-1">
-                Showing {(currentPage - 1) * itemsPerPage + 1}-
-                {Math.min(currentPage * itemsPerPage, totalItems)} of{' '}
-                {totalItems} manga
-              </div>
-              <div className="order-1 flex gap-1 sm:order-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={goToPrevPage}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                {renderPaginationButtons()}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          !searchTerm && ( // Hide pagination during client-side search
+            <MangaPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => goToPage(page, totalPages)}
+              onNextPage={() => goToNextPage(totalPages)}
+              onPrevPage={goToPrevPage}
+              isTablet={isTablet}
+            />
           )}
 
         {/* Client-side search results count */}
         {!isLoading && !isError && !isCompact && searchTerm && (
           <div className="text-muted-foreground mt-4 text-center text-sm">
-            Found {filteredManga.length} manga matching "{searchTerm}"
+            Found {filteredMangaList.length} manga matching "{searchTerm}"
           </div>
         )}
 
-        {/* Simple count for compact view */}
+        {/* Compact view count */}
         {!isLoading && !isError && isCompact && mangaToShow.length > 0 && (
           <div className="text-muted-foreground mt-4 text-center text-sm">
             {limit && totalItems > limit
@@ -584,6 +279,4 @@ const MangaSection = ({
       </CardContent>
     </Card>
   );
-};
-
-export default MangaSection;
+}

@@ -96,7 +96,7 @@ export default function NewMangaPage() {
       if (coverImage) {
         submissionData.append('manga_thumb', coverImage);
       } else {
-        console.error('Cover image is required');
+        console.log('Cover image is required');
         setIsSubmitting(false);
         return;
       }
@@ -109,7 +109,7 @@ export default function NewMangaPage() {
       await createManga(submissionData).unwrap();
       router.push('/dashboard/manga');
     } catch (error) {
-      console.error('Failed to create manga:', error);
+      console.log('Failed to create manga:', error);
     } finally {
       setIsSubmitting(false);
     }

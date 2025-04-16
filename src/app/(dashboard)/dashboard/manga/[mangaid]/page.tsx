@@ -143,7 +143,7 @@ export default function MangaDetailPage() {
             src={
               !manga.manga_thumb
                 ? '/placeholder.jpg'
-                : `https://ipfs.io/ipfs/${manga.manga_thumb}`
+                : `${process.env.NEXT_PUBLIC_API_URL_IPFS}${manga.manga_thumb}`
             }
             alt={manga.manga_title}
             fill

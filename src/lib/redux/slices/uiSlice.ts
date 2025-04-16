@@ -1,51 +1,76 @@
+// uiSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UiState {
-  theme: 'light' | 'dark';
-  selectedGenres: string[];
-  sortBy: string;
+  selectedCategory: number[];
+  selectedStatus: string[];
+  sortBy: {
+    key: string;
+    value: boolean;
+  };
   searchQuery: string;
   currentPage: number;
-  status: string[];
+  isNavbar: boolean;
 }
 
 const initialState: UiState = {
-  theme: 'dark',
-  selectedGenres: [],
-  sortBy: 'latest',
+  selectedCategory: [],
+  selectedStatus: [],
+  sortBy: {
+    key: 'none',
+    value: false
+  },
   searchQuery: '',
   currentPage: 1,
-  status: []
+  isNavbar: false
 };
 
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    setTheme: (state, action: PayloadAction<'light' | 'dark'>) => {
-      state.theme = action.payload;
-    },
-    toggleGenre: (state, action: PayloadAction<string>) => {
-      const genre = action.payload;
-      if (state.selectedGenres.includes(genre)) {
-        state.selectedGenres = state.selectedGenres.filter(g => g !== genre);
+    toggleCategory: (state, action: PayloadAction<number>) => {
+      const category = action.payload;
+      if (state.selectedCategory.includes(category)) {
+        state.selectedCategory = state.selectedCategory.filter(
+          (g) => g !== category
+        );
       } else {
-        state.selectedGenres.push(genre);
+        state.selectedCategory.push(category);
       }
       // Reset page when filters change
       state.currentPage = 1;
     },
+    // Add a new reducer for setting a single category (replacing the array)
+    setCategory: (state, action: PayloadAction<number>) => {
+      state.selectedCategory = action.payload ? [action.payload] : [];
+      // Reset page when filters change
+      state.currentPage = 1;
+    },
+    // Add reducer for toggling status
     toggleStatus: (state, action: PayloadAction<string>) => {
       const status = action.payload;
-      if (state.status.includes(status)) {
-        state.status = state.status.filter(s => s !== status);
+      if (state.selectedStatus.includes(status)) {
+        state.selectedStatus = state.selectedStatus.filter((s) => s !== status);
       } else {
-        state.status.push(status);
+        state.selectedStatus.push(status);
       }
       // Reset page when filters change
       state.currentPage = 1;
     },
-    setSortBy: (state, action: PayloadAction<string>) => {
+    // Add a new reducer for setting a single status (replacing the array)
+    setStatus: (state, action: PayloadAction<string>) => {
+      state.selectedStatus = action.payload ? [action.payload] : [];
+      // Reset page when filters change
+      state.currentPage = 1;
+    },
+    setSortBy: (
+      state,
+      action: PayloadAction<{
+        key: string;
+        value: boolean;
+      }>
+    ) => {
       state.sortBy = action.payload;
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
@@ -57,22 +82,30 @@ const uiSlice = createSlice({
       state.currentPage = action.payload;
     },
     clearFilters: (state) => {
-      state.selectedGenres = [];
-      state.status = [];
-      state.sortBy = 'latest';
+      state.selectedCategory = [];
+      state.selectedStatus = [];
+      state.sortBy = {
+        key: 'none',
+        value: false
+      };
       state.searchQuery = '';
       state.currentPage = 1;
+    },
+    toggleNavbar: (state, action: PayloadAction<boolean>) => {
+      state.isNavbar = action.payload;
     }
   }
 });
 
-export const { 
-  setTheme, 
-  toggleGenre, 
-  toggleStatus, 
-  setSortBy, 
-  setSearchQuery, 
+export const {
+  toggleCategory,
+  setCategory,
+  toggleStatus,
+  setStatus,
+  setSortBy,
+  setSearchQuery,
   setCurrentPage,
-  clearFilters
+  clearFilters,
+  toggleNavbar
 } = uiSlice.actions;
 export default uiSlice.reducer;

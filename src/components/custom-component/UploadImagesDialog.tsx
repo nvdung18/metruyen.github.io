@@ -205,7 +205,7 @@ export function UploadImagesDialog({
         toast.success('Images uploaded successfully');
       }, 500);
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.log('failed:', error);
       toast.error('Upload failed');
       setIsUploading(false);
       setUploadProgress(0);

@@ -92,7 +92,7 @@ export default function ChapterImagesPage() {
           setHasChanges(false); // Reset changes when data is loaded initially
         })
         .catch((err) => {
-          console.error('IPFS fetch failed:', err);
+          console.log('IPFS fetch failed:', err);
           setImages([]); // Clear images on error
         })
         .finally(() => setIsLoadingIPFS(false));
@@ -207,7 +207,7 @@ export default function ChapterImagesPage() {
         toast.success('Image deleted successfully');
       }
     } catch (error) {
-      console.error('Failed to delete images:', error);
+      console.log('Failed to delete images:', error);
       toast.error('Failed to delete images. Please try again.');
     }
   }, [
@@ -246,7 +246,7 @@ export default function ChapterImagesPage() {
       toast.success('Image order saved successfully!');
       setHasChanges(false);
     } catch (error) {
-      console.error('Failed to save image order:', error);
+      console.log('Failed to save image order:', error);
       toast.error(
         `Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

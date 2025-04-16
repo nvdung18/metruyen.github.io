@@ -39,13 +39,6 @@ function SECURE_COOKIE_OPTIONS(expires: number = 7) {
   };
 }
 
-// Secure cookie settings
-// const SECURE_COOKIE_OPTIONS = {
-//   expires: new Date(Date.now() + 20 * 1000), // 20 seconds
-//   secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-//   path: '/' // Available across the entire site
-// };
-
 // Create the slice
 const authSlice = createSlice({
   name: 'auth',

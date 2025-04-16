@@ -32,7 +32,19 @@ const AuthPage = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    // Validate form fields
+    if (!formData.username || !formData.email || !formData.password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    if (!formData.email.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    if (formData.password.length < 7) {
+      toast.error('Password must be at least 7 characters long');
+      return;
+    }
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
@@ -54,7 +66,7 @@ const AuthPage = () => {
         // Dispatch login success action with the token and user data
         dispatch(
           loginSuccess({
-            token: {
+            tokens: {
               access_token: metadata.tokens.access_token,
               refresh_token: metadata.tokens.refresh_token
             },

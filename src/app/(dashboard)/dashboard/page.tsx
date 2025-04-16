@@ -10,15 +10,33 @@ import {
 } from '@/components/ui/card';
 import { ArrowUpRight, BarChart3, BookOpen, Layers, Users } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import UsersSection from '@/components/dashboard/UsersSection';
-import MangaSection from '@/components/dashboard/MangaSection';
-import RevenueSection from '@/components/dashboard/RevenueSection';
-import { useAppSelector } from '@/lib/redux/hook';
+import DashboardHeader from '@/components/section/DashboardHeader';
+import UsersSection from '@/components/section/UsersSection';
+import MangaSection from '@/components/section/MangaSection';
+import RevenueSection from '@/components/section/RevenueSection';
+import { useGetAllMangaQuery } from '@/services/apiManga';
+import { allManga } from '../../../data/mockData';
+import { useGetCategoriesQuery } from '@/services/apiCategory';
+import { useGetListUserQuery } from '@/services/apiUser';
 
 const DashboardPage = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const user = useAppSelector((state) => state.auth.user);
+  const {
+    data: mangaData,
+    isLoading: isLoadingManga,
+    error: mangaError
+  } = useGetAllMangaQuery({});
+  const {
+    data: categoriesData,
+    isLoading: isLoadingCategories,
+    error: categoriesError
+  } = useGetCategoriesQuery();
+
+  const {
+    data: usersData,
+    isLoading: isLoadingUsers,
+    error: usersError
+  } = useGetListUserQuery();
+  console.log('usersData', usersData);
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6">
@@ -35,10 +53,8 @@ const DashboardPage = () => {
             <CardDescription>Collection size</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-manga-400 text-3xl font-bold">1,248</div>
-            <div className="mt-2 flex items-center text-xs text-green-500">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              <span>12% growth</span>
+            <div className="text-manga-400 text-3xl font-bold">
+              {mangaData && mangaData.total}
             </div>
           </CardContent>
         </Card>
@@ -49,14 +65,16 @@ const DashboardPage = () => {
               <span>Categories</span>
               <Layers className="text-manga-400 h-4 w-4" />
             </CardTitle>
-            <CardDescription>Active genres</CardDescription>
+            <CardDescription>Active categories</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-manga-400 text-3xl font-bold">36</div>
-            <div className="mt-2 flex items-center text-xs text-green-500">
+            <div className="text-manga-400 text-3xl font-bold">
+              {categoriesData && categoriesData?.length}
+            </div>
+            {/* <div className="mt-2 flex items-center text-xs text-green-500">
               <ArrowUpRight className="mr-1 h-3 w-3" />
               <span>4 new this month</span>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
 
@@ -69,10 +87,8 @@ const DashboardPage = () => {
             <CardDescription>User base</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-manga-400 text-3xl font-bold">24,587</div>
-            <div className="mt-2 flex items-center text-xs text-green-500">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              <span>18% increase</span>
+            <div className="text-manga-400 text-3xl font-bold">
+              {usersData && usersData?.total}
             </div>
           </CardContent>
         </Card>

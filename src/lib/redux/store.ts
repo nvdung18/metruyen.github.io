@@ -1,19 +1,21 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { apiSlice } from '@/services/api';
 import authReducer from '@/lib/redux/slices/authSlice';
 import uiReducer from '@/lib/redux/slices/uiSlice';
 import { authApiSlice } from '@/services/apiAuth';
 import { categoryApi } from '@/services/apiCategory';
 import { mangaApi } from '@/services/apiManga';
+import { userApiSlice } from '@/services/apiUser';
+import errorApiSlice from '@/services/apiError';
 
 // Fixed reducer mapping - each API needs its own reducer path
 const rootReducer = {
   auth: authReducer,
   ui: uiReducer,
-  [apiSlice.reducerPath]: apiSlice.reducer,
   [authApiSlice.reducerPath]: authApiSlice.reducer,
   [categoryApi.reducerPath]: categoryApi.reducer,
-  [mangaApi.reducerPath]: mangaApi.reducer // Add this line
+  [mangaApi.reducerPath]: mangaApi.reducer, // Corrected mapping
+  [userApiSlice.reducerPath]: userApiSlice.reducer, // Added userApiSlice reducer
+  [errorApiSlice.reducerPath]: errorApiSlice.reducer // Corrected mapping
 };
 
 export const makeStore = () => {
@@ -22,10 +24,11 @@ export const makeStore = () => {
     // Add middleware in a type-safe way
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware()
-        .concat(apiSlice.middleware)
+        .concat(errorApiSlice.middleware) // Corrected concatenation
         .concat(authApiSlice.middleware)
         .concat(categoryApi.middleware)
-        .concat(mangaApi.middleware) // Add this line
+        .concat(mangaApi.middleware)
+        .concat(userApiSlice.middleware) // Corrected concatenation
   });
 };
 

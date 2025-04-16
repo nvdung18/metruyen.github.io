@@ -207,7 +207,7 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
       form.reset();
       setSelectedFiles([]);
     } catch (error) {
-      console.error('Failed to create chapter:', error);
+      console.log('error to create chapter:', error);
       toast.error('Failed to create chapter. Please try again.');
     }
   };
@@ -216,13 +216,16 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
     if (confirm('Are you sure you want to delete this chapter?')) {
       try {
         // Call the delete mutation here (assuming you have a deleteChapter mutation)
+        const mangaId = Number(mangaid);
+
         await deleteChapter({
-          mangaId: Number(mangaid),
+          mangaId,
           chapterId
         }).unwrap();
+        // Remove chapter from reading history
         toast.success('Chapter deleted successfully');
       } catch (error) {
-        console.error('Failed to delete chapter:', error);
+        console.log('error to delete chapter:', error);
         toast.error('Failed to delete chapter. Please try again.');
       }
     }
@@ -520,12 +523,6 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Eye
-                          size={16}
-                          className="text-muted-foreground hover:text-foreground"
-                        />
-                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

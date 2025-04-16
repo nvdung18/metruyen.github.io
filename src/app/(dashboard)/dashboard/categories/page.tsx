@@ -97,7 +97,6 @@ const CategoryPage = ({
 
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'mangaCount'>('mangaCount');
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -153,20 +152,12 @@ const CategoryPage = ({
   }, [categoryToEdit, isEditDialogOpen, editForm]);
 
   // Filter and sort categories
-  const filteredAndSortedCategories = [...categories]
-    .filter((category) => {
-      if (!searchTerm) return true;
-      return category.category_name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-    })
-    .sort((a, b) => {
-      if (sortBy === 'name') {
-        return a.category_name.localeCompare(b.category_name);
-      } else {
-        return a.category_name.localeCompare(b.category_name);
-      }
-    });
+  const filteredAndSortedCategories = [...categories].filter((category) => {
+    if (!searchTerm) return true;
+    return category.category_name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+  });
 
   // Apply limit if specified (for compact view)
   const categoriesToShow = limit
@@ -289,56 +280,6 @@ const CategoryPage = ({
     }
   };
 
-  // Handle bulk delete
-  const handleBulkDelete = async () => {
-    if (selectedCategories.length === 0) return;
-
-    // For simplicity, just delete them one by one
-    let successCount = 0;
-    let errorCount = 0;
-
-    toast.loading(`Deleting ${selectedCategories.length} categories...`, {
-      id: 'bulk-delete'
-    });
-
-    for (const categoryId of selectedCategories) {
-      try {
-        const result = await deleteCategory(categoryId).unwrap();
-        if (result.success) {
-          successCount++;
-        } else {
-          errorCount++;
-        }
-      } catch (err) {
-        errorCount++;
-      }
-    }
-
-    toast.dismiss('bulk-delete');
-
-    // Show results
-    if (successCount > 0) {
-      toast.success('Categories deleted', {
-        description: `${successCount} ${
-          successCount === 1 ? 'category has' : 'categories have'
-        } been deleted.`,
-        icon: <CheckCircle2 className="h-5 w-5 text-green-500" />
-      });
-    }
-
-    if (errorCount > 0) {
-      toast.error('Deletion incomplete', {
-        description: `Failed to delete ${errorCount} ${
-          errorCount === 1 ? 'category' : 'categories'
-        }.`,
-        icon: <XCircle className="h-5 w-5 text-red-500" />
-      });
-    }
-
-    // Clear selection
-    setSelectedCategories([]);
-  };
-
   // Determine if we should show the compact view
   const isCompact = variant === 'compact';
 
@@ -354,26 +295,6 @@ const CategoryPage = ({
         {/* Only show action buttons in default view or on desktop */}
         {(!isCompact || isDesktop) && (
           <div className="flex items-center gap-2">
-            {selectedCategories.length > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="mr-1 h-4 w-4" />
-                    Delete ({selectedCategories.length})
-                  </>
-                )}
-              </Button>
-            )}
             <Button
               size="sm"
               className="bg-manga-600 hover:bg-manga-700"
@@ -397,21 +318,6 @@ const CategoryPage = ({
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-muted/40 border-manga-600/20 pl-9"
             />
-          </div>
-
-          <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-            <Select
-              value={sortBy}
-              onValueChange={(value: 'name' | 'mangaCount') => setSortBy(value)}
-            >
-              <SelectTrigger className="bg-muted/40 border-manga-600/20 w-[140px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent className="bg-card/90 border-manga-600/40 backdrop-blur-xl">
-                <SelectItem value="mangaCount">Most Manga</SelectItem>
-                <SelectItem value="name">Name A-Z</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
       )}
@@ -444,21 +350,6 @@ const CategoryPage = ({
               <table className="w-full">
                 <thead>
                   <tr className="bg-manga-600/20">
-                    {/* Checkbox column - only in default view or on desktop */}
-                    {(!isCompact || isDesktop) && (
-                      <th className="w-[30px] px-4 py-3 text-left">
-                        <Checkbox
-                          checked={
-                            filteredAndSortedCategories.length > 0 &&
-                            selectedCategories.length ===
-                              filteredAndSortedCategories.length
-                          }
-                          onCheckedChange={(checked) =>
-                            toggleSelectAll(Boolean(checked))
-                          }
-                        />
-                      </th>
-                    )}
                     <th className="px-4 py-3 text-left">Name</th>
                     {/* Actions column - only in default view or on desktop */}
                     {(!isCompact || isDesktop) && (
@@ -473,22 +364,6 @@ const CategoryPage = ({
                         key={item.category_id}
                         className="border-manga-600/10 hover:bg-manga-600/5 border-t"
                       >
-                        {/* Checkbox cell - only in default view or on desktop */}
-                        {(!isCompact || isDesktop) && (
-                          <td className="px-4 py-3">
-                            <Checkbox
-                              checked={selectedCategories.includes(
-                                item.category_id
-                              )}
-                              onCheckedChange={(checked) =>
-                                toggleSelectCategory(
-                                  item.category_id,
-                                  Boolean(checked)
-                                )
-                              }
-                            />
-                          </td>
-                        )}
                         <td className="px-4 py-3">
                           <Link
                             href={`/dashboard/categories/${item.category_id}`}

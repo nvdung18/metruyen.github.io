@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export const config = {
-  matcher: '/dashboard/:path*'
+  matcher: ['/dashboard/:path*', '/profile']
 };
 
 export function isTokenExpired(token: string, bufferSeconds = 60): boolean {
@@ -20,7 +20,7 @@ export function isTokenExpired(token: string, bufferSeconds = 60): boolean {
     const currentTime = Math.floor(Date.now() / 1000);
     return payload.exp <= currentTime + bufferSeconds;
   } catch (error) {
-    console.error('Error checking token expiration:', error);
+    console.log('Error checking token expiration:', error);
     return true;
   }
 }
@@ -74,7 +74,9 @@ export async function middleware(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        path: '/'
+        path: '/',
+        // i want to setting expire in 2 day
+        maxAge: 2 * 24 * 60 * 60 // 2 days in seconds
       });
 
       nextResponse.cookies.set({
@@ -83,7 +85,9 @@ export async function middleware(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        path: '/'
+        path: '/',
+        // i want to setting expire in 7 day
+        maxAge: 7 * 24 * 60 * 60 // 7 days in seconds
       });
 
       return nextResponse;
@@ -91,7 +95,7 @@ export async function middleware(request: NextRequest) {
 
     return NextResponse.next();
   } catch (error: any) {
-    console.error('Error in middleware:', error.message);
+    console.log('Error in middleware:', error.message);
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);

@@ -1,4 +1,4 @@
-import { MangaType } from '@/services/api';
+import { MangaType } from '@/services/apiManga';
 import MangaCard from './MangaCard';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -9,12 +9,14 @@ interface MangaGridProps {
   action?: React.ReactNode;
   emptyMessage?: string;
   isLoading?: boolean;
+  limit?: number;
 }
 
 const MangaGrid = ({
   manga,
   columns = 4,
   title,
+  limit = 0,
   action,
   emptyMessage = 'No manga available.',
   isLoading = false
@@ -34,6 +36,8 @@ const MangaGrid = ({
     ));
   };
 
+  // Sort manga by manga_id in descending order
+  const sortedManga = [...manga].sort((a, b) => b.manga_id - a.manga_id);
   return (
     <div className="manga-grid-container space-y-6">
       {title && (
@@ -47,16 +51,27 @@ const MangaGrid = ({
         <div className={gridClassName}>{renderSkeletons()}</div>
       ) : manga.length > 0 ? (
         <div className={gridClassName}>
-          {manga.slice(0, 8).map((item) => (
-            <MangaCard
-              key={item.id}
-              id={item.id}
-              title={item.title}
-              coverImage={item.coverImage}
-              rating={item.ratingsCount}
-              // genres={item.genres}
-            />
-          ))}
+          {limit == 0
+            ? sortedManga.map((item) => (
+                <MangaCard
+                  key={item.manga_id}
+                  id={item.manga_id.toString()}
+                  title={item.manga_title}
+                  coverImage={item.manga_thumb}
+                  rating={item.manga_ratings_count}
+                  // genres={item.genres}
+                />
+              ))
+            : sortedManga.slice(0, limit).map((item) => (
+                <MangaCard
+                  key={item.manga_id}
+                  id={item.manga_id.toString()}
+                  title={item.manga_title}
+                  coverImage={item.manga_thumb}
+                  rating={item.manga_ratings_count}
+                  // genres={item.genres}
+                />
+              ))}
         </div>
       ) : (
         <div className="py-10 text-center">

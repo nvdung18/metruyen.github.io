@@ -1,9 +1,14 @@
-'use client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import Footer from './Footer';
 import Navbar from './Navbar';
+import { cookies } from 'next/headers';
+import { isTokenExpired } from '@/lib/utils';
 
-const LayoutNonDashboard = ({ children }: { children: React.ReactNode }) => {
+export default async function LayoutNonDashboard({
+  children
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -11,6 +16,4 @@ const LayoutNonDashboard = ({ children }: { children: React.ReactNode }) => {
       <Footer />
     </div>
   );
-};
-
-export default LayoutNonDashboard;
+}

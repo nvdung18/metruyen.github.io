@@ -16,8 +16,8 @@ const AuthPage = () => {
 
   const isLoginPage = pathname === '/login';
   const defaultTab = isLoginPage ? 'login' : 'register';
-
-  const [login, { isLoading }] = useLoginMutation();
+  const [isLoading, setIsLoading] = useState(false);
+  const [login] = useLoginMutation();
   const dispatch = useAppDispatch();
 
   const [formData, setFormData] = useState({
@@ -34,6 +34,7 @@ const AuthPage = () => {
     e.preventDefault();
     console.log(formData);
     try {
+      setIsLoading(true);
       const result = await login({
         usr_email: formData.email,
         usr_password: formData.password
@@ -50,8 +51,10 @@ const AuthPage = () => {
         toast.error('Login failed. Please try again.');
       }
     } catch (err: any) {
-      console.error(err);
+      console.log(err);
       toast.error(err?.data?.message || 'Login failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 

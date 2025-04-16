@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { ChevronRight, TrendingUp } from 'lucide-react';
 import FeaturedManga from '@/components/manga/FeatureManga';
 import Link from 'next/link';
-import { useGetAllMangaQuery } from '@/services/api';
 import { useState, useMemo } from 'react';
-import { useAppSelector } from '@/lib/redux/hook';
+import { useGetAllMangaQuery } from '@/services/apiManga';
 
 // Define a type for the manga item
 interface MangaItem {
@@ -33,22 +32,32 @@ const Index = () => {
 
   // Sort the data client-side
   const sortedByPopularity = useMemo(() => {
-    if (!data?.items) return [];
-    return [...data.items].sort((a, b) => b.views - a.views);
-  }, [data?.items]);
+    if (!data?.mangas) return [];
+    return [...data.mangas].sort(
+      (a, b) => (b.manga_views || 0) - (a.manga_views || 0)
+    );
+  }, [data?.mangas]);
 
   const sortedByLatest = useMemo(() => {
-    if (!data?.items) return [];
-    return [...data.items].sort(
+    if (!data?.mangas) return [];
+
+    return [...data.mangas].sort(
       (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        (b.updatedAt ? new Date(b.updatedAt).getTime() : 0) -
+        (a.updatedAt ? new Date(a.updatedAt).getTime() : 0)
     );
-  }, [data?.items]);
+  }, [data?.mangas]);
 
   const sortedByFavorite = useMemo(() => {
-    if (!data?.items) return [];
-    return [...data.items].sort((a, b) => b.followers - a.followers);
-  }, [data?.items]);
+    if (!data?.mangas) return [];
+    return [...data.mangas].sort(
+      (a, b) => b.manga_number_of_followers - a.manga_number_of_followers
+    );
+  }, [data?.mangas]);
+
+  console.log('Sorted by Popularity:', sortedByPopularity);
+  console.log('Sorted by Latest:', sortedByLatest);
+  console.log('Sorted by Favorite:', sortedByFavorite);
 
   return (
     <>
@@ -57,8 +66,9 @@ const Index = () => {
         <section className="manga-section container">
           <MangaGrid
             title="Popular Manga"
-            manga={sortedByPopularity}
+            manga={sortedByPopularity.slice(0, 8)}
             isLoading={isLoading}
+            limit={8}
             action={
               <Button
                 variant="link"
@@ -78,8 +88,9 @@ const Index = () => {
           <div className="container">
             <MangaGrid
               title="Latest Updates"
-              manga={sortedByLatest}
+              manga={sortedByLatest.slice(0, 8)}
               isLoading={isLoading}
+              limit={8}
               action={
                 <Button
                   variant="link"
@@ -97,9 +108,10 @@ const Index = () => {
 
         <section className="manga-section container">
           <MangaGrid
-            title="Favorite"
-            manga={sortedByFavorite}
+            title="High Followers Manga"
+            manga={sortedByFavorite.slice(0, 8)}
             isLoading={isLoading}
+            limit={8}
             action={
               <Button
                 variant="link"

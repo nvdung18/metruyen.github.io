@@ -26,13 +26,10 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useGetCategoriesQuery } from '@/services/apiCategory';
-import { useGetAllMangaQuery } from '@/services/api';
-
-const featuredManga = [
-  { id: '1', title: 'Demon Slayer', coverImage: '/file.svg' },
-  { id: '2', title: 'One Piece', coverImage: '/file.svg' },
-  { id: '3', title: 'Jujutsu Kaisen', coverImage: '/file.svg' }
-];
+import { useGetAllMangaQuery } from '@/services/apiManga';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hook';
+import { set } from 'lodash';
+import { setCategory, setStatus } from '@/lib/redux/slices/uiSlice';
 
 const recentlyViewed = [
   { name: 'Adventure', tag: 'adventure' },
@@ -47,7 +44,6 @@ interface MegaMenuProps {
 }
 
 const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const {
     data: categories,
     isLoading: isLoadingCategories,
@@ -55,8 +51,9 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
   } = useGetCategoriesQuery();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
+  const dispatch = useAppDispatch();
   const {
-    data: mangas,
+    data: mangaData,
     error,
     isLoading: isLoadingManga
   } = useGetAllMangaQuery({
@@ -65,15 +62,24 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
   });
 
   const sortedByLatest = useMemo(() => {
-    if (!mangas?.items) return [];
-    return [...mangas.items].sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
-  }, [mangas?.items]);
+    if (!mangaData?.mangas) return [];
+
+    return [...mangaData.mangas].sort((a, b) => {
+      // Handle potentially undefined dates
+      const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+
+      return dateB - dateA; // Sort in descending order (newest first)
+    });
+  }, [mangaData?.mangas]);
 
   if (!isOpen) return null;
-
+  const getImageUrl = (thumbPath: string) => {
+    if (!thumbPath) return '/placeholder.jpg';
+    if (thumbPath.startsWith('http')) return thumbPath;
+    if (thumbPath.includes('ipfs.io/ipfs/')) return thumbPath;
+    return `${process.env.NEXT_PUBLIC_API_URL_IPFS}${thumbPath}`;
+  };
   return (
     <div
       className={cn(
@@ -85,16 +91,6 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Left Section: Search + Categories Tabs */}
           <div className="col-span-2 space-y-4">
-            <div className="relative">
-              <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
-              <Input
-                placeholder="Search for manga or categories..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
             <Tabs defaultValue="category" className="w-full">
               <TabsList className="bg-background/50 mb-4 w-full">
                 <TabsTrigger value="category" className="flex-1">
@@ -111,9 +107,12 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
                     categories.map((category) => (
                       <Link
                         key={category.category_id}
-                        href={`/discover?category=${category.category_id}`}
+                        href={`/manga/list`}
                         className="hover:bg-accent group flex items-center gap-2 rounded-md p-2"
-                        onClick={onClose}
+                        onClick={() => {
+                          dispatch(setCategory(category.category_id));
+                          onClose();
+                        }}
                       >
                         <span className="group-hover:text-manga-300 text-sm font-medium transition-colors">
                           {category.category_name}
@@ -132,9 +131,12 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
               <TabsContent value="status" className="space-y-4">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   <Link
-                    href="/discover?status=ongoing"
+                    href="/manga/list"
                     className="hover:bg-accent group flex items-center gap-2 rounded-md p-2"
-                    onClick={onClose}
+                    onClick={() => {
+                      dispatch(setStatus('ongoing'));
+                      onClose();
+                    }}
                   >
                     <span className="bg-secondary text-secondary-foreground group-hover:bg-manga-600 rounded-md p-1.5 transition-colors group-hover:text-white">
                       <Clock size={16} />
@@ -144,9 +146,12 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
                     </span>
                   </Link>
                   <Link
-                    href="/discover?status=completed"
+                    href="/manga/list"
                     className="hover:bg-accent group flex items-center gap-2 rounded-md p-2"
-                    onClick={onClose}
+                    onClick={() => {
+                      dispatch(setStatus('completed'));
+                      onClose();
+                    }}
                   >
                     <span className="bg-secondary text-secondary-foreground group-hover:bg-manga-600 rounded-md p-1.5 transition-colors group-hover:text-white">
                       <Check size={16} />
@@ -156,9 +161,12 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
                     </span>
                   </Link>
                   <Link
-                    href="/discover?status=trending"
+                    href="/manga/list"
                     className="hover:bg-accent group flex items-center gap-2 rounded-md p-2"
-                    onClick={onClose}
+                    onClick={() => {
+                      dispatch(setStatus('hiatus'));
+                      onClose();
+                    }}
                   >
                     <span className="bg-secondary text-secondary-foreground group-hover:bg-manga-600 rounded-md p-1.5 transition-colors group-hover:text-white">
                       <Flame size={16} />
@@ -185,21 +193,15 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
               <div className="space-y-2">
                 {sortedByLatest.slice(1, 4).map((manga) => (
                   <Link
-                    key={manga.id}
-                    href={`/manga/${manga.id}`}
+                    key={manga.manga_id}
+                    href={`/manga/${manga.manga_id}`}
                     className="hover:bg-accent flex items-center gap-3 rounded-md p-2"
                     onClick={onClose}
                   >
                     <div className="relative h-14 w-10 overflow-hidden rounded-md shadow-sm transition-transform group-hover:scale-105">
                       <Image
-                        src={
-                          manga.coverImage.startsWith('http')
-                            ? manga.coverImage
-                            : manga.coverImage.includes('ipfs.io/ipfs/')
-                              ? manga.coverImage
-                              : `https://ipfs.io/ipfs/${manga.coverImage}`
-                        }
-                        alt={manga.title}
+                        src={getImageUrl(manga.manga_thumb)}
+                        alt={manga.manga_title}
                         fill
                         sizes="40px"
                         className="object-cover"
@@ -208,7 +210,9 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                     </div>
-                    <span className="text-sm font-medium">{manga.title}</span>
+                    <span className="text-sm font-medium">
+                      {manga.manga_title}
+                    </span>
                   </Link>
                 ))}
               </div>

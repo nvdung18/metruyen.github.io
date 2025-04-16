@@ -8,8 +8,7 @@ export interface MangaCardProps {
   id: string;
   title: string;
   coverImage: string;
-  rating?: number;
-  genres?: string[];
+  rating: number;
   chapters?: number;
   className?: string;
   isNew?: boolean;
@@ -21,7 +20,6 @@ const MangaCard = ({
   title,
   coverImage,
   rating,
-  // genres = [],
   chapters,
   className,
   isNew,
@@ -32,7 +30,7 @@ const MangaCard = ({
     ? 'https://sonikaagarwal.in/wp-content/uploads/2021/01/b500sample_cover.jpg'
     : coverImage.includes('ipfs.io/ipfs/')
       ? coverImage
-      : `https://ipfs.io/ipfs/${coverImage}`;
+      : `${process.env.NEXT_PUBLIC_API_URL_IPFS}${coverImage}`;
 
   return (
     <Link href={`/manga/${id}`}>

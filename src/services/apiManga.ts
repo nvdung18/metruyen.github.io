@@ -33,21 +33,24 @@ interface ApiResponse<T> {
   timestamp: string;
 }
 
-// Manga interfaces
-export interface MangaAdmin {
+export interface MangaType {
   manga_id: number;
   manga_title: string;
   manga_description?: string;
-  manga_thumb?: string;
+  manga_thumb: string;
   manga_author?: string;
   manga_status?: 'completed' | 'draft' | 'ongoing' | 'hiatus';
   manga_views?: number;
   manga_total_star_rating?: number;
   manga_number_of_followers: number;
-  manga_ratings_count?: number;
+  manga_ratings_count: number;
   createdAt?: string;
   updatedAt?: string;
-  manga_slug?: string; // Added this field
+  manga_slug?: string;
+}
+
+// Manga interfaces
+export interface MangaAdmin extends MangaType {
   is_deleted?: number | number;
   is_draft?: number | number;
   is_published?: number | boolean;
@@ -88,8 +91,12 @@ export interface MangaQueryParams {
   limit?: number;
   sort?: string;
   category_id?: number;
-  search?: string;
-  status?: string;
+  keyword?: string;
+  manga_status?: string;
+  sortMangaByItem?: {
+    key: string;
+    value: boolean;
+  };
 }
 
 export interface MangaListResult {
@@ -154,11 +161,52 @@ export interface MangaDetail extends MangaAdmin {
   // You can add more potential properties here
 }
 
+export interface MangaFav {
+  manga_id: number;
+  fav_id: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MangaFavDetail extends MangaFav {
+  manga: {
+    manga_title: string;
+    manga_thumb: string;
+  };
+}
+
+export interface Comment {
+  comment_id: number;
+  comment_chapter_id: number;
+  comment_user_id: number;
+  comment_content: string;
+  comment_manga_id: number;
+  comment_parent_id: number | null;
+  updatedAt: string;
+  createdAt: string;
+  user: {
+    usr_id: number;
+    usr_name: string;
+  };
+}
+
+export interface User {
+  usr_id: number;
+  usr_name: string;
+  usr_email: string;
+  usr_avatar: string;
+  usr_sex: string;
+}
+
+export interface CIDStorage {
+  cid: string;
+}
+
 // Create the API slice
 export const mangaApi = createApi({
   reducerPath: 'mangaApi',
   baseQuery: apiBaseQuery,
-  tagTypes: ['MangaAdmin', 'Chapter', 'MangaList'],
+  tagTypes: ['MangaAdmin', 'Chapter', 'MangaList', 'Favorite', 'User'],
   endpoints: (builder) => ({
     // Get all manga with pagination, filtering and sorting
     getAllManga: builder.query<MangaListResult, MangaQueryParams>({
@@ -173,12 +221,13 @@ export const mangaApi = createApi({
           method: 'GET'
         };
       },
+
       transformResponse: (response: ApiResponse<MangaAdmin[]>) => {
         console.log('Raw manga response:', response);
 
         // Handle potential error responses
         if (!response.metadata || response.statusCode >= 400) {
-          console.error('API Error:', response.message || 'Unknown error');
+          console.log('API Error:', response.message || 'Unknown error');
           return {
             mangas: [],
             total: 0,
@@ -201,30 +250,31 @@ export const mangaApi = createApi({
           totalPages: 1
         };
 
-        // Format according to your MangaListResult interface
+        // Format according to your MangaListResult interface with proper type handling
         return {
           mangas: mangas.map((manga) => ({
             manga_id: manga.manga_id,
-            manga_title: manga.manga_title,
-            manga_description: manga.manga_description,
-            manga_thumb: manga.manga_thumb, // Maintain both fields for compatibility
-            manga_author: manga.manga_author,
-            manga_status: manga.manga_status,
-            manga_views: manga.manga_views || 0,
-            manga_likes: manga.manga_ratings_count || 0,
-            manga_dislikes: 0,
-            manga_number_of_followers: manga.manga_number_of_followers || 0,
-            created_at: manga.createdAt,
-            updated_at: manga.updatedAt,
-            manga_slug: manga.manga_slug,
-            is_deleted: manga.is_deleted,
-            is_draft: manga.is_draft,
-            is_published: manga.is_published
+            manga_title: manga.manga_title || '',
+            manga_description: manga.manga_description || '',
+            manga_thumb: manga.manga_thumb || '',
+            manga_author: manga.manga_author || '',
+            manga_status: manga.manga_status || 'ongoing',
+            manga_views: Number(manga.manga_views) || 0,
+            manga_ratings_count: Number(manga.manga_ratings_count) || 0,
+            manga_total_star_rating: Number(manga.manga_total_star_rating) || 0,
+            manga_number_of_followers:
+              Number(manga.manga_number_of_followers) || 0,
+            createdAt: manga.createdAt || new Date().toISOString(),
+            updatedAt: manga.updatedAt || new Date().toISOString(),
+            manga_slug: manga.manga_slug || '',
+            is_deleted: manga.is_deleted || 0,
+            is_draft: manga.is_draft || 0,
+            is_published: manga.is_published || 0
           })),
-          total: pagination.total || mangas.length,
-          page: pagination.page || 1,
-          limit: pagination.limit || 20,
-          totalPages: pagination.totalPages || 1
+          total: Number(pagination.total) || mangas.length,
+          page: Number(pagination.page) || 1,
+          limit: Number(pagination.limit) || 20,
+          totalPages: Number(pagination.totalPages) || 1
         };
       },
       providesTags: (result) =>
@@ -333,26 +383,6 @@ export const mangaApi = createApi({
       ]
     }),
 
-    // Search manga
-    searchManga: builder.query<MangaListResult, string>({
-      query: (searchTerm) => ({
-        url: '/manga/search',
-        params: { q: searchTerm }
-      }),
-      transformResponse: (response: ApiResponse<MangaListResult>) => {
-        if (!response.metadata) {
-          return {
-            mangas: [],
-            total: 0,
-            page: 1,
-            limit: 10,
-            totalPages: 0
-          };
-        }
-        return response.metadata;
-      }
-    }),
-
     // Create manga
     createManga: builder.mutation<MangaAdmin, MangaCreateRequest>({
       query: (manga) => {
@@ -410,6 +440,23 @@ export const mangaApi = createApi({
       ]
     }),
 
+    unpublishManga: builder.mutation<MangaAdmin, number>({
+      query: (id) => ({
+        url: `/manga/unpublish/${id}`,
+        method: 'PATCH'
+      }),
+      transformResponse: (response: ApiResponse<MangaAdmin>) => {
+        if (!response.metadata) {
+          throw new Error('Failed to unpublish manga');
+        }
+        return response.metadata;
+      },
+      invalidatesTags: (result, error, id) => [
+        { type: 'MangaAdmin', id },
+        { type: 'MangaList', id: 'LIST' }
+      ]
+    }),
+
     // Delete manga
     deleteManga: builder.mutation<
       { success: boolean; message: string },
@@ -443,9 +490,8 @@ export const mangaApi = createApi({
           chap_id: chapter.chap_id,
           chap_manga_id: chapter.chap_manga_id,
           chap_number: chapter.chap_number,
-          chap_title: chapter.chap_title || 'xzcasd',
+          chap_title: chapter.chap_title || 'error',
           chap_views: chapter.chap_views || 0,
-          // Add any other properties that might be present in some responses
           createdAt: chapter.createdAt,
           updatedAt: chapter.updatedAt,
           isDeleted: chapter.is_deleted
@@ -571,6 +617,360 @@ export const mangaApi = createApi({
       invalidatesTags: (result, error, { chapterId }) => [
         { type: 'Chapter', id: chapterId }
       ]
+    }),
+
+    searchManga: builder.query<MangaListResult, MangaQueryParams>({
+      query: (params = {}) => {
+        const queryParams = new URLSearchParams();
+
+        // Add required parameters with defaults
+        queryParams.append('page', String(params.page || 1));
+        queryParams.append('limit', String(params.limit || 20));
+        queryParams.append('publish', String(true));
+        if (params.category_id)
+          queryParams.append('category_id', String(params.category_id));
+        if (params.manga_status)
+          queryParams.append('manga_status', String(params.manga_status));
+        if (params.keyword) queryParams.append('keyword', params.keyword);
+        if (params.sortMangaByItem) {
+          queryParams.append(
+            params.sortMangaByItem.key,
+            String(params.sortMangaByItem.value)
+          );
+        }
+        return {
+          url: `/manga/search?${queryParams.toString()}`,
+          method: 'GET'
+        };
+      },
+
+      transformResponse: (response: ApiResponse<MangaAdmin[]>) => {
+        console.log('Raw manga response:', response);
+
+        // Handle potential error responses
+        if (!response.metadata || response.statusCode >= 400) {
+          console.log('API Error:', response.message || 'Unknown error');
+          return {
+            mangas: [],
+            total: 0,
+            page: 1,
+            limit: 20,
+            totalPages: 1
+          };
+        }
+
+        // Extract manga array from metadata
+        const mangas = Array.isArray(response.metadata)
+          ? response.metadata
+          : [];
+
+        // Extract pagination from options
+        const pagination = response.option?.pagination || {
+          page: 1,
+          limit: 20,
+          total: mangas.length,
+          totalPages: 1
+        };
+
+        // Format according to your MangaListResult interface with proper type handling
+        return {
+          mangas: mangas.map((manga) => ({
+            manga_id: manga.manga_id,
+            manga_title: manga.manga_title || '',
+            manga_description: manga.manga_description || '',
+            manga_thumb: manga.manga_thumb || '',
+            manga_author: manga.manga_author || '',
+            manga_status: manga.manga_status || 'ongoing',
+            manga_views: Number(manga.manga_views) || 0,
+            manga_ratings_count: Number(manga.manga_ratings_count) || 0,
+            manga_total_star_rating: Number(manga.manga_total_star_rating) || 0,
+            manga_number_of_followers:
+              Number(manga.manga_number_of_followers) || 0,
+            createdAt: manga.createdAt || new Date().toISOString(),
+            updatedAt: manga.updatedAt || new Date().toISOString(),
+            manga_slug: manga.manga_slug || '',
+            is_deleted: manga.is_deleted || 0,
+            is_draft: manga.is_draft || 0,
+            is_published: manga.is_published || 0
+          })),
+          total: Number(pagination.total) || mangas.length,
+          page: Number(pagination.page) || 1,
+          limit: Number(pagination.limit) || 20,
+          totalPages: Number(pagination.totalPages) || 1
+        };
+      },
+      providesTags: (result) =>
+        result?.mangas
+          ? [
+              ...result.mangas.map(({ manga_id }) => ({
+                type: 'MangaAdmin' as const,
+                id: manga_id
+              })),
+              { type: 'MangaList' as const, id: 'LIST' }
+            ]
+          : [{ type: 'MangaList' as const, id: 'LIST' }]
+    }),
+
+    getListFavManga: builder.query<MangaFavDetail[], void>({
+      query: () => ({
+        url: '/favorite/manga-from-favorite'
+      }),
+      transformResponse: (response: ApiResponse<MangaFavDetail[]>) => {
+        if (!response.metadata || !Array.isArray(response.metadata)) {
+          return [];
+        }
+        return response.metadata;
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ manga_id }) => ({
+                type: 'Favorite' as const,
+                id: manga_id
+              })),
+              { type: 'Favorite' as const, id: 'LIST' }
+            ]
+          : [{ type: 'Favorite' as const, id: 'LIST' }]
+    }),
+
+    addFavorite: builder.mutation<MangaFav, number>({
+      query: (mangaId) => {
+        // Create URLSearchParams for x-www-form-urlencoded
+        const params = new URLSearchParams();
+        params.append('manga_id', String(mangaId));
+
+        return {
+          url: '/favorite/manga-to-favorite',
+          method: 'POST',
+          body: params.toString(),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        };
+      },
+      transformResponse: (response: ApiResponse<MangaFav>) => {
+        if (!response.metadata) {
+          throw new Error('Failed to add Favorite');
+        }
+        return response.metadata;
+      },
+      invalidatesTags: (result, error, manga_id) => [
+        { type: 'Favorite', id: manga_id },
+        { type: 'Favorite', id: 'LIST' }
+      ]
+    }),
+
+    // Remove manga from favorites
+    removeFavorite: builder.mutation<{ success: boolean }, number>({
+      query: (mangaId) => {
+        // Create URLSearchParams for x-www-form-urlencoded
+        const params = new URLSearchParams();
+        params.append('manga_id', String(mangaId));
+
+        return {
+          url: '/favorite/manga-from-favorite',
+          method: 'DELETE',
+          body: params.toString(),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        };
+      },
+      transformResponse: (response: ApiResponse<null>) => {
+        return {
+          success: response.status
+        };
+      },
+      invalidatesTags: (result, error, manga_id) => [
+        { type: 'Favorite', id: manga_id },
+        { type: 'Favorite', id: 'LIST' }
+      ]
+    }),
+
+    createComment: builder.mutation<
+      Comment,
+      {
+        comment_chapter_id: number;
+        comment_content: string;
+        comment_parent_id?: number | null;
+      }
+    >({
+      query: ({ comment_chapter_id, comment_content, comment_parent_id }) => {
+        const body: {
+          comment_chapter_id: number;
+          comment_content: string;
+          comment_parent_id?: number;
+        } = {
+          comment_chapter_id,
+          comment_content
+        };
+
+        // Only add comment_parent_id to body if it's not null or undefined
+        if (comment_parent_id !== null && comment_parent_id !== undefined) {
+          body.comment_parent_id = comment_parent_id;
+        }
+
+        return {
+          url: '/comment',
+          method: 'POST',
+          body
+        };
+      },
+      transformResponse: (response: ApiResponse<Comment>) => {
+        if (!response.metadata) {
+          throw new Error('Failed to create comment');
+        }
+        return response.metadata;
+      },
+      invalidatesTags: (result, error, { comment_chapter_id }) => [
+        { type: 'Chapter', id: `MANGA_${comment_chapter_id}` }
+      ]
+    }),
+
+    getListComments: builder.query<
+      Comment[],
+      { chapter_id: number; parent_id?: number | null }
+    >({
+      query: ({ chapter_id, parent_id }) => {
+        // If parent_id is provided, we can add it as a query parameter
+        const searchParam = new URLSearchParams();
+        searchParam.append('chapterId', String(chapter_id));
+        if (parent_id !== undefined && parent_id !== null) {
+          searchParam.append('parentId', String(parent_id));
+        }
+
+        return {
+          url: `/comment?${searchParam.toString()}`
+        };
+      },
+      transformResponse: (response: ApiResponse<Comment[]>) => {
+        if (!response.metadata || !Array.isArray(response.metadata)) {
+          return [];
+        }
+        return response.metadata;
+      },
+      providesTags: (result, error, { chapter_id }) => [
+        { type: 'Chapter', id: `MANGA_${chapter_id}` }
+      ]
+    }),
+
+    updateUserProfile: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+      },
+      { userId: number; data: FormData }
+    >({
+      query: ({ userId, data }) => ({
+        url: `/user/update-profile `,
+        method: 'PATCH',
+        body: data,
+        formData: true
+      }),
+      transformResponse: (response: ApiResponse<null>) => {
+        return {
+          success: response.status,
+          message: response.message
+        };
+      },
+      invalidatesTags: (result, error, { userId }) => [
+        { type: 'User', id: userId }
+      ]
+    }),
+
+    getUserProfile: builder.query<User, number>({
+      query: (userId) => ({
+        url: `/user/${userId}`
+      }),
+      transformResponse: (response: ApiResponse<User>) => {
+        if (!response.metadata) {
+          throw new Error('Failed to fetch user profile');
+        }
+        return response.metadata;
+      },
+      providesTags: (result, error, userId) => [{ type: 'User', id: userId }]
+    }),
+
+    // Add more endpoints as needed
+    getContractAddress: builder.query<CIDStorage, void>({
+      query: () => ({
+        url: '/manga/contract-address/cid-storage'
+      }),
+      transformResponse: (response: ApiResponse<CIDStorage>) => {
+        if (!response.metadata) {
+          throw new Error('Failed to fetch contract address');
+        }
+        return response.metadata;
+      }
+    }),
+
+    increaseMangaView: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+      },
+      {
+        mangaId: number;
+      }
+    >({
+      query: ({ mangaId }) => ({
+        url: `/manga/views/${mangaId}`,
+        method: 'PATCH'
+      }),
+      transformResponse: (response: ApiResponse<null>) => {
+        return {
+          success: response.status,
+          message: response.message
+        };
+      }
+    }),
+
+    increaseChapterView: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+      },
+      {
+        chapterId: number;
+      }
+    >({
+      // Corrected query function syntax
+      query: ({ chapterId }) => ({
+        url: `/chapter/views/${chapterId}`,
+        method: 'PATCH'
+      }),
+      transformResponse: (response: ApiResponse<null>) => {
+        return {
+          success: response.status,
+          message: response.message
+        };
+      }
+      // No need to invalidate tags for chapter views
+    }),
+
+    ratingManga: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+      },
+      {
+        mangaId: number;
+        rating: number;
+      }
+    >({
+      query: ({ mangaId, rating }) => ({
+        url: `/manga/rating/${mangaId}?rating=${rating}`,
+        method: 'PATCH'
+      }),
+      transformResponse: (response: ApiResponse<null>) => {
+        return {
+          success: response.status,
+          message: response.message
+        };
+      },
+      invalidatesTags: (result, error, { mangaId }) => [
+        { type: 'MangaAdmin', id: mangaId }
+      ]
     })
   })
 });
@@ -584,11 +984,23 @@ export const {
   useCreateMangaMutation,
   useUpdateMangaByIdMutation,
   usePublishMangaMutation,
+  useUnpublishMangaMutation,
   useDeleteMangaMutation,
   useGetMangaChaptersQuery,
   useGetChapterDetailQuery,
   useCreateChapterMutation,
   useUpdateChapterMutation,
   useDeleteChapterMutation,
-  useDeleteImageInChapterMutation
+  useDeleteImageInChapterMutation,
+  useGetListFavMangaQuery,
+  useAddFavoriteMutation,
+  useRemoveFavoriteMutation,
+  useCreateCommentMutation,
+  useGetListCommentsQuery,
+  useUpdateUserProfileMutation,
+  useGetUserProfileQuery,
+  useGetContractAddressQuery,
+  useIncreaseMangaViewMutation,
+  useIncreaseChapterViewMutation,
+  useRatingMangaMutation
 } = mangaApi;

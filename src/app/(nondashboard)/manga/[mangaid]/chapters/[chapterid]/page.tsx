@@ -1,322 +1,355 @@
-"use client";
-
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Home, 
-  List, 
-  ZoomIn, 
-  ZoomOut,
-  Settings,
-  X,
-  Maximize,
-  Minimize
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { 
-  useGetMangaByIdQuery,
-  useGetMangaChapterImagesQuery
-} from '@/services/api';
+'use client';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
+import { MessageCircle } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import ReaderTopControls from '@/components/manga/ReaderTopControls';
+import ReaderBottomControls from '@/components/manga/ReaderBottomControls';
+import ReaderImageDisplay from '@/components/manga/ReaderImageDisplay';
+import ReaderCommentsPanel from '@/components/manga/ReaderCommentsPanel';
+
+import { ChapterImage } from '@/app/(dashboard)/dashboard/manga/[mangaid]/chapters/[chapterid]/images/page';
+import {
+  useGetChapterDetailQuery,
+  useGetMangaByIdQuery,
+  useGetMangaChaptersQuery
+} from '@/services/apiManga';
+import { fetchAndParseIPFSData } from '@/lib/utils';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hook';
+import { toggleNavbar } from '@/lib/redux/slices/uiSlice';
 
 const MangaReader = () => {
-  const params = useParams();
-  const id = params?.mangaid as string;
-  const chapter = params?.chapterid as string;
-  
-  const { data: manga, isLoading: isMangaLoading } = useGetMangaByIdQuery(id || '');
-  const { 
-    data: images = [], 
-    isLoading: isImagesLoading 
-  } = useGetMangaChapterImagesQuery(
-    { mangaId: id || '', chapterId: chapter || '' },
-    { skip: !id || !chapter }
-  );
-  
-  // State
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const [fullscreen, setFullscreen] = useState(false);
+  const { mangaid, chapterid } = useParams<{
+    mangaid: string;
+    chapterid: string;
+  }>();
+  const dispatch = useAppDispatch();
+
+  // --- Data Fetching ---
+  const mangaIdNum = Number(mangaid);
+  const chapterIdNum = Number(chapterid);
+
+  const { data: manga, isLoading: isMangaLoading } = useGetMangaByIdQuery({
+    id: mangaIdNum,
+    isPublished: 'publish'
+  });
+
+  const { data: chapterDetails, isLoading: isChapterDetailsLoading } =
+    useGetChapterDetailQuery({
+      mangaId: mangaIdNum,
+      chapterId: chapterIdNum
+    });
+
+  const { data: chapters, isLoading: isChaptersLoading } =
+    useGetMangaChaptersQuery(mangaIdNum);
+
+  const auth = useAppSelector((state) => state.auth);
+
+  // --- State ---
+  const [images, setImages] = useState<ChapterImage[]>([]);
+  const [isLoadingIPFS, setIsLoadingIPFS] = useState(false);
   const [zoom, setZoom] = useState(100);
-  const [isMouseMoving, setIsMouseMoving] = useState(false);
-  
-  // Refs
-  const hideControlsTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [isInteractionActive, setIsInteractionActive] = useState(true); // Start as active
+
+  const controlsVisible = isInteractionActive || showComments;
+
+  // --- Refs ---
   const readerContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Handle controls visibility with debounce
-  const showControls = useCallback(() => {
-    setControlsVisible(true);
-    
-    // Reset any existing timer
-    if (hideControlsTimerRef.current) {
-      clearTimeout(hideControlsTimerRef.current);
+  const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // --- Effects ---
+  // Fetch IPFS data when chapter details are available
+  useEffect(() => {
+    if (chapterDetails?.chap_content) {
+      const cid = chapterDetails.chap_content;
+      setIsLoadingIPFS(true);
+      setImages([]); // Clear previous images
+      fetchAndParseIPFSData(cid)
+        .then(setImages)
+        .catch((err) => {
+          console.log('fetch failed:', err);
+          setImages([]);
+        })
+        .finally(() => setIsLoadingIPFS(false));
+    } else {
+      setImages([]); // Clear images if no content CID
     }
-    
-    // Set new timer to hide controls
-    hideControlsTimerRef.current = setTimeout(() => {
-      if (!isMouseMoving) {
-        setControlsVisible(false);
+  }, [chapterDetails]);
+
+  // Hide main app navbar
+  useEffect(() => {
+    dispatch(toggleNavbar(true));
+    return () => {
+      dispatch(toggleNavbar(false));
+    };
+  }, [dispatch]);
+
+  // Disable body scroll
+  useEffect(() => {
+    const originalStyle = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
+  // Control reader container scroll based on comments
+  useEffect(() => {
+    if (readerContainerRef.current) {
+      readerContainerRef.current.style.overflow = showComments
+        ? 'hidden'
+        : 'auto';
+    }
+  }, [showComments]);
+
+  // Track reading progress and current image index
+  useEffect(() => {
+    const container = readerContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // Prevent division by zero or negative scrollHeight
+      const totalScrollableHeight = Math.max(1, scrollHeight - clientHeight);
+      const progress = (scrollTop / totalScrollableHeight) * 100;
+      setReadingProgress(Math.min(100, Math.max(0, progress)));
+
+      if (images.length > 0) {
+        // Estimate image height more robustly
+        const avgImageHeight = scrollHeight / images.length;
+        const currentIndex = Math.min(
+          images.length - 1,
+          Math.floor(scrollTop / avgImageHeight)
+        );
+        setCurrentImageIndex(currentIndex);
       }
-    }, 3000);
-  }, [isMouseMoving]);
-  
-  // Handle mouse movement
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    // Initial calculation
+    handleScroll();
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [images.length]); // Re-run only if image count changes
+
+  // --- Interaction Handling for Controls Visibility ---
+  const activateInteraction = useCallback(() => {
+    setIsInteractionActive(true);
+    if (interactionTimerRef.current) {
+      clearTimeout(interactionTimerRef.current);
+    }
+    interactionTimerRef.current = setTimeout(() => {
+      // Only deactivate if comments are not shown
+      if (!showComments) {
+        setIsInteractionActive(false);
+      }
+    }, 3000); // Hide after 3 seconds of inactivity
+  }, [showComments]); // Dependency on showComments to check before deactivating
+
+  // Keep controls visible when comments are shown
+  useEffect(() => {
+    if (showComments) {
+      setIsInteractionActive(true); // Ensure active
+      if (interactionTimerRef.current) {
+        clearTimeout(interactionTimerRef.current); // Clear timer
+      }
+    } else {
+      // If comments just closed, restart the timer
+      activateInteraction();
+    }
+  }, [showComments, activateInteraction]);
+
+  // Initial activation and cleanup
+  useEffect(() => {
+    activateInteraction(); // Activate on mount
+    return () => {
+      if (interactionTimerRef.current) {
+        clearTimeout(interactionTimerRef.current); // Cleanup timer on unmount
+      }
+    };
+  }, [activateInteraction]);
+
+  // --- Event Handlers ---
   const handleMouseMove = useCallback(() => {
-    setIsMouseMoving(true);
-    showControls();
-    
-    // Debounce the mouse movement state
-    const movementTimer = setTimeout(() => {
-      setIsMouseMoving(false);
-    }, 500);
-    
-    return () => clearTimeout(movementTimer);
-  }, [showControls]);
-  
-  // Handle fullscreen toggle
-  const toggleFullscreen = useCallback(async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-        setFullscreen(true);
-      } else if (document.exitFullscreen) {
-        await document.exitFullscreen();
-        setFullscreen(false);
-      }
-    } catch (err) {
-      console.error('Error with fullscreen:', err);
+    if (!showComments) {
+      activateInteraction();
+    }
+  }, [activateInteraction, showComments]);
+
+  const keepControlsVisible = useCallback(() => {
+    setIsInteractionActive(true);
+    if (interactionTimerRef.current) {
+      clearTimeout(interactionTimerRef.current);
     }
   }, []);
-  
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (hideControlsTimerRef.current) {
-        clearTimeout(hideControlsTimerRef.current);
-      }
-    };
+
+  const hideControlsWithDelay = useCallback(() => {
+    // This is called onMouseLeave from controls; restart the main timer
+    if (!showComments) {
+      activateInteraction();
+    }
+  }, [activateInteraction, showComments]);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setFullscreen(true);
+      });
+    } else {
+      document.exitFullscreen?.().then(() => {
+        setFullscreen(false);
+      });
+    }
   }, []);
-  
-  // Listen for fullscreen change event
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setFullscreen(!!document.fullscreenElement);
-    };
-    
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+
+  const toggleComments = useCallback(() => {
+    setShowComments((prev) => !prev);
   }, []);
-  
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Show controls on any key press
-      showControls();
-      
-      // Handle specific keys
-      switch (e.key) {
-        case 'f':
-          toggleFullscreen();
-          break;
-        case '+':
-          setZoom(prev => Math.min(150, prev + 10));
-          break;
-        case '-':
-          setZoom(prev => Math.max(50, prev - 10));
-          break;
-        case 'ArrowLeft':
-          if (prevChapter) {
-            window.location.href = `/manga/${id}/chapters/${prevChapter}`;
-          }
-          break;
-        case 'ArrowRight':
-          if (nextChapter) {
-            window.location.href = `/manga/${id}/chapters/${nextChapter}`;
-          }
-          break;
-        default:
-          break;
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [id, showControls, toggleFullscreen]);
-  
-  // Handle next/prev chapters
-  const chapterNum = parseInt(chapter || '1');
-  const prevChapter = chapterNum > 1 ? chapterNum - 1 : null;
-  const nextChapter = manga && chapterNum < manga.chapters ? chapterNum + 1 : null;
-  
-  const isLoading = isMangaLoading || isImagesLoading;
-  
-  if (!manga && !isMangaLoading) {
+
+  // --- Chapter Navigation ---
+  const sortedChapters = useMemo(() => {
+    if (!chapters || !Array.isArray(chapters)) return [];
+    return [...chapters].sort((a, b) => a.chap_number - b.chap_number);
+  }, [chapters]);
+
+  const currentChapterIndex = useMemo(() => {
+    if (!sortedChapters.length) return -1;
+    return sortedChapters.findIndex((ch) => ch.chap_id === chapterIdNum);
+  }, [sortedChapters, chapterIdNum]);
+
+  const prevChapter = useMemo(() => {
+    return currentChapterIndex > 0
+      ? sortedChapters[currentChapterIndex - 1]
+      : null;
+  }, [sortedChapters, currentChapterIndex]);
+
+  const nextChapter = useMemo(() => {
+    return currentChapterIndex >= 0 &&
+      currentChapterIndex < sortedChapters.length - 1
+      ? sortedChapters[currentChapterIndex + 1]
+      : null;
+  }, [sortedChapters, currentChapterIndex]);
+
+  // --- Render Logic ---
+  if (isMangaLoading) {
+    // Simplified loading state for initial manga info
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <h1 className="mb-4 text-2xl font-bold">Manga Not Found</h1>
-          <Button asChild>
-            <Link href="/">Go Home</Link>
-          </Button>
-        </div>
+      <div className="fixed inset-0 flex items-center justify-center bg-black text-white">
+        Loading Manga Info...
+      </div>
+    );
+  }
+
+  if (!manga) {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-black text-white">
+        <h1 className="mb-4 text-2xl font-bold">Manga Not Found</h1>
+        <Button asChild variant="secondary">
+          <Link href="/">Go Home</Link>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div 
-      className="relative min-h-screen bg-black"
+    <div
+      className="fixed inset-0 bg-black"
       onMouseMove={handleMouseMove}
-      ref={readerContainerRef}
+      // onMouseLeave is not needed here as the timer handles inactivity
     >
-      {/* Reader Controls - Top */}
-      <div 
-        className={`fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4 transition-all duration-300 ease-in-out ${
-          controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
+      {/* Reading progress bar */}
+      <div className="fixed top-0 right-0 left-0 z-[60] h-1">
+        {' '}
+        {/* Ensure progress is above controls */}
+        <div
+          className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300 ease-out"
+          style={{ width: `${readingProgress}%` }}
+        />
+      </div>
+
+      {/* Top Controls */}
+      <AnimatePresence>
+        <ReaderTopControls
+          manga={manga}
+          chapterDetails={chapterDetails}
+          zoom={zoom}
+          setZoom={setZoom}
+          fullscreen={fullscreen}
+          toggleFullscreen={toggleFullscreen}
+          isVisible={controlsVisible && !showComments} // Only show if comments are closed
+          keepControlsVisible={keepControlsVisible}
+          hideControlsWithDelay={hideControlsWithDelay}
+        />
+      </AnimatePresence>
+
+      {/* Side controls */}
+      <div className="fixed top-1/2 left-4 z-40 -translate-y-1/2">
+        <motion.div
+          initial={{ opacity: 0.4 }}
+          whileHover={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={toggleComments}
+            className={`rounded-full backdrop-blur-sm ${
+              showComments
+                ? 'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30'
+                : 'bg-black/30 text-white hover:bg-white/20'
+            }`}
+          >
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+        </motion.div>
+      </div>
+
+      {/* Reading Content */}
+      <div
+        ref={readerContainerRef}
+        className={`reader-container scrollbar-thin scrollbar-track-black scrollbar-thumb-gray-600 absolute inset-0 h-full w-full ${
+          showComments ? 'overflow-hidden' : 'overflow-y-auto'
         }`}
       >
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" asChild className="text-white hover:bg-white/10">
-              <Link href={`/manga/${id}`}>
-                <X className="h-5 w-5" />
-              </Link>
-            </Button>
-            <h1 className="ml-2 hidden font-medium text-white md:block">
-              {manga?.title} - Chapter {chapter}
-            </h1>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setZoom(Math.max(50, zoom - 10))}
-              className="text-white hover:bg-white/10"
-            >
-              <ZoomOut className="h-5 w-5" />
-            </Button>
-            
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-white/80">{zoom}%</span>
-              <Slider 
-                className="w-24 md:w-32"
-                value={[zoom]} 
-                min={50} 
-                max={150} 
-                step={10}
-                onValueChange={(value) => setZoom(value[0])}
-              />
-            </div>
-            
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setZoom(Math.min(150, zoom + 10))}
-              className="text-white hover:bg-white/10"
-            >
-              <ZoomIn className="h-5 w-5" />
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggleFullscreen}
-              className="text-white hover:bg-white/10"
-            >
-              {fullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-            </Button>
-            
-            <Button variant="ghost" size="icon" asChild className="text-white hover:bg-white/10">
-              <Link href={`/manga/${id}`}>
-                <Home className="h-5 w-5" />
-              </Link>
-            </Button>
-            
-            <Button variant="ghost" size="icon" asChild className="text-white hover:bg-white/10">
-              <Link href={`/manga/${id}`}>
-                <List className="h-5 w-5" />
-              </Link>
-            </Button>
-            
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-              <Settings className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
+        <ReaderImageDisplay
+          images={images}
+          zoom={zoom}
+          isLoading={isLoadingIPFS || isChapterDetailsLoading}
+        />
       </div>
-      
-      {/* Reading Content */}
-      <div className="reader-container h-screen overflow-y-auto scrollbar-none">
-        {isLoading ? (
-          <div className="flex min-h-screen items-center justify-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-manga-500"></div>
-          </div>
-        ) : (
-          <div className="mx-auto flex max-w-4xl flex-col items-center justify-center py-4">
-            {images.map((image) => (
-              <div 
-                key={image.id} 
-                className="my-1 w-full"
-                style={{ maxWidth: `${zoom}%` }}
-              >
-                <img 
-                  src={image.url} 
-                  alt={`Page ${image.page}`} 
-                  className="h-auto w-full"
-                  loading="lazy"
-                />
-              </div>
-            ))}
-            
-            {/* Chapter navigation */}
-            <div className="flex w-full max-w-lg justify-between px-4 py-8">
-              <Button 
-                variant="outline" 
-                disabled={!prevChapter}
-                asChild={!!prevChapter}
-                className="border-white/20 text-white hover:bg-white/10"
-              >
-                {prevChapter ? (
-                  <Link href={`/manga/${id}/chapters/${prevChapter}`}>
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Previous Chapter
-                  </Link>
-                ) : (
-                  <>
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Previous Chapter
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                disabled={!nextChapter}
-                asChild={!!nextChapter}
-                className="border-white/20 text-white hover:bg-white/10"
-              >
-                {nextChapter ? (
-                  <Link href={`/manga/${id}/chapters/${nextChapter}`}>
-                    Next Chapter <ChevronRight className="ml-2 h-4 w-4" />
-                  </Link>
-                ) : (
-                  <>
-                    Next Chapter <ChevronRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+
+      {/* Bottom Controls */}
+      <AnimatePresence>
+        <ReaderBottomControls
+          mangaId={mangaIdNum}
+          prevChapter={prevChapter}
+          nextChapter={nextChapter}
+          chaptersLoading={isChaptersLoading}
+          currentImageIndex={currentImageIndex}
+          totalImages={images.length}
+          imagesLoading={isLoadingIPFS || isChapterDetailsLoading}
+          isVisible={controlsVisible && !showComments} // Only show if comments are closed
+          keepControlsVisible={keepControlsVisible}
+          hideControlsWithDelay={hideControlsWithDelay}
+        />
+      </AnimatePresence>
+
+      {/* Comments Panel */}
+      <ReaderCommentsPanel
+        mangaId={mangaid}
+        chapterId={chapterid}
+        showComments={showComments}
+        toggleComments={toggleComments}
+      />
     </div>
   );
 };
