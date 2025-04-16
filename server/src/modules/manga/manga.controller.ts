@@ -469,7 +469,6 @@ export class MangaController {
   @ApiOperation({
     summary: 'Increase view of manga',
     description: `
-  - **${SwaggerApiOperation.NEED_AUTH}**
       `,
   })
   @ApiParam({

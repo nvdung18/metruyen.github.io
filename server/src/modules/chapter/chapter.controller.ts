@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -202,40 +203,6 @@ export class ChapterController {
   }
 
   @ApiOperation({
-    summary: 'Increase views of chapter',
-    description: `
-  - **${SwaggerApiOperation.NOT_NEED_AUTH}**
-    `,
-  })
-  @Patch('/views/:id')
-  @ApiParam({
-    name: 'id',
-    type: Number,
-    description: 'Manga id',
-  })
-  @ApiQuery({
-    name: 'chapter',
-    type: Number,
-    description: 'Chapter of manga',
-  })
-  @ResponseMessage('Increase views of chapter successful')
-  @AuthorizeAction({ action: 'readAny', resource: 'Chapters' })
-  @GuestRole(true)
-  async increaseViewOfChapter(
-    @Req() req: Request,
-    @Param('id') mangaId: number,
-    @Query('chapter') chapter: number,
-  ) {
-    const data = await this.chapterService.increaseViewOfChapter(
-      mangaId,
-      chapter,
-    );
-    return {
-      metadata: data,
-    };
-  }
-
-  @ApiOperation({
     summary: 'Delete chapter',
     description: `
   - **${SwaggerApiOperation.NOT_NEED_AUTH}**
@@ -290,45 +257,63 @@ export class ChapterController {
     };
   }
 
+  // @ApiOperation({
+  //   summary: 'Test Folder upload by admin',
+  //   description: `
+  // - **${SwaggerApiOperation.NEED_AUTH}**
+  //   `,
+  // })
+  // @Post('test-folder-upload/:id')
+  // @ApiConsumes('multipart/form-data')
+  // @ApiBody({
+  //   description: 'Add chapter',
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       chap_content: {
+  //         type: 'array',
+  //         items: { type: 'string', format: 'binary' },
+  //       },
+  //     },
+  //   },
+  // })
+  // @ApiParam({
+  //   name: 'id',
+  //   type: Number,
+  //   description: 'Chapter id',
+  // })
+  // @UseInterceptors(FilesInterceptor('chap_content'))
+  // @ResponseMessage('Chapter updated successful')
+  // @AuthorizeAction({ action: 'updateAny', resource: 'Chapters' })
+  // async testFolderUpload(
+  //   @Req() req: Request,
+  //   @UploadedFiles(
+  //     new FilesValidationPipe({ isRequired: false }, 5, IMAGE_TYPES),
+  //   )
+  //   files: Express.Multer.File[],
+  //   @Param('id') chapterId: number,
+  // ) {
+  //   const result = await this.chapterService.testFolderUpload(files);
+  //   return {
+  //     metadata: result,
+  //   };
+  // }
+
   @ApiOperation({
-    summary: 'Test Folder upload by admin',
+    summary: 'Increase views of chapter',
     description: `
-  - **${SwaggerApiOperation.NEED_AUTH}**
     `,
-  })
-  @Post('test-folder-upload/:id')
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    description: 'Add chapter',
-    schema: {
-      type: 'object',
-      properties: {
-        chap_content: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
-        },
-      },
-    },
   })
   @ApiParam({
     name: 'id',
     type: Number,
     description: 'Chapter id',
   })
-  @UseInterceptors(FilesInterceptor('chap_content'))
-  @ResponseMessage('Chapter updated successful')
-  @AuthorizeAction({ action: 'updateAny', resource: 'Chapters' })
-  async testFolderUpload(
-    @Req() req: Request,
-    @UploadedFiles(
-      new FilesValidationPipe({ isRequired: false }, 5, IMAGE_TYPES),
-    )
-    files: Express.Multer.File[],
-    @Param('id') chapterId: number,
-  ) {
-    const result = await this.chapterService.testFolderUpload(files);
+  @Patch('/views/:id')
+  @ResponseMessage('Increase views of chapter successful')
+  async increaseViewOfChapter(@Param('id', ParseIntPipe) chapterId: number) {
     return {
-      metadata: result,
+      metadata: await this.chapterService.increaseViewOfChapter(chapterId),
     };
   }
 }

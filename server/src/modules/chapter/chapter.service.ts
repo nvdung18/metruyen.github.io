@@ -324,19 +324,13 @@ export class ChapterService {
     return foundChapter;
   }
 
-  async increaseViewOfChapter(
-    mangaId: number,
-    chapNumber: number,
-  ): Promise<number> {
-    await this.mangaService.findMangaById(mangaId);
+  async increaseViewOfChapter(chapterId: number): Promise<number> {
+    const foundChapter = await this.findChapterById(chapterId);
+    await this.mangaService.findMangaById(foundChapter.chap_manga_id);
 
-    const isUpdated = await this.chapterRepo.increaseViewOfChapter(
-      mangaId,
-      chapNumber,
-      {
-        options: { raw: true },
-      },
-    );
+    const isUpdated = await this.chapterRepo.increaseViewOfChapter(chapterId, {
+      raw: true,
+    });
 
     if (!isUpdated)
       throw new HttpException(

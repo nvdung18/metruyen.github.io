@@ -10,7 +10,9 @@ export class CreateUserDto {
   @IsEmail({}, { message: 'Invalid email format' })
   usr_email: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: 'abcxyz123',
+  })
   @MinLength(7, { message: 'Password must be at least 8 characters long' })
   @IsNotEmpty({ message: 'Password is required' })
   usr_password: string;

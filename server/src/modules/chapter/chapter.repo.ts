@@ -83,12 +83,8 @@ export class ChapterRepo {
   }
 
   async increaseViewOfChapter(
-    mangaId: number,
-    chapNumber: number,
-    {
-      isDeleted = false,
-      options = {},
-    }: { isDeleted?: boolean; options?: object } = {},
+    chapterId: number,
+    options = {},
   ): Promise<number> {
     const [affectedCount] = await this.chapterModel.update(
       {
@@ -96,9 +92,7 @@ export class ChapterRepo {
       },
       {
         where: {
-          chap_manga_id: mangaId,
-          chap_number: chapNumber,
-          is_deleted: isDeleted,
+          chap_id: chapterId,
         },
         ...options,
       },

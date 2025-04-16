@@ -44,6 +44,7 @@ export class UserController {
     description: `
   - **${SwaggerApiOperation.NOT_NEED_AUTH}**
   - **${SwaggerApiOperation.NOT_REQUIRE_CLIENT_ID}**
+  - your password have to be at least 7 characters long
     `,
   })
   @Post('sign-up')
