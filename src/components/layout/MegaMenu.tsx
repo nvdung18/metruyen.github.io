@@ -217,27 +217,6 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
                 ))}
               </div>
             </div>
-
-            <Separator />
-
-            {/* Recently Viewed */}
-            <div>
-              <h3 className="mb-2 text-sm font-semibold">Recently Viewed</h3>
-              <div className="space-y-2">
-                {recentlyViewed.map((item) => (
-                  <Link
-                    key={item.tag}
-                    href={`/discover?genre=${item.tag}`}
-                    className="hover:bg-accent group flex items-center gap-2 rounded-md p-2"
-                    onClick={onClose}
-                  >
-                    <span className="group-hover:text-manga-300 text-sm font-medium transition-colors">
-                      {item.name}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
