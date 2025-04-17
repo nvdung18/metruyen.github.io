@@ -1,8 +1,6 @@
 import React from 'react';
 import Footer from './Footer';
 import Navbar from './Navbar';
-import { cookies } from 'next/headers';
-import { isTokenExpired } from '@/lib/utils';
 
 export default async function LayoutNonDashboard({
   children

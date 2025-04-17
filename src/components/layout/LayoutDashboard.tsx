@@ -25,34 +25,6 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-const navItems: NavItem[] = [
-  {
-    title: 'Dashboard',
-    href: '/dashboard',
-    icon: <BarChart3 className="h-5 w-5" />
-  },
-  {
-    title: 'Manga',
-    href: '/dashboard/manga',
-    icon: <BookOpen className="h-5 w-5" />
-  },
-  {
-    title: 'Categories',
-    href: '/dashboard/categories',
-    icon: <FolderTree className="h-5 w-5" />
-  },
-  {
-    title: 'Users',
-    href: '/dashboard/users',
-    icon: <Users className="h-5 w-5" />
-  },
-  {
-    title: 'Settings',
-    href: '/dashboard/settings',
-    icon: <Settings className="h-5 w-5" />
-  }
-];
-
 export default function DashboardLayout({
   children
 }: {

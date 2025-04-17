@@ -45,7 +45,7 @@ const AuthPage = () => {
         const { metadata } = result;
         // Dispatch login success action with the token and user data
         toast.success('Login successfully!');
-        if (metadata.user.usr_id === 1) navigate.push('/dashboard');
+        if (metadata.user.usr_id === 1) navigate.push('/dashboard/manga');
         else navigate.push('/');
       } else {
         toast.error('Login failed. Please try again.');

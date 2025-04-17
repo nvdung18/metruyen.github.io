@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { historyData } from '@/lib/data/data';
 import { HistoryEntry, MangaChange } from '@/types/history';
+import { metadata } from '../app/layout';
 
 // Interface for blockchain connection configuration
 export interface BlockchainConfig {
@@ -8,6 +9,22 @@ export interface BlockchainConfig {
   contractAddress: string;
   apiKey?: string;
 }
+
+const fetchBlockchainConfig = async () => {
+  try {
+    const response = await fetch('/api/blockchain/config');
+    if (!response.ok) {
+      throw new Error('Failed to fetch blockchain configuration');
+    }
+    const config = await response.json();
+    console.log('Config', config);
+    return config.metadata;
+  } catch (error) {
+    console.error('Error fetching blockchain config:', error);
+
+    return null;
+  }
+};
 
 // Default configuration
 const defaultConfig: BlockchainConfig = {
@@ -42,10 +59,11 @@ class BlockchainService {
     try {
       // Initialize the provider
       this.provider = new ethers.JsonRpcProvider(this.config.rpcUrl);
-
+      const address = await fetchBlockchainConfig();
       // Initialize the contract
       this.contract = new ethers.Contract(
-        this.config.contractAddress,
+        // this.config.contractAddress,
+        address,
         ABI,
         this.provider
       );

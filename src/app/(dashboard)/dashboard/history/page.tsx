@@ -133,9 +133,7 @@ const DashboardMangaHistory = () => {
 
       <Card className="bg-card/50 border-manga-600/20 animate-fade-in mb-8 shadow-lg backdrop-blur-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold">
-            Blockchain Change History
-          </CardTitle>
+          <CardTitle className="text-xl font-bold">Change History</CardTitle>
         </CardHeader>
 
         <CardContent>

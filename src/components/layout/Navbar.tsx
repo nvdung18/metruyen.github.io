@@ -206,10 +206,10 @@ const Navbar = () => {
                     {Number(auth.clientId) == 1 && (
                       <DropdownMenuItem asChild>
                         <Link
-                          href={'/dashboard'}
+                          href={'/dashboard/manga'}
                           className={cn(
                             'flex items-center rounded-lg px-3 py-2.5 text-sm transition-all duration-200', // Adjusted padding/text size
-                            pathname === '/dashboard'
+                            pathname === '/dashboard/manga'
                               ? 'bg-accent text-manga-400'
                               : 'hover:bg-accent/50'
                           )}
@@ -409,7 +409,7 @@ const Navbar = () => {
               <>
                 {Number(auth.clientId) == 1 && (
                   <Link
-                    href={'/dashboard'}
+                    href={'/dashboard/manga'}
                     className={cn(
                       'flex items-center rounded-lg px-3 py-2.5 text-sm transition-all duration-200', // Adjusted padding/text size
                       pathname === '/dashboard'

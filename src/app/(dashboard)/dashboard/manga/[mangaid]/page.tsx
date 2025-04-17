@@ -312,14 +312,7 @@ export default function MangaDetailPage() {
                                     View
                                   </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link
-                                    href={`/dashboard/manga/${mangaId}/chapters/${chapter.chap_id}/edit`}
-                                  >
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </Link>
-                                </DropdownMenuItem>
+
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-destructive">
                                   <Trash className="mr-2 h-4 w-4" />

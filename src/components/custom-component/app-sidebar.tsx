@@ -35,11 +35,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    title: 'Dashboard',
-    href: '/dashboard',
-    icon: <BarChart3 className="h-5 w-5" />
-  },
-  {
     title: 'Manga',
     href: '/dashboard/manga',
     icon: <BookOpen className="h-5 w-5" />
@@ -64,6 +59,16 @@ const navItems: NavItem[] = [
 export function AppSidebar() {
   const { toggleSidebar } = useSidebar();
   const pathname = usePathname();
+
+  const isNavItemActive = (href: string) => {
+    // Check for exact match
+    if (pathname === href) return true;
+
+    // Check for nested routes (if pathname starts with href and href is not just the root)
+    if (href !== '/' && pathname.startsWith(href)) return true;
+
+    return false;
+  };
   return (
     <Sidebar
       collapsible="icon"
@@ -105,7 +110,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu className={cn('gap-0')}>
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = isNavItemActive(item.href);
             return (
               <SidebarMenuItem
                 key={item.title}

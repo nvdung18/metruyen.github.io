@@ -68,29 +68,27 @@ export default function MangaTableRow({
   return (
     <tr className="border-manga-600/10 hover:bg-manga-600/5 border-t">
       <td className="px-4 py-3">
-        <Link href={`/dashboard/manga/${item.manga_id}/`}>
-          <div className="flex items-center gap-3">
-            {/* Container to hold image or skeleton */}
-            <div className="h-12 w-8 flex-shrink-0">
-              {isImageLoading ? ( // Show skeleton only if loading a real image
-                <Skeleton className="h-full w-full rounded-sm" />
-              ) : (
-                <Image
-                  src={imageUrl} // Use determined image URL
-                  alt={item.manga_title}
-                  width={48} // Keep original width/height for aspect ratio hint
-                  height={72}
-                  className="border-manga-600/20 h-full w-full rounded-sm border object-cover shadow-sm"
-                  onError={handleImageError}
-                  onLoad={handleImageLoadComplete} // Set loading to false on load
-                  unoptimized={!shouldOptimize}
-                  priority={false} // Avoid prioritizing list images usually
-                />
-              )}
-            </div>
-            <span className="line-clamp-1 font-medium">{item.manga_title}</span>
+        <div className="flex items-center gap-3">
+          {/* Container to hold image or skeleton */}
+          <div className="h-12 w-8 flex-shrink-0">
+            {isImageLoading ? ( // Show skeleton only if loading a real image
+              <Skeleton className="h-full w-full rounded-sm" />
+            ) : (
+              <Image
+                src={imageUrl} // Use determined image URL
+                alt={item.manga_title}
+                width={48} // Keep original width/height for aspect ratio hint
+                height={72}
+                className="border-manga-600/20 h-full w-full rounded-sm border object-cover shadow-sm"
+                onError={handleImageError}
+                onLoad={handleImageLoadComplete} // Set loading to false on load
+                unoptimized={!shouldOptimize}
+                priority={false} // Avoid prioritizing list images usually
+              />
+            )}
           </div>
-        </Link>
+          <span className="line-clamp-1 font-medium">{item.manga_title}</span>
+        </div>
       </td>
       {isDesktop && (
         <td className="px-4 py-3">{item.manga_author || 'Unknown'}</td>

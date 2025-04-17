@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Plus,
   Filter,
@@ -96,6 +96,7 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
 
   // State for file uploads
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -167,7 +168,23 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
+
+      // Update files state
       setSelectedFiles((prev) => [...prev, ...filesArray]);
+
+      // Generate previews for each file
+      filesArray.forEach((file) => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setFilePreviews((prev) => [
+              ...prev,
+              event.target?.result as string
+            ]);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
     }
   };
 
@@ -175,11 +192,19 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
     setSelectedFiles(
       selectedFiles.filter((_, index) => index !== indexToRemove)
     );
+    setFilePreviews(filePreviews.filter((_, index) => index !== indexToRemove));
   };
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
+
+  useEffect(() => {
+    if (!dialogOpen) {
+      setSelectedFiles([]);
+      setFilePreviews([]);
+    }
+  }, [dialogOpen]);
 
   const onSubmit = async (data: any) => {
     try {
@@ -206,6 +231,7 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
       setDialogOpen(false);
       form.reset();
       setSelectedFiles([]);
+      setFilePreviews([]);
     } catch (error) {
       console.log('error to create chapter:', error);
       toast.error('Failed to create chapter. Please try again.');
@@ -253,130 +279,195 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                 Add Chapter
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-manga-600/30 backdrop-blur-lg sm:max-w-[600px]">
-              <DialogHeader>
+            <DialogContent className="bg-card border-manga-600/30 flex max-h-[85vh] flex-col overflow-hidden backdrop-blur-lg sm:max-w-[600px]">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-xl">Add New Chapter</DialogTitle>
                 <DialogDescription>
                   Upload a new chapter with images and details
                 </DialogDescription>
               </DialogHeader>
 
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-4"
-                >
-                  <FormField
-                    control={form.control}
-                    name="chap_number"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Chapter Number</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="e.g. 1"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="chap_title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Chapter Title</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter chapter title" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="mt-6">
-                    <FormLabel className="mb-2 block">
-                      Upload Chapter Images
-                    </FormLabel>
-
-                    {/* Hidden file input */}
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileChange}
+              <div className="-mr-1 flex-grow overflow-y-auto pr-1">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="chap_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Chapter Number</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="e.g. 1"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
 
-                    {/* Click to upload area */}
-                    <div
-                      className="border-manga-600/40 hover:bg-manga-500/10 cursor-pointer rounded-md border border-dashed p-8 text-center transition-colors"
-                      onClick={triggerFileInput}
-                    >
-                      <Upload className="text-manga-400 mx-auto mb-2 h-10 w-10" />
-                      <p className="text-muted-foreground text-sm">
-                        Drag and drop image files here, or click to browse
-                      </p>
-                      <span className="text-muted-foreground mt-2 inline-block text-xs">
-                        Supports: JPG, PNG, WEBP (Max 5MB per image)
-                      </span>
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="chap_title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Chapter Title</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter chapter title"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                    {/* Preview of selected files */}
-                    {selectedFiles.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        <p className="text-sm font-medium">
-                          Selected Files ({selectedFiles.length})
+                    <div className="mt-6">
+                      <FormLabel className="mb-2 block">
+                        Upload Chapter Images
+                      </FormLabel>
+
+                      {/* Hidden file input */}
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+
+                      {/* Click to upload area */}
+                      <div
+                        className={`border-manga-600/40 hover:bg-manga-500/10 cursor-pointer rounded-md border border-dashed p-8 text-center transition-colors ${
+                          filePreviews.length > 0 ? 'border-manga-500/40' : ''
+                        }`}
+                        onClick={triggerFileInput}
+                      >
+                        <Upload className="text-manga-400 mx-auto mb-2 h-10 w-10" />
+                        <p className="text-muted-foreground text-sm">
+                          Drag and drop image files here, or click to browse
                         </p>
-                        <div className="max-h-40 overflow-y-auto">
-                          {selectedFiles.map((file, index) => (
-                            <div
-                              key={index}
-                              className="bg-muted/30 flex items-center justify-between rounded-md p-2 text-sm"
-                            >
-                              <div className="flex-1 truncate">
-                                <span className="font-medium">
-                                  Page {index + 1}:
-                                </span>{' '}
-                                {file.name}
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => removeFile(index)}
-                              >
-                                <X size={14} />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
+                        <span className="text-muted-foreground mt-2 inline-block text-xs">
+                          Supports: JPG, PNG, WEBP (Max 5MB per image)
+                        </span>
                       </div>
-                    )}
-                  </div>
 
-                  <DialogFooter className="mt-6">
-                    <DialogClose asChild>
-                      <Button type="button" variant="outline">
-                        Cancel
-                      </Button>
-                    </DialogClose>
-                    <Button
-                      type="submit"
-                      className="bg-manga-500 hover:bg-manga-600"
-                      disabled={isCreating || selectedFiles.length === 0}
-                    >
-                      {isCreating ? 'Uploading...' : 'Save Chapter'}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
+                      {/* Image preview grid */}
+                      {filePreviews.length > 0 && (
+                        <div className="mt-4">
+                          <p className="mb-2 text-sm font-medium">
+                            Preview ({filePreviews.length} images)
+                          </p>
+                          <div className="border-border max-h-[240px] overflow-y-auto rounded-md border p-2">
+                            <div className="grid grid-cols-3 gap-2">
+                              {filePreviews.map((preview, index) => (
+                                <div
+                                  key={index}
+                                  className="group relative aspect-[2/3] overflow-hidden rounded-md"
+                                >
+                                  <img
+                                    src={preview}
+                                    alt={`Page ${index + 1}`}
+                                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+                                    <div className="absolute right-0 bottom-0 left-0 p-1 text-center">
+                                      <span className="text-xs font-medium text-white">
+                                        Page {index + 1}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeFile(index);
+                                    }}
+                                    className="absolute top-1 right-1 rounded-full bg-black/70 p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                                  >
+                                    <X size={14} className="text-white" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* File list */}
+                      {selectedFiles.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">
+                              Selected Files ({selectedFiles.length})
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive/90 h-8 text-xs"
+                              onClick={() => {
+                                setSelectedFiles([]);
+                                setFilePreviews([]);
+                              }}
+                            >
+                              <Trash size={12} className="mr-1" />
+                              Clear all
+                            </Button>
+                          </div>
+                          <div className="border-border max-h-32 overflow-y-auto rounded-md border">
+                            {selectedFiles.map((file, index) => (
+                              <div
+                                key={index}
+                                className="bg-muted/30 border-border flex items-center justify-between border-b p-2 text-sm last:border-b-0"
+                              >
+                                <div className="flex-1 truncate">
+                                  <span className="font-medium">
+                                    Page {index + 1}:
+                                  </span>{' '}
+                                  {file.name}
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => removeFile(index)}
+                                >
+                                  <X size={14} />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </form>
+                </Form>
+              </div>
+
+              <DialogFooter className="border-manga-600/20 mt-4 flex-shrink-0 border-t pt-4">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button
+                  type="submit"
+                  className="bg-manga-500 hover:bg-manga-600"
+                  disabled={isCreating || selectedFiles.length === 0}
+                  onClick={form.handleSubmit(onSubmit)}
+                >
+                  {isCreating ? 'Uploading...' : 'Save Chapter'}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 
@@ -445,17 +536,6 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow>
-              <TableHead className="w-12">
-                <input
-                  type="checkbox"
-                  checked={
-                    selectedChapters.length === paginatedChapters.length &&
-                    paginatedChapters.length > 0
-                  }
-                  onChange={selectAllChapters}
-                  className="border-manga-600/40 text-manga-500 focus:ring-manga-500/40 rounded"
-                />
-              </TableHead>
               <TableHead>MangaID</TableHead>
               <TableHead>Ch. No.</TableHead>
               <TableHead className="hidden md:table-cell">Title</TableHead>
@@ -479,14 +559,6 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                   key={chapter.chap_id}
                   className="hover:bg-muted/30 transition-colors"
                 >
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      checked={selectedChapters.includes(chapter.chap_id)}
-                      onChange={() => toggleSelectChapter(chapter.chap_id)}
-                      className="border-manga-600/40 text-manga-500 focus:ring-manga-500/40 rounded"
-                    />
-                  </TableCell>
                   <TableCell className="font-medium">
                     <Link
                       href={`/dashboard/manga/${mangaid}/chapters/${chapter.chap_id}`}

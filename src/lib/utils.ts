@@ -275,10 +275,12 @@ export async function fetchAndParseIPFSData(
       return [];
     }
 
+    console.log('DataImage', data);
+
     const formattedImages = data
       .map((item: any, index: number): ChapterImage | null => {
         let imageUrl = item.image || item.url; // Allow 'url' as fallback
-        const pageNumber = item.page || index + 1;
+        const pageNumber = item.page;
 
         if (!imageUrl || typeof imageUrl !== 'string') {
           console.warn(
@@ -286,14 +288,6 @@ export async function fetchAndParseIPFSData(
             item
           );
           return null; // Skip invalid items
-        }
-        if (
-          typeof pageNumber !== 'number' ||
-          isNaN(pageNumber) ||
-          pageNumber <= 0
-        ) {
-          console.warn(`Invalid page number for item at index ${index}:`, item);
-          return null; // Skip items with invalid page numbers
         }
 
         if (!imageUrl.startsWith('http')) {
@@ -307,7 +301,7 @@ export async function fetchAndParseIPFSData(
         }
 
         return {
-          id: `${pageNumber}-${index}`, // Create a more stable ID if possible, otherwise use index
+          id: `${pageNumber}`, // Create a more stable ID if possible, otherwise use index
           url: imageUrl,
           pageNumber: pageNumber
         };

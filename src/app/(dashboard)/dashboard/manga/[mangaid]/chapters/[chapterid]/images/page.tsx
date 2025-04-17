@@ -80,6 +80,7 @@ export default function ChapterImagesPage() {
   // Effect to fetch and process IPFS data when chapterData loads/changes
   useEffect(() => {
     if (chapterData?.chap_content) {
+      console.log(chapterData);
       setChapterDetails({
         number: chapterData.chap_number,
         title: chapterData.chap_title || null
@@ -88,6 +89,7 @@ export default function ChapterImagesPage() {
       setIsLoadingIPFS(true);
       fetchAndParseIPFSData(cid)
         .then((parsedImages) => {
+          console.log('ParsedImages', parsedImages);
           setImages(parsedImages);
           setHasChanges(false); // Reset changes when data is loaded initially
         })
@@ -254,6 +256,7 @@ export default function ChapterImagesPage() {
   }, [images, chapterId, isUpdatingChapter]);
 
   const toggleImageSelection = useCallback((image: ChapterImage) => {
+    console.log('Image', image);
     setSelectedImages((prev) => {
       const isSelected = prev.some((img) => img.id === image.id);
       if (isSelected) {
@@ -382,7 +385,6 @@ export default function ChapterImagesPage() {
         <ImageGrid
           images={images}
           selectedImages={selectedImages}
-          onDragEnd={handleDragEnd}
           onToggleSelection={toggleImageSelection}
           onConfirmDelete={confirmDeleteImage}
           mangaId={mangaId}
