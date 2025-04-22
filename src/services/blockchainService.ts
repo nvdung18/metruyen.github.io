@@ -164,7 +164,7 @@ class BlockchainService {
 
       // Use the IPFS gateway to fetch the data
       const response = await fetch(
-        `https://gold-blank-bovid-152.mypinata.cloud/ipfs/${cid}`
+        `${process.env.NEXT_PUBLIC_API_URL_IPFS}${cid}`
       );
 
       if (!response.ok) {

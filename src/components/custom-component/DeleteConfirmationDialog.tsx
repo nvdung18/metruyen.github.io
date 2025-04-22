@@ -8,23 +8,33 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
+import { Loader2 } from 'lucide-react';
 
 interface DeleteConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   itemName?: string; // Optional: specify what is being deleted
+  isLoading?: boolean; // Add loading state prop
 }
 
 export function DeleteConfirmationDialog({
   open,
   onOpenChange,
   onConfirm,
-  itemName = 'item' // Default item name
+  itemName = 'item', // Default item name
+  isLoading = false // Default not loading
 }: DeleteConfirmationDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        // Prevent closing dialog during loading
+        if (isLoading && !isOpen) return;
+        onOpenChange(isOpen);
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Delete {itemName}</DialogTitle>
           <DialogDescription>
@@ -33,17 +43,32 @@ export function DeleteConfirmationDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
           <Button
             variant="destructive"
             onClick={() => {
               onConfirm();
-              onOpenChange(false); // Close dialog on confirm
+              // Don't automatically close dialog when loading state is managed externally
+              if (!isLoading) {
+                onOpenChange(false);
+              }
             }}
+            disabled={isLoading}
           >
-            Delete
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

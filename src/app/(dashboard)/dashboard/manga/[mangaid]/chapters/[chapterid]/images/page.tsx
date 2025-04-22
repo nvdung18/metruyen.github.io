@@ -144,6 +144,16 @@ export default function ChapterImagesPage() {
 
   const handleDeleteImage = useCallback(async () => {
     try {
+      // Set deletion loading state
+      const toastId = toast.loading(
+        `Deleting ${
+          selectedImages.length > 0
+            ? `${selectedImages.length} images`
+            : 'image'
+        }...`,
+        { duration: 10000 }
+      );
+
       if (selectedImages.length > 0) {
         // Extract CIDs from the image URLs
         const contentCids = selectedImages.map((img) => {
@@ -175,6 +185,9 @@ export default function ChapterImagesPage() {
 
         setImages(renumberedImages);
         setSelectedImages([]);
+
+        // Dismiss loading toast and show success
+        toast.dismiss(toastId);
         toast.success(`${selectedImages.length} images deleted successfully`);
       }
       // Handle single image deletion if needed
@@ -206,11 +219,16 @@ export default function ChapterImagesPage() {
 
         setImages(renumberedImages);
         setImageToDeleteId(null);
+
+        // Dismiss loading toast and show success
+        toast.dismiss(toastId);
         toast.success('Image deleted successfully');
       }
     } catch (error) {
-      console.log('Failed to delete images:', error);
+      // Dismiss any existing loading toast and show error
+      toast.dismiss();
       toast.error('Failed to delete images. Please try again.');
+      console.error('Failed to delete images:', error);
     }
   }, [
     selectedImages,
@@ -397,6 +415,7 @@ export default function ChapterImagesPage() {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleDeleteImage}
+        isLoading={isDeletingImages}
         itemName={
           selectedImages.length > 0
             ? `${selectedImages.length} selected images`

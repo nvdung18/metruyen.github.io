@@ -86,7 +86,7 @@ export function ImageGrid({
 
               return (
                 <div
-                  key={image.url}
+                  key={index}
                   className={`group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-md border transition-all duration-150 ease-in-out ${
                     isSelected
                       ? 'ring-primary scale-95 ring-2'

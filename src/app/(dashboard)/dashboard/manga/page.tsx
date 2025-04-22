@@ -122,23 +122,33 @@ export default function MangaManagementPage({
 
   const handleTogglePublishStatus = useCallback(
     async (id: number, newStatus: string) => {
-      // Assuming 'publishManga' handles both publish/unpublish based on current state
-      // Or you might have separate mutations
-      console.log(`Toggling manga ${id} ${newStatus}status`);
+      console.log(`Toggling manga ${id} ${newStatus} status`);
+
+      // Create loading toast with auto-dismiss after 5 seconds
+      const loadingToastId = toast.loading(
+        `${newStatus === 'published' ? 'Publishing' : 'Unpublishing'} manga...`
+      );
+
       try {
-        if (newStatus == 'published') {
+        if (newStatus === 'published') {
           await publishManga(id).unwrap();
-          toast.success("Manga's publish status updated successfully");
-        } else if (newStatus == 'unpublished') {
+          // Dismiss loading toast explicitly and show success
+          toast.dismiss(loadingToastId);
+          toast.success('Manga published successfully');
+        } else if (newStatus === 'unpublished') {
           await unpublishManga(id).unwrap();
-          toast.success("Manga's unpublish status updated successfully");
+          // Dismiss loading toast explicitly and show success
+          toast.dismiss(loadingToastId);
+          toast.success('Manga unpublished successfully');
         }
       } catch (err) {
+        // Dismiss loading toast and show error
+        toast.dismiss(loadingToastId);
         toast.error('Failed to update manga status');
-        console.log('Publish/Unpublish error:', err);
+        console.error('Publish/Unpublish error:', err);
       }
     },
-    [publishManga]
+    [publishManga, unpublishManga]
   );
 
   const handleResetFilters = useCallback(() => {
