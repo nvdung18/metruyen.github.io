@@ -182,52 +182,153 @@ class BlockchainService {
   /**
    * Get the complete version history for a manga
    * @param latestCid - The CID of the latest version
-   * @returns Array of all version history entries
+   * @param page - The page number (starting from 1)
+   * @param pageSize - Number of versions per page
+   * @returns Object containing array of version history entries and pagination metadata
    */
-  async getCompleteVersionHistory(latestCid: string): Promise<HistoryEntry[]> {
+  async getCompleteVersionHistory(
+    latestCid: string,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<{
+    history: HistoryEntry[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      hasMore: boolean;
+    };
+  }> {
     if (!latestCid) {
       console.log('No CID provided to fetch version history');
-      return [];
+      return {
+        history: [],
+        pagination: {
+          currentPage: page,
+          totalPages: 0,
+          totalItems: 0,
+          hasMore: false
+        }
+      };
     }
 
-    const history: HistoryEntry[] = [];
-    let currentCid = latestCid;
-    const processedCids = new Set<string>(); // To prevent infinite loops
-
     try {
-      // Continue fetching until we reach a version with no previous version
-      // or until we encounter a CID we've already processed
+      console.log(
+        `Fetching paginated history for page ${page} with size ${pageSize}`
+      );
+
+      // We'll use a more efficient approach by:
+      // 1. First, getting a count of total items (without fetching all content)
+      // 2. Then, only fetching the specific items needed for the requested page
+
+      // Step 1: Count total items by traversing the chain lightly
+      let currentCid = latestCid;
+      let totalItems = 0;
+      const processedCids = new Set<string>(); // To prevent infinite loops
+
+      // First pass: Just count the total number of versions
       while (currentCid && !processedCids.has(currentCid)) {
-        console.log(`Fetching version data for CID: ${currentCid}`);
         processedCids.add(currentCid);
+        totalItems++;
 
-        // Fetch the current version data from IPFS
-        const versionData = await this.fetchIPFSData(currentCid);
+        // Get basic metadata to find previous version without fetching full content
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL_IPFS}${currentCid}`,
+          { method: 'HEAD' }
+        );
 
-        if (!versionData) {
-          console.log(`Failed to fetch IPFS content for CID: ${currentCid}`);
-          break;
+        if (!response.ok) {
+          // If we can't access the metadata, try to fetch the full content as fallback
+          const versionData = await this.fetchIPFSData(currentCid);
+          if (!versionData) break;
+          currentCid = versionData.previousVersion;
+        } else {
+          // Try to get previousVersion from headers if available
+          // If not available, we'll need to fetch the content
+          const versionData = await this.fetchIPFSData(currentCid);
+          if (!versionData) break;
+          currentCid = versionData.previousVersion;
         }
 
-        // Add this version to our history array
-        history.push(versionData);
-
-        // Move to the previous version
-        currentCid = versionData.previousVersion;
-
-        // Safety check - if we've processed too many versions, break to prevent
-        // potential infinite loops or excessive API calls
-        if (history.length > 100) {
-          console.warn('Reached maximum history depth (100 versions)');
+        // Safety check - if we've processed too many versions, break
+        if (totalItems > 100) {
+          console.warn(
+            'Reached maximum history depth (100 versions) during counting'
+          );
           break;
         }
       }
 
-      // Sort the history by version number (descending)
-      return history.sort((a, b) => b.version - a.version);
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(totalItems / pageSize);
+      const normalizedPage = Math.max(1, Math.min(page, totalPages || 1));
+
+      // Step 2: Now fetch only the items needed for this page
+      // We need to skip (page-1)*pageSize items and fetch pageSize items
+
+      // Reset for second traversal
+      currentCid = latestCid;
+      processedCids.clear();
+
+      // Skip items for previous pages
+      let itemsToSkip = (normalizedPage - 1) * pageSize;
+      while (itemsToSkip > 0 && currentCid && !processedCids.has(currentCid)) {
+        processedCids.add(currentCid);
+
+        // Get just enough information to find the next CID
+        const versionData = await this.fetchIPFSData(currentCid);
+        if (!versionData) break;
+
+        currentCid = versionData.previousVersion;
+        itemsToSkip--;
+      }
+
+      // Now fetch only the items for our page
+      const pageHistory: HistoryEntry[] = [];
+      let itemsFetched = 0;
+
+      while (
+        itemsFetched < pageSize &&
+        currentCid &&
+        !processedCids.has(currentCid)
+      ) {
+        console.log(
+          `Fetching version data for page ${normalizedPage}, item ${itemsFetched + 1}`
+        );
+        processedCids.add(currentCid);
+
+        // Fetch the full data for this item
+        const versionData = await this.fetchIPFSData(currentCid);
+        if (!versionData) break;
+
+        pageHistory.push(versionData);
+        currentCid = versionData.previousVersion;
+        itemsFetched++;
+      }
+
+      // Sort by version number (descending) if needed
+      pageHistory.sort((a, b) => b.version - a.version);
+
+      return {
+        history: pageHistory,
+        pagination: {
+          currentPage: normalizedPage,
+          totalPages,
+          totalItems,
+          hasMore: normalizedPage < totalPages
+        }
+      };
     } catch (error) {
-      console.error('Error fetching complete version history:', error);
-      return history; // Return whatever we've managed to fetch so far
+      console.error('Error fetching paginated version history:', error);
+      return {
+        history: [],
+        pagination: {
+          currentPage: page,
+          totalPages: 0,
+          totalItems: 0,
+          hasMore: false
+        }
+      };
     }
   }
 }

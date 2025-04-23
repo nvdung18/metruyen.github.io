@@ -1,114 +1,117 @@
-import React, { useState } from 'react';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious
-} from '@/components/ui/pagination';
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 
 interface HistoryPaginationProps {
-  totalEntries: number;
-  filteredEntries: number;
-  entriesPerPage?: number;
-  onPageChange?: (page: number) => void;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-const HistoryPagination = ({
-  totalEntries,
-  filteredEntries,
-  entriesPerPage = 10,
+/**
+ * Pagination component for history pages
+ * Shows current page, navigation buttons, and page numbers
+ */
+const HistoryPagination: React.FC<HistoryPaginationProps> = ({
+  currentPage,
+  totalPages,
   onPageChange
-}: HistoryPaginationProps) => {
-  const [currentPage, setCurrentPage] = useState(1);
+}) => {
+  // Generate array of page numbers to display
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5; // Maximum number of page numbers to display
 
-  // Calculate total number of pages
-  const totalPages = Math.max(1, Math.ceil(filteredEntries / entriesPerPage));
+    // Always show first page
+    pages.push(1);
 
-  // Generate pages array to display (always show 5 pages if possible)
-  const getPageRange = () => {
-    if (totalPages <= 5) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    // Add current page and neighbors
+    const startPage = Math.max(2, currentPage - 1);
+    const endPage = Math.min(totalPages - 1, currentPage + 1);
+
+    // Add ellipsis after first page if there's a gap
+    if (startPage > 2) {
+      pages.push(-1); // -1 represents an ellipsis
     }
 
-    // If current page is near the beginning
-    if (currentPage <= 3) {
-      return [1, 2, 3, 4, 5];
+    // Add pages around current page
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
     }
 
-    // If current page is near the end
-    if (currentPage >= totalPages - 2) {
-      return [
-        totalPages - 4,
-        totalPages - 3,
-        totalPages - 2,
-        totalPages - 1,
-        totalPages
-      ];
+    // Add ellipsis before last page if there's a gap
+    if (endPage < totalPages - 1) {
+      pages.push(-2); // -2 represents an ellipsis
     }
 
-    // Otherwise, show current page in the middle
-    return [
-      currentPage - 2,
-      currentPage - 1,
-      currentPage,
-      currentPage + 1,
-      currentPage + 2
-    ];
-  };
-
-  const handlePageChange = (page: number) => {
-    if (page !== currentPage && page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      if (onPageChange) {
-        onPageChange(page);
-      }
+    // Always show last page if there's more than one page
+    if (totalPages > 1) {
+      pages.push(totalPages);
     }
+
+    return pages;
   };
 
   return (
-    <div className="mt-4 space-y-2">
-      <div className="text-muted-foreground text-sm">
-        Showing {filteredEntries} of {totalEntries} history records
-      </div>
+    <div className="flex items-center justify-center space-x-2">
+      {/* Previous page button */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage <= 1}
+        className="border-manga-600/20 hover:bg-manga-600/10"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        <span className="sr-only">Previous page</span>
+      </Button>
 
-      {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => handlePageChange(currentPage - 1)}
-                className={
-                  currentPage === 1 ? 'pointer-events-none opacity-50' : ''
-                }
-              />
-            </PaginationItem>
+      {/* Page numbers */}
+      {getPageNumbers().map((page, index) => {
+        // Render ellipsis for skipped pages
+        if (page < 0) {
+          return (
+            <Button
+              key={`ellipsis-${index}`}
+              variant="ghost"
+              size="icon"
+              disabled
+              className="pointer-events-none"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          );
+        }
 
-            {getPageRange().map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  isActive={page === currentPage}
-                  onClick={() => handlePageChange(page)}
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
+        // Render page number
+        return (
+          <Button
+            key={page}
+            variant={currentPage === page ? 'default' : 'outline'}
+            size="icon"
+            onClick={() => onPageChange(page)}
+            className={
+              currentPage === page
+                ? 'bg-manga-500 hover:bg-manga-600'
+                : 'border-manga-600/20 hover:bg-manga-600/10'
+            }
+          >
+            {page}
+          </Button>
+        );
+      })}
 
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => handlePageChange(currentPage + 1)}
-                className={
-                  currentPage === totalPages
-                    ? 'pointer-events-none opacity-50'
-                    : ''
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+      {/* Next page button */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage >= totalPages}
+        className="border-manga-600/20 hover:bg-manga-600/10"
+      >
+        <ChevronRight className="h-4 w-4" />
+        <span className="sr-only">Next page</span>
+      </Button>
     </div>
   );
 };

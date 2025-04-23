@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useContext, createContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import {
@@ -23,8 +23,19 @@ import { useAppSelector } from '@/lib/redux/hook';
 import { formatDate } from '@/lib/utils';
 import { useGetListCommentsQuery } from '@/services/apiManga';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '../ui/skeleton';
+
+// Create a context to track which comment is being replied to
+interface CommentContextType {
+  activeReplyId: number | null;
+  setActiveReplyId: (id: number | null) => void;
+}
+
+export const CommentContext = createContext<CommentContextType>({
+  activeReplyId: null,
+  setActiveReplyId: () => {}
+});
 
 export interface CommentType {
   comment: {
@@ -48,10 +59,15 @@ interface CommentProps extends CommentType {
 }
 
 const CommentItem = ({ comment, chapterId }: CommentProps) => {
-  const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [showReplies, setShowReplies] = useState(false);
   const auth = useAppSelector((state) => state.auth);
+
+  // Use the comment context to track active reply
+  const { activeReplyId, setActiveReplyId } = useContext(CommentContext);
+
+  // Check if this comment is the one being replied to
+  const isReplying = activeReplyId === comment.comment_id;
 
   const {
     data: commentsData,
@@ -71,6 +87,15 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
       refetchComments();
     }
     setShowReplies(!showReplies);
+  };
+
+  // Toggle reply form and close any other open reply forms
+  const toggleReplyForm = () => {
+    if (isReplying) {
+      setActiveReplyId(null);
+    } else {
+      setActiveReplyId(comment.comment_id);
+    }
   };
 
   return (
@@ -124,20 +149,9 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
             variant="ghost"
             size="sm"
             className="hover:bg-manga-500/10 h-8 gap-1 text-xs"
-            onClick={() =>
-              setReplyingTo(
-                replyingTo === comment.comment_id ? null : comment.comment_id
-              )
-            }
+            onClick={toggleReplyForm}
           >
             <ReplyIcon className="h-4 w-4" /> Reply
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hover:bg-manga-500/10 h-8 gap-1 text-xs"
-          >
-            <Flag className="h-4 w-4" /> Report
           </Button>
 
           {!comment.comment_parent_id && hasReplies && (
@@ -167,7 +181,7 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
         </div>
       </div>
 
-      {replyingTo === comment.comment_id && auth.clientId && (
+      {isReplying && auth.clientId && (
         <div className="ml-8">
           <CommentForm
             avatarUrl={`https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.comment_user_id}`}
@@ -177,7 +191,7 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
             value={replyContent}
             onChange={setReplyContent}
             isReply={true}
-            onCancel={() => setReplyingTo(null)}
+            onCancel={() => setActiveReplyId(null)}
             chapterId={comment.comment_chapter_id}
             parentId={comment.comment_id}
             parentName={`@${comment.user.usr_name}`}

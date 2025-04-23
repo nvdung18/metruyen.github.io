@@ -371,7 +371,7 @@ export const filterHistoryData = (
   searchTerm: string
 ) => {
   let filtered = [...historyData];
-
+  console.log('HistoryData', historyData);
   // Apply type filter
   if (filterType !== 'all') {
     filtered = filtered.filter((entry) => entry.type === filterType);

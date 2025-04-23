@@ -228,21 +228,7 @@ const ChangeDetailsTable = ({
         </span>
         Change Details
       </h3>
-      <h3 className="border-manga-600/20 text-manga-400 flex items-center gap-2 border-b p-4 font-medium">
-        {/* adding icon for this */}
-        <span className="bg-manga-400/10 flex rounded-full p-1">
-          <History className="text-manga-400 h-4 w-4" />
-        </span>
-        {type === 'CreateManga' && 'Create Manga'}
-        {type === 'CreateChapter' && 'Create Chapter'}
-        {type === 'UpdateManga' && 'Update Manga'}
-        {type === 'UpdateChapter' && 'Update Chapter'}
-        {type === 'PublishManga' && 'Publish Manga'}
-        {type === 'UnpublishManga' && 'UnPublish Manga'}
-        {type === 'DeleteManga' && 'Delete Manga'}
-        {type === 'DeleteChapter' && 'Delete Chapter'}
-        {type === 'UpdateChapterContent' && 'Update Chapter Content'}
-      </h3>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-manga-600/10">

@@ -39,7 +39,7 @@ const HistoryTable = ({
   historyEntries,
   onViewDetails,
   onViewCompleteHistory,
-  itemsPerPage = 10,
+  itemsPerPage = 5,
   currentPage: externalCurrentPage,
   onPageChange
 }: HistoryTableProps) => {
@@ -57,7 +57,6 @@ const HistoryTable = ({
   // Get current page entries
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentEntries = historyEntries.slice(startIndex, endIndex);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -91,7 +90,7 @@ const HistoryTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentEntries.length === 0 ? (
+            {historyEntries.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={5}
@@ -101,7 +100,7 @@ const HistoryTable = ({
                 </TableCell>
               </TableRow>
             ) : (
-              currentEntries.map((entry, index) => (
+              historyEntries.map((entry, index) => (
                 <TableRow
                   key={generateUniqueKey(entry, index)}
                   className="border-manga-600/10 hover:bg-manga-600/5 border-t"
@@ -145,42 +144,6 @@ const HistoryTable = ({
           </TableBody>
         </Table>
       </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-muted-foreground text-sm">
-            Showing {startIndex + 1}-{Math.min(endIndex, historyEntries.length)}{' '}
-            of {historyEntries.length} entries
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <div className="text-sm">
-              Page {currentPage} of {totalPages}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

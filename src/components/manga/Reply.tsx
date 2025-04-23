@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { MoreVertical, Reply as ReplyIcon, ThumbsUp } from 'lucide-react';
@@ -11,6 +11,7 @@ import {
 import { formatDate } from '@/lib/utils';
 import { useAppSelector } from '@/lib/redux/hook';
 import CommentForm from './CommentForm';
+import { CommentContext } from './Comment';
 
 interface ReplyProps {
   comment_id: number;
@@ -30,12 +31,13 @@ interface ReplyProps {
 const Reply = ({ comment }: { comment: ReplyProps }) => {
   const auth = useAppSelector((state) => state.auth);
   const [replyContent, setReplyContent] = useState('');
-  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const { activeReplyId, setActiveReplyId } = useContext(CommentContext);
+
+  // Check if this reply is the one being replied to
+  const isReplying = activeReplyId === comment.comment_id;
 
   const handleReplyClick = () => {
-    setReplyingTo(
-      replyingTo === comment.comment_id ? null : comment.comment_id
-    );
+    setActiveReplyId(isReplying ? null : comment.comment_id);
   };
 
   return (
@@ -94,7 +96,7 @@ const Reply = ({ comment }: { comment: ReplyProps }) => {
       </div>
 
       {/* Reply form */}
-      {replyingTo === comment.comment_id && auth.clientId && (
+      {isReplying && auth.clientId && (
         <div className="animate-fade-in mt-3 ml-4">
           <CommentForm
             avatarUrl={`https://api.dicebear.com/7.x/avataaars/svg?seed=${auth.user?.id}`}
@@ -104,7 +106,7 @@ const Reply = ({ comment }: { comment: ReplyProps }) => {
             value={replyContent}
             onChange={setReplyContent}
             isReply={true}
-            onCancel={() => setReplyingTo(null)}
+            onCancel={() => setActiveReplyId(null)}
             chapterId={comment.comment_chapter_id}
             parentId={comment.comment_id}
             parentName={`@${comment.user.usr_name}`}

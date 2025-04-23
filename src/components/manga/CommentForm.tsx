@@ -94,6 +94,11 @@ const CommentForm = ({
       toast(`${isReply ? 'Reply posted' : 'Comment posted'}`, {
         description: 'Your comment has been posted successfully'
       });
+
+      // Close the reply form if it's a reply
+      if (isReply && onCancel) {
+        onCancel();
+      }
     } catch (err) {
       console.log('Failed to post comment:', err);
 

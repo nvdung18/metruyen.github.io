@@ -11,22 +11,38 @@ import { toast } from 'sonner';
 import HistoryFilters from '@/components/manga/HistoryFilters';
 import HistoryTable from '@/components/manga/HistoryTable';
 import HistoryDetailsDialog from '@/components/manga/HistoryDetailsDialog';
+import HistoryPagination from '@/components/manga/HistoryPagination';
 import { useBlockchain } from '@/hooks/useBlockchain';
 
 /**
  * Dashboard page for displaying manga history from blockchain
  */
 const DashboardMangaHistory = () => {
-  ///dashboard/history?manga_id
+  // URL parameters
   const searchParams = useSearchParams();
   const router = useRouter();
   const mangaId = searchParams.get('manga_id');
   const navigate = useRouter();
+
+  // Filtering state
   const [filterType, setFilterType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  // Pagination config
+  const PAGE_SIZE = 5; // Number of history entries per page
+
+  // Use blockchain hook for data fetching with pagination
+  const {
+    historyData,
+    pagination,
+    error,
+    isLoading,
+    getLatestMangaVersion,
+    getCompleteVersionHistory,
+    changePage
+  } = useBlockchain();
 
   if (!mangaId) {
     toast('Error', {
@@ -35,14 +51,6 @@ const DashboardMangaHistory = () => {
     router.push('/dashboard/manga');
     return null;
   }
-
-  // Use blockchain hook for data fetching
-  const {
-    historyData,
-    error,
-    getLatestMangaVersion,
-    getCompleteVersionHistory
-  } = useBlockchain();
 
   // Get filtered data and unique types for filter dropdown
   const filteredHistory = filterHistoryData(
@@ -56,38 +64,37 @@ const DashboardMangaHistory = () => {
   useEffect(() => {
     const fetchLatestManga = async () => {
       try {
-        // Example manga ID - replace with your actual manga ID
-        setIsLoading(true);
         console.log('Fetching latest version for manga ID:', mangaId);
         const latestVersionEntry = await getLatestMangaVersion(Number(mangaId));
 
         if (latestVersionEntry) {
           console.log('HistoryEntry LastVersion', latestVersionEntry);
-          // Now fetch the complete version history using the CID from the latest version
-          console.log('Fetching complete version history...');
+
+          // Now fetch the paginated version history
+          console.log('Fetching paginated version history...');
           if (!latestVersionEntry.previousVersion) {
             console.log('No previous version CID found for this entry');
             return;
           }
-          const completeHistory =
-            await getCompleteVersionHistory(latestVersionEntry);
-          console.log('Complete version history:', completeHistory);
-          console.log(
-            `Fetched ${completeHistory.length} version history entries`
-          );
+
+          // Get first page of history with default page size
+          const { history, pagination: paginationData } =
+            await getCompleteVersionHistory(latestVersionEntry, 1, PAGE_SIZE);
+
+          console.log('Paginated version history:', history);
+          console.log(`Fetched ${history.length} version history entries`);
+          console.log('Pagination data:', paginationData);
         } else {
           console.log('No latest version found for manga ID:', mangaId);
         }
       } catch (err) {
         console.log('Error fetching manga version history:', err);
-      } finally {
-        setIsLoading(false);
       }
     };
 
     fetchLatestManga();
-  }, []);
-  console.log('History Data:', historyData); // Debugging line
+  }, [mangaId, getLatestMangaVersion, getCompleteVersionHistory]);
+
   /**
    * Handle view details click
    * @param entry - History entry to view
@@ -95,6 +102,14 @@ const DashboardMangaHistory = () => {
   const handleViewDetails = (entry: HistoryEntry) => {
     setSelectedEntry(entry);
     setIsDetailsOpen(true);
+  };
+
+  /**
+   * Handle page change in pagination
+   * @param page - The page number to navigate to
+   */
+  const handlePageChange = async (page: number) => {
+    await changePage(page);
   };
 
   // Show toast on error
@@ -158,12 +173,24 @@ const DashboardMangaHistory = () => {
                 changeTypes={changeTypes}
               />
 
-              {/* Table component - pass the new handler */}
+              {/* Table component */}
               <HistoryTable
                 historyEntries={filteredHistory}
                 onViewDetails={handleViewDetails}
-                // onViewCompleteHistory={handleViewCompleteHistory}
+                onPageChange={handlePageChange}
+                currentPage={pagination.currentPage}
               />
+
+              {/* Pagination component */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-6">
+                  <HistoryPagination
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
             </>
           )}
         </CardContent>
