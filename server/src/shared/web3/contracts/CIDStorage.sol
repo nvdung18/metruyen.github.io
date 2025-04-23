@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "contracts/metruyen/Owner.sol";
-import "hardhat/console.sol";
-import "contracts/metruyen/factory.sol";
+import 'contracts/metruyen/Owner.sol';
+import 'hardhat/console.sol';
+import 'contracts/metruyen/factory.sol';
 
 contract CIDStorage {
     event StoryUpdated(
@@ -16,10 +16,10 @@ contract CIDStorage {
     constructor(address _factoryContract) {
         require(
             _factoryContract != address(0),
-            "Invalid Factory contract address"
+            'Invalid Factory contract address'
         );
         Factory factoryContract = Factory(_factoryContract);
-        factoryContract.addExistingContract("CIDStorage", address(this));
+        factoryContract.addExistingContract('CIDStorage', address(this));
     }
 
     function updateStory(
@@ -28,8 +28,7 @@ contract CIDStorage {
         address _ownerContract
     ) public {
         Owner ownerContract = Owner(_ownerContract);
-        require(ownerContract.getOwner() == msg.sender, "Caller is not owner");
+        require(ownerContract.getOwner() == msg.sender, 'Caller is not owner');
         emit StoryUpdated(storyId, newCID, block.timestamp);
     }
-
 }

@@ -23,6 +23,7 @@ import { omit } from 'lodash';
 import { CategoryService } from '@modules/category/category.service';
 import { UserService } from '@modules/user/user.service';
 import { ContractName as ContractNameConst } from '@common/constants';
+import { Http } from 'winston/lib/winston/transports';
 
 @Injectable()
 export class MangaService {
@@ -74,7 +75,7 @@ export class MangaService {
       );
 
       const { changes: mangaCategories } = await this.addMangaCategory(
-        category_id,
+        { category_id },
         mangaId,
         {
           transaction: t,
@@ -203,29 +204,53 @@ export class MangaService {
   }
 
   async addMangaCategory(
-    category_id: number[],
+    {
+      category_id,
+      replace_category_id = [],
+    }: { category_id: number[]; replace_category_id?: number[] },
     mangaId: number,
     options: object = {},
     isCreateManga: boolean = false,
   ): Promise<{
     mangaCategories: MangaCategory[];
-    changes: { field: string; categoryId: any; categoryName: any }[];
+    changes: {
+      field: string;
+      newCategoryId: any;
+      newCategoryName: any;
+      oldCategoryId?: any;
+      oldCategoryName?: any;
+    }[];
   }> {
-    const changes: { field: string; categoryId: any; categoryName: any }[] = [];
+    const changes: {
+      field: string;
+      newCategoryId: any;
+      newCategoryName: any;
+      oldCategoryId?: any;
+      oldCategoryName?: any;
+    }[] = [];
     let foundManga: Manga;
     if (!isCreateManga) {
       foundManga = await this.findMangaByIdCanPublishOrUnPublish(mangaId);
     }
 
     const mangaCategory = await Promise.all(
-      category_id.map(async (id) => {
-        const category = await this.categoryService.getCategoryById(id);
+      category_id.map(async (categoryId, index) => {
+        const category = await this.categoryService.getCategoryById(categoryId);
+        const replaceCategory =
+          replace_category_id[index] !== undefined
+            ? await this.categoryService.getCategoryById(
+                replace_category_id[index],
+              )
+            : null;
         changes.push({
           field: 'category_id',
-          categoryId: id,
-          categoryName: category.category_name,
+          newCategoryId: categoryId,
+          newCategoryName: category.category_name,
+          oldCategoryId: replaceCategory?.category_id,
+          oldCategoryName: replaceCategory?.category_name,
         });
-        return { category_id: id, manga_id: mangaId };
+        console.log(changes);
+        return { category_id: categoryId, manga_id: mangaId };
       }),
     );
 
@@ -240,6 +265,15 @@ export class MangaService {
         mangaCategories = await this.mangaRepo.addMangaCategory(mangaCategory, {
           transaction: t,
         });
+
+        if (replace_category_id.length > 0) {
+          const deleteMangaCategory = replace_category_id.map((categoryId) => {
+            return { category_id: categoryId, manga_id: mangaId };
+          });
+          await this.mangaRepo.deleteMangaCategory(deleteMangaCategory, {
+            transaction: t,
+          });
+        }
 
         await this.createHistoryOfUpdateManga(
           HistoryType.CreateCategoryForManga,

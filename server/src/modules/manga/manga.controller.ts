@@ -139,6 +139,7 @@ export class MangaController {
     };
   }
 
+  @ApiConsumes('application/x-www-form-urlencoded')
   @ApiOperation({
     summary: 'Admin add Manga Category',
     description: `
@@ -163,7 +164,10 @@ export class MangaController {
     @Body() updateMangaCategoryDto: UpdateMangaCategoryDto,
   ) {
     const { mangaCategories } = await this.mangaService.addMangaCategory(
-      updateMangaCategoryDto.category_id,
+      {
+        category_id: updateMangaCategoryDto.category_id,
+        replace_category_id: updateMangaCategoryDto.replace_category_id,
+      },
       id,
     );
     return {
