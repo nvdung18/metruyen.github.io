@@ -141,7 +141,7 @@ export class MangaController {
 
   @ApiConsumes('application/x-www-form-urlencoded')
   @ApiOperation({
-    summary: 'Admin add Manga Category',
+    summary: 'Admin update Manga Category (remove or create)',
     description: `
   - **${SwaggerApiOperation.NEED_AUTH}**
   - Only **admin** can use this API.
@@ -153,58 +153,63 @@ export class MangaController {
     type: Number,
     description: 'Id of manga',
   })
+  @ApiBody({
+    description: 'Update Manga',
+    type: UpdateMangaCategoryDto,
+  })
   @Post('/manga-category/:id')
   @ResponseMessage('Add Manga Category successful')
   @UseGuards(RolesGuard)
   @UseGuards(AuthGuard)
   @Roles({ action: 'updateAny', resource: 'Manga' })
-  async addMangaCategory(
+  async updateMangaCategory(
     @Req() req: Request,
     @Param('id') id: number,
-    @Body() updateMangaCategoryDto: UpdateMangaCategoryDto,
+    @Body(new AtLeastOneFieldPipe({ removeAllEmptyField: true }))
+    updateMangaCategoryDto: UpdateMangaCategoryDto,
   ) {
     const { mangaCategories } = await this.mangaService.addMangaCategory(
       {
-        category_id: updateMangaCategoryDto.category_id,
-        replace_category_id: updateMangaCategoryDto.replace_category_id,
+        listNewCategoryId: updateMangaCategoryDto.listNewCategoryId,
+        listRemoveCategoryId: updateMangaCategoryDto.listRemoveCategoryId,
       },
       id,
     );
     return {
-      metadata: req['permission'].filter(mangaCategories),
+      metadata: mangaCategories,
     };
   }
 
-  @ApiOperation({
-    summary: 'Admin delete Manga Category',
-    description: `
-  - **${SwaggerApiOperation.NEED_AUTH}**
-  - Only **admin** can use this API.
-  - Can delete many categories.
-  - If have any error in process delete, it will rollback data
-      `,
-  })
-  @ApiParam({
-    name: 'id',
-    type: Number,
-    description: 'Id of manga',
-  })
-  @Delete('/manga-category/:id')
-  @ResponseMessage('Delete Manga Category successful')
-  @UseGuards(RolesGuard)
-  @UseGuards(AuthGuard)
-  @Roles({ action: 'deleteAny', resource: 'Manga' })
-  async deleteMangaCategory(
-    @Param('id') id: number,
-    @Body() updateMangaCategoryDto: UpdateMangaCategoryDto,
-  ) {
-    return {
-      metadata: await this.mangaService.deleteMangaCategory(
-        updateMangaCategoryDto.category_id,
-        id,
-      ),
-    };
-  }
+  // @ApiOperation({
+  //   summary: 'Admin delete Manga Category',
+  //   description: `
+  // - **${SwaggerApiOperation.NEED_AUTH}**
+  // - Only **admin** can use this API.
+  // - Can delete many categories.
+  // - If have any error in process delete, it will rollback data
+  //     `,
+  // })
+  // @ApiParam({
+  //   name: 'id',
+  //   type: Number,
+  //   description: 'Id of manga',
+  // })
+  // @Delete('/manga-category/:id')
+  // @ResponseMessage('Delete Manga Category successful')
+  // @UseGuards(RolesGuard)
+  // @UseGuards(AuthGuard)
+  // @Roles({ action: 'deleteAny', resource: 'Manga' })
+  // async deleteMangaCategory(
+  //   @Param('id') id: number,
+  //   @Body() updateMangaCategoryDto: UpdateMangaCategoryDto,
+  // ) {
+  //   return {
+  //     metadata: await this.mangaService.deleteMangaCategory(
+  //       updateMangaCategoryDto.listNewCategoryId,
+  //       id,
+  //     ),
+  //   };
+  // }
 
   @ApiOperation({
     summary: 'Admin publish Manga',

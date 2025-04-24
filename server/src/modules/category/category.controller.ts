@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
+  Param,
   Post,
   Put,
   Query,
@@ -17,11 +19,13 @@ import { RolesGuard } from '@common/guards/roles.guard';
 import { GuestRole, Roles } from '@common/decorators/roles.decorator';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { SwaggerApiOperation } from '@common/constants';
+import { DeleteManyCategoriesDto } from './dto/delete-many-categories.dto';
 
 @ApiTags('Category')
 @ApiBearerAuth()
@@ -91,6 +95,29 @@ export class CategoryController {
     const data = await this.categoryService.getAllCategories();
     return {
       metadata: req['permission'].filter(data),
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Admin delete many Categories',
+    description: `
+  - **${SwaggerApiOperation.NEED_AUTH}**
+  - Only **admin** can use this API.
+    `,
+  })
+  @ApiConsumes('application/x-www-form-urlencoded')
+  @Delete('')
+  @ResponseMessage('Delete many categories successfully')
+  @UseGuards(RolesGuard)
+  @UseGuards(AuthGuard)
+  @Roles({ action: 'deleteAny', resource: 'Categories' })
+  async deleteManyCategory(
+    @Body() deleteManyCategoriesDto: DeleteManyCategoriesDto,
+  ) {
+    return {
+      metadata: await this.categoryService.deleteManyCategories(
+        deleteManyCategoriesDto.listCategory,
+      ),
     };
   }
 }

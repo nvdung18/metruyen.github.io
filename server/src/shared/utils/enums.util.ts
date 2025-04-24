@@ -5,8 +5,9 @@ export enum HistoryType {
   UnpublishManga = 'Unpublish Manga',
   PublishManga = 'Publish Manga',
 
-  CreateCategoryForManga = 'Create new Category For Manga',
-  DeleteCategoryForMagna = 'Delete Category For Manga',
+  // CreateCategoryForManga = 'Create new Category For Manga',
+  // DeleteCategoryForMagna = 'Delete Category For Manga',
+  UpdateCategoryForManga = 'Update category for manga',
 
   CreateChapter = 'Create new Chapter',
   UpdateChapter = 'Update Chapter',

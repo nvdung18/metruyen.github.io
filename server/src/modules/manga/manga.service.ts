@@ -75,7 +75,7 @@ export class MangaService {
       );
 
       const { changes: mangaCategories } = await this.addMangaCategory(
-        { category_id },
+        { listNewCategoryId: category_id },
         mangaId,
         {
           transaction: t,
@@ -205,56 +205,51 @@ export class MangaService {
 
   async addMangaCategory(
     {
-      category_id,
-      replace_category_id = [],
-    }: { category_id: number[]; replace_category_id?: number[] },
+      listNewCategoryId,
+      listRemoveCategoryId = [],
+    }: { listNewCategoryId: number[]; listRemoveCategoryId?: number[] },
     mangaId: number,
     options: object = {},
     isCreateManga: boolean = false,
   ): Promise<{
-    mangaCategories: MangaCategory[];
-    changes: {
+    mangaCategories: MangaCategory[] | boolean;
+    changes?: {
       field: string;
-      newCategoryId: any;
-      newCategoryName: any;
-      oldCategoryId?: any;
-      oldCategoryName?: any;
+      newCategoryId?: any;
+      newCategoryName?: any;
+      removeCategoryId?: any;
+      removeCategoryName?: any;
     }[];
   }> {
     const changes: {
       field: string;
-      newCategoryId: any;
-      newCategoryName: any;
-      oldCategoryId?: any;
-      oldCategoryName?: any;
+      newCategoryId?: any;
+      newCategoryName?: any;
+      removeCategoryId?: any;
+      removeCategoryName?: any;
     }[] = [];
     let foundManga: Manga;
     if (!isCreateManga) {
       foundManga = await this.findMangaByIdCanPublishOrUnPublish(mangaId);
     }
 
-    const mangaCategory = await Promise.all(
-      category_id.map(async (categoryId, index) => {
-        const category = await this.categoryService.getCategoryById(categoryId);
-        const replaceCategory =
-          replace_category_id[index] !== undefined
-            ? await this.categoryService.getCategoryById(
-                replace_category_id[index],
-              )
-            : null;
-        changes.push({
-          field: 'category_id',
-          newCategoryId: categoryId,
-          newCategoryName: category.category_name,
-          oldCategoryId: replaceCategory?.category_id,
-          oldCategoryName: replaceCategory?.category_name,
-        });
-        console.log(changes);
-        return { category_id: categoryId, manga_id: mangaId };
-      }),
-    );
+    let mangaCategory: any = [];
+    if (listNewCategoryId.length > 0) {
+      mangaCategory = await Promise.all(
+        listNewCategoryId.map(async (categoryId, index) => {
+          const category =
+            await this.categoryService.getCategoryById(categoryId);
+          changes.push({
+            field: 'category_id',
+            newCategoryId: categoryId,
+            newCategoryName: category.category_name,
+          });
+          return { category_id: categoryId, manga_id: mangaId };
+        }),
+      );
+    }
 
-    let mangaCategories: MangaCategory[];
+    let mangaCategories: MangaCategory[] | boolean;
     if (isCreateManga) {
       mangaCategories = await this.mangaRepo.addMangaCategory(
         mangaCategory,
@@ -262,28 +257,42 @@ export class MangaService {
       );
     } else {
       mangaCategories = await this.sequelize.transaction(async (t) => {
-        mangaCategories = await this.mangaRepo.addMangaCategory(mangaCategory, {
-          transaction: t,
-        });
+        if (listNewCategoryId.length > 0) {
+          mangaCategories = await this.mangaRepo.addMangaCategory(
+            mangaCategory,
+            {
+              transaction: t,
+            },
+          );
+        }
 
-        if (replace_category_id.length > 0) {
-          const deleteMangaCategory = replace_category_id.map((categoryId) => {
-            return { category_id: categoryId, manga_id: mangaId };
-          });
-          await this.mangaRepo.deleteMangaCategory(deleteMangaCategory, {
+        if (listRemoveCategoryId.length > 0) {
+          const deleteMangaCategories = await Promise.all(
+            listRemoveCategoryId.map(async (categoryId) => {
+              const category =
+                await this.categoryService.getCategoryById(categoryId);
+              changes.push({
+                field: 'category_id',
+                removeCategoryId: categoryId,
+                removeCategoryName: category.category_name,
+              });
+              return { category_id: categoryId, manga_id: mangaId };
+            }),
+          );
+          await this.mangaRepo.deleteMangaCategory(deleteMangaCategories, {
             transaction: t,
           });
         }
 
         await this.createHistoryOfUpdateManga(
-          HistoryType.CreateCategoryForManga,
+          HistoryType.UpdateCategoryForManga,
           mangaId,
           `${foundManga.manga_title}-history`,
           { changes: changes },
         );
 
-        const result = mangaCategories.map((category) => category.dataValues);
-        return result;
+        // const result = mangaCategories.map((category) => category.dataValues);
+        return true;
       });
     }
 
@@ -298,54 +307,54 @@ export class MangaService {
     return { mangaCategories, changes };
   }
 
-  async deleteMangaCategory(
-    category_id: number[],
-    mangaId: number,
-  ): Promise<number> {
-    const changes: { field: string; categoryId: any; categoryName: any }[] = [];
-    const foundManga = await this.findMangaByIdCanPublishOrUnPublish(mangaId);
+  // async deleteMangaCategory(
+  //   category_id: number[],
+  //   mangaId: number,
+  // ): Promise<number> {
+  //   const changes: { field: string; categoryId: any; categoryName: any }[] = [];
+  //   const foundManga = await this.findMangaByIdCanPublishOrUnPublish(mangaId);
 
-    const mangaCategory = Promise.all(
-      category_id.map(async (id) => {
-        const category = await this.categoryService.getCategoryById(id);
-        changes.push({
-          field: 'category_id',
-          categoryId: id,
-          categoryName: category.category_name,
-        });
-        return { category_id: id, manga_id: mangaId };
-      }),
-    );
+  //   const mangaCategory = Promise.all(
+  //     category_id.map(async (id) => {
+  //       const category = await this.categoryService.getCategoryById(id);
+  //       changes.push({
+  //         field: 'category_id',
+  //         categoryId: id,
+  //         categoryName: category.category_name,
+  //       });
+  //       return { category_id: id, manga_id: mangaId };
+  //     }),
+  //   );
 
-    const result = await this.sequelize.transaction(async (t) => {
-      const isDeleted = await this.mangaRepo.deleteMangaCategory(
-        await Promise.resolve(mangaCategory),
-        { transaction: t },
-      );
-      if (!isDeleted)
-        throw new HttpException(
-          'Can not delete manga category',
-          HttpStatus.BAD_REQUEST,
-        );
+  //   const result = await this.sequelize.transaction(async (t) => {
+  //     const isDeleted = await this.mangaRepo.deleteMangaCategory(
+  //       await Promise.resolve(mangaCategory),
+  //       { transaction: t },
+  //     );
+  //     if (!isDeleted)
+  //       throw new HttpException(
+  //         'Can not delete manga category',
+  //         HttpStatus.BAD_REQUEST,
+  //       );
 
-      await this.createHistoryOfUpdateManga(
-        HistoryType.DeleteCategoryForMagna,
-        mangaId,
-        `${foundManga.manga_title}-history`,
-        { changes: changes },
-      );
+  //     await this.createHistoryOfUpdateManga(
+  //       HistoryType.UpdateCategoryForManga,
+  //       mangaId,
+  //       `${foundManga.manga_title}-history`,
+  //       { changes: changes },
+  //     );
 
-      return isDeleted;
-    });
+  //     return isDeleted;
+  //   });
 
-    // delete cache
-    const cacheKey = foundManga.is_draft
-      ? `manga:unpublish:${mangaId}`
-      : `manga:${mangaId}`;
-    await this.cacheService.delete(cacheKey);
+  //   // delete cache
+  //   const cacheKey = foundManga.is_draft
+  //     ? `manga:unpublish:${mangaId}`
+  //     : `manga:${mangaId}`;
+  //   await this.cacheService.delete(cacheKey);
 
-    return result;
-  }
+  //   return result;
+  // }
 
   async publishMangaById(mangaId: number): Promise<number> {
     const foundManga = await this.findMangaById(mangaId, false, true);
@@ -478,6 +487,8 @@ export class MangaService {
       order.push(['manga_number_of_followers', 'DESC']);
     }
 
+    // check category is exists then create include condition
+    await this.categoryService.getCategoryById(category_id);
     const includeConditions = category_id
       ? [
           {
@@ -543,6 +554,7 @@ export class MangaService {
     ]);
     if (!foundManga)
       throw new HttpException('Not found manga', HttpStatus.BAD_REQUEST);
+
     await this.cacheService.set(
       cacheKey,
       foundManga.get({ plain: true }),

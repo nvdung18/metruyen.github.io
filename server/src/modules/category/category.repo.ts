@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Category } from './models/category.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class CategoryRepo {
@@ -26,5 +27,20 @@ export class CategoryRepo {
 
   async getAllCategories(option: object = {}): Promise<Array<Category>> {
     return this.categoryModel.findAll(option);
+  }
+
+  async deleteManyCategory(
+    categoriesId: Array<number>,
+    options: object = {},
+  ): Promise<number> {
+    const affectedCount = await this.categoryModel.destroy({
+      where: {
+        category_id: {
+          [Op.in]: categoriesId,
+        },
+      },
+      ...options,
+    });
+    return affectedCount;
   }
 }

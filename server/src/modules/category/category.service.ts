@@ -4,6 +4,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import Util from '@common/services/util.service';
 import { Category } from './models/category.model';
 import { CacheService } from 'src/shared/cache/cache.service';
+import { Sequelize } from 'sequelize-typescript';
 
 @Injectable()
 export class CategoryService {
@@ -11,6 +12,7 @@ export class CategoryService {
     private categoryRepo: CategoryRepo,
     private util: Util,
     private cacheService: CacheService,
+    private sequelize: Sequelize,
   ) {}
 
   async createNewCategory(createCategoryDto: CreateCategoryDto) {
@@ -83,6 +85,42 @@ export class CategoryService {
     const category = allCategories.find((category) => {
       return category.category_id === categoryId;
     });
+    if (!category)
+      throw new HttpException('Category not found', HttpStatus.BAD_REQUEST);
     return category;
+  }
+
+  async deleteManyCategories(categoriesId: number[]): Promise<number> {
+    const allCategories = await this.getAllCategories();
+    const categories = allCategories
+      .filter((category) => categoriesId.includes(category.category_id))
+      .map((category) => category.category_id);
+
+    // Check if all requested IDs exist
+    if (categories.length !== categoriesId.length) {
+      throw new HttpException(
+        'Some categories not found',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const isDeleted = this.sequelize.transaction(async (t) => {
+      const deleteCategories = await this.categoryRepo.deleteManyCategory(
+        categories,
+        { transaction: t },
+      );
+      if (!deleteCategories)
+        throw new HttpException(
+          'Can not delete category',
+          HttpStatus.BAD_REQUEST,
+        );
+      return deleteCategories;
+    });
+
+    // delete cache
+    const cacheKey = `all_categories`;
+    await this.cacheService.delete(cacheKey);
+
+    return isDeleted;
   }
 }
