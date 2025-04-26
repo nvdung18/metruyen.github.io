@@ -205,7 +205,7 @@ export class MangaService {
 
   async addMangaCategory(
     {
-      listNewCategoryId,
+      listNewCategoryId = [],
       listRemoveCategoryId = [],
     }: { listNewCategoryId: number[]; listRemoveCategoryId?: number[] },
     mangaId: number,
