@@ -487,20 +487,19 @@ export class MangaService {
       order.push(['manga_number_of_followers', 'DESC']);
     }
 
-    // check category is exists then create include condition
-    await this.categoryService.getCategoryById(category_id);
-    const includeConditions = category_id
-      ? [
-          {
-            model: Category,
-            as: 'categories',
-            through: { attributes: [] },
-            attributes: [],
-            required: !!category_id,
-            where: category_id ? { category_id } : undefined,
-          },
-        ]
-      : [];
+    const includeConditions = [];
+    // check category is exists then add to include condition
+    if (category_id) {
+      await this.categoryService.getCategoryById(category_id);
+      includeConditions.push({
+        model: Category,
+        as: 'categories',
+        through: { attributes: [] },
+        attributes: [],
+        required: !!category_id,
+        where: category_id ? { category_id } : undefined,
+      });
+    }
 
     const { data, pagination } = await this.mangaRepo.searchManga(
       page,
