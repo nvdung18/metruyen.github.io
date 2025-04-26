@@ -42,7 +42,7 @@ export function ImageGrid({
   onViewChapterClick
 }: ImageGridProps) {
   const isSelectionMode = selectedImages.length > 0;
-
+  console.log('Images', images);
   return (
     <Card>
       <CardHeader>

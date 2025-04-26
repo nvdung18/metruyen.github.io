@@ -6,11 +6,13 @@ import { categoryApi } from '@/services/apiCategory';
 import { mangaApi } from '@/services/apiManga';
 import { userApiSlice } from '@/services/apiUser';
 import errorApiSlice from '@/services/apiError';
+import chapterImagesReducer from './slices/chapterImagesSlice';
 
 // Fixed reducer mapping - each API needs its own reducer path
 const rootReducer = {
   auth: authReducer,
   ui: uiReducer,
+  chapterImages: chapterImagesReducer,
   [authApiSlice.reducerPath]: authApiSlice.reducer,
   [categoryApi.reducerPath]: categoryApi.reducer,
   [mangaApi.reducerPath]: mangaApi.reducer, // Corrected mapping

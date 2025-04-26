@@ -25,6 +25,8 @@ import { ImageGrid } from '@/components/chapter/ImageGrid'; // Adjust path as ne
 import { DeleteConfirmationDialog } from '@/components/custom-component/DeleteConfirmationDialog'; // Adjust path as needed
 import { UploadImagesDialog } from '@/components/custom-component/UploadImagesDialog';
 import { fetchAndParseIPFSData } from '@/lib/utils';
+import { useAppDispatch } from '@/lib/redux/hook';
+import { setCurrentImages } from '@/lib/redux/slices/chapterImagesSlice';
 
 // --- Type Imports ---
 // Consider moving these to a shared types file (e.g., types/chapter.ts)
@@ -44,6 +46,8 @@ export default function ChapterImagesPage() {
   const router = useRouter();
   const mangaId = Number(params.mangaid);
   const chapterId = Number(params.chapterid);
+
+  const dispatch = useAppDispatch();
 
   // --- State ---
   const [images, setImages] = useState<ChapterImage[]>([]);
@@ -91,6 +95,8 @@ export default function ChapterImagesPage() {
         .then((parsedImages) => {
           console.log('ParsedImages', parsedImages);
           setImages(parsedImages);
+          // ✅ correct
+          dispatch(setCurrentImages(parsedImages));
           setHasChanges(false); // Reset changes when data is loaded initially
         })
         .catch((err) => {
@@ -107,7 +113,7 @@ export default function ChapterImagesPage() {
       setImages([]);
       setIsLoadingIPFS(false);
     }
-  }, [chapterData]);
+  }, [chapterData, dispatch]);
 
   // --- Callback Handlers ---
   const handleDragEnd = useCallback((result: DropResult) => {
@@ -423,13 +429,12 @@ export default function ChapterImagesPage() {
         }
       />
 
-      <UploadImagesDialog
+      {/* <UploadImagesDialog
         open={isUploadDialogOpen}
         onOpenChange={handleUploadDialogClose}
         chapterId={chapterId}
         currentImages={images}
-      />
-
+      /> */}
       <UploadImagesDialog
         open={isUpdateDialogOpen}
         onOpenChange={handleUpdateDialogClose}

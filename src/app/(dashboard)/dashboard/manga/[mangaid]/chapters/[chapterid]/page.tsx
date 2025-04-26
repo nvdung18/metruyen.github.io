@@ -61,7 +61,9 @@ export default function ChapterViewPage() {
       const fetchIPFSData = async () => {
         try {
           // Ensure URL includes protocol (https://)
-          const response = await fetch(`https://ipfs.io/ipfs/${cid}`);
+          const response = await fetch(
+            `https://gold-blank-bovid-152.mypinata.cloud/ipfs/${cid}`
+          );
           if (!response.ok) {
             throw new Error(`Failed to fetch IPFS content: ${response.status}`);
           }

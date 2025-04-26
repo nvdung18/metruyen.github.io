@@ -423,6 +423,100 @@ export const mangaApi = createApi({
       ]
     }),
 
+    // Update manga categories
+    // updateMangaCategories: builder.mutation<
+    //   MangaAdmin,
+    //   {
+    //     mangaId: number;
+    //     newCategories: number[];
+    //     removedCategories: number[];
+    //   }
+    // >({
+    //   query: ({ mangaId, newCategories, removedCategories }) => {
+    //     // Kiểm tra và đảm bảo có ít nhất một trường được gửi đi
+    //     if (newCategories.length === 0 && removedCategories.length === 0) {
+    //       throw new Error('At least one category must be provided');
+    //     }
+
+    //     // Tạo object chứa dữ liệu
+    //     const formData: Record<string, string> = {};
+
+    //     if (newCategories.length > 0) {
+    //       formData.listNewCategoryId = newCategories.join(',');
+    //     }
+
+    //     if (removedCategories.length > 0) {
+    //       formData.listRemoveCategoryId = removedCategories.join(',');
+    //     }
+
+    //     // Chuyển đổi object thành x-www-form-urlencoded string
+    //     const body = Object.entries(formData)
+    //       .map(([key, value]) => `${key}=${value}`)
+    //       .join('&');
+
+    //     return {
+    //       url: `/manga/manga-category/${mangaId}`,
+    //       method: 'POST',
+    //       body,
+    //       headers: {
+    //         'Content-Type': 'application/x-www-form-urlencoded'
+    //       }
+    //     };
+    //   },
+    //   transformResponse: (response: ApiResponse<MangaAdmin>) => {
+    //     if (!response.metadata) {
+    //       throw new Error('Failed to update manga categories');
+    //     }
+    //     return response.metadata;
+    //   },
+    //   invalidatesTags: (result, error, { mangaId }) => [
+    //     { type: 'MangaAdmin', id: mangaId },
+    //     { type: 'MangaList', id: 'LIST' }
+    //   ]
+    // }),
+
+    // Update manga categories
+    updateMangaCategories: builder.mutation<
+      { success: boolean; message: string },
+      {
+        mangaId: number;
+        newCategories: number[];
+        removedCategories: number[];
+      }
+    >({
+      query: ({ mangaId, newCategories, removedCategories }) => {
+        // Create URLSearchParams for x-www-form-urlencoded format
+        const params = new URLSearchParams();
+
+        // Convert arrays to comma-separated strings
+        if (newCategories.length > 0) {
+          params.append('listNewCategoryId', newCategories.join(','));
+        }
+        if (removedCategories.length > 0) {
+          params.append('listRemoveCategoryId', removedCategories.join(','));
+        }
+
+        return {
+          url: `/manga/manga-category/${mangaId}`,
+          method: 'POST',
+          body: params.toString(),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        };
+      },
+      transformResponse: (response: ApiResponse<null>) => {
+        return {
+          success: response.status,
+          message: response.message
+        };
+      },
+      invalidatesTags: (result, error, { mangaId }) => [
+        { type: 'MangaAdmin', id: mangaId },
+        { type: 'MangaList', id: 'LIST' }
+      ]
+    }),
+
     publishManga: builder.mutation<MangaAdmin, number>({
       query: (id) => ({
         url: `/manga/publish/${id}`,
@@ -1002,5 +1096,6 @@ export const {
   useGetContractAddressQuery,
   useIncreaseMangaViewMutation,
   useIncreaseChapterViewMutation,
-  useRatingMangaMutation
+  useRatingMangaMutation,
+  useUpdateMangaCategoriesMutation
 } = mangaApi;

@@ -2,6 +2,7 @@ import type React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, Upload, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ImageDialogAdd } from '../manga/ImageDialogAdd';
 
 interface ChapterHeaderProps {
   mangaId: number;
@@ -69,9 +70,8 @@ export function ChapterHeader({
           </>
         ) : (
           <>
-            <Button size="sm" variant="outline" onClick={onUploadClick}>
-              Upload Images
-            </Button>
+            <ImageDialogAdd />
+
             {hasChanges && (
               <Button size="sm" onClick={onSaveOrder}>
                 Save Order

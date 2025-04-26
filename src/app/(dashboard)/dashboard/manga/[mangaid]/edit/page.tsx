@@ -40,7 +40,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
   useGetMangaByIdQuery,
-  useUpdateMangaByIdMutation
+  useUpdateMangaByIdMutation,
+  useUpdateMangaCategoriesMutation
 } from '@/services/apiManga';
 import { useGetCategoriesQuery } from '@/services/apiCategory';
 
@@ -67,6 +68,12 @@ export default function EditMangaPage() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
+  const [newCategories, setNewCategories] = useState<number[]>([]);
+  const [removedCategories, setRemovedCategories] = useState<number[]>([]);
+
+  const [updateMangaCategories] = useUpdateMangaCategoriesMutation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Fetch manga data
   const {
     data: manga,
@@ -82,7 +89,7 @@ export default function EditMangaPage() {
     useGetCategoriesQuery();
 
   // Update manga mutation
-  const [updateManga, { isLoading: isUpdating }] = useUpdateMangaByIdMutation();
+  const [updateManga] = useUpdateMangaByIdMutation();
 
   // Initialize form
   const form = useForm<MangaFormValues>({
@@ -166,37 +173,77 @@ export default function EditMangaPage() {
 
   // Form submission handler
   const onSubmit = async (values: MangaFormValues) => {
+    // Kiểm tra thay đổi thông tin cơ bản của manga
+    const isBasicInfoChanged =
+      values.manga_title !== manga?.manga_title ||
+      values.manga_description !== manga?.manga_description ||
+      values.manga_author !== manga?.manga_author ||
+      values.manga_status !== manga?.manga_status ||
+      values.is_published !== manga?.is_published ||
+      thumbnailFile !== null;
+
+    // Kiểm tra thay đổi categories
+    const isCategoriesChanged =
+      newCategories.length > 0 || removedCategories.length > 0;
+
+    // Nếu không có thay đổi gì cả
+    if (!isBasicInfoChanged && !isCategoriesChanged) {
+      toast.info('No changes detected');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
+      const updatePromises = [];
 
-      // Add form values to FormData
-      formData.append('manga_title', values.manga_title);
-      formData.append('manga_description', values.manga_description);
-      formData.append('manga_author', values.manga_author);
-      formData.append('manga_status', values.manga_status);
+      // Thêm promise cập nhật thông tin cơ bản nếu có thay đổi
+      if (isBasicInfoChanged) {
+        const formData = new FormData();
+        formData.append('manga_title', values.manga_title);
+        formData.append('manga_description', values.manga_description);
+        formData.append('manga_author', values.manga_author);
+        formData.append('manga_status', values.manga_status);
+        formData.append('is_published', values.is_published.toString());
 
-      // Add categories as JSON string
-      // formData.append('categories', JSON.stringify(values.categories));
+        if (thumbnailFile) {
+          formData.append('manga_thumb', thumbnailFile);
+        }
 
-      // Add thumbnail if selected
-      // if (thumbnailFile) {
-      formData.append('manga_thumb', thumbnailFile ? thumbnailFile : '');
-      // }
+        updatePromises.push(
+          updateManga({
+            manga_id: mangaId,
+            formData
+          }).unwrap()
+        );
+      }
 
-      // Call update mutation
-      await updateManga({
-        manga_id: mangaId,
-        formData
-      }).unwrap();
+      // Thêm promise cập nhật categories nếu có thay đổi
+      if (isCategoriesChanged) {
+        updatePromises.push(
+          updateMangaCategories({
+            mangaId,
+            newCategories,
+            removedCategories
+          }).unwrap()
+        );
+      }
+
+      // Gọi song song các API cần thiết
+      await Promise.all(updatePromises);
 
       toast.success('Manga updated successfully');
       router.push(
         `/dashboard/manga/${mangaId}?status=${searchParams.get('status')}`
       );
     } catch (error) {
-      console.log('Failed to update manga:', error);
-      toast.error('Failed to update manga. Please try again.');
+      console.error('Update failed:', error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to update manga. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -400,7 +447,7 @@ export default function EditMangaPage() {
                 </CardContent>
               </Card>
 
-              {/* <Card>
+              <Card>
                 <CardHeader>
                   <CardTitle>Categories</CardTitle>
                   <CardDescription>
@@ -437,17 +484,62 @@ export default function EditMangaPage() {
                                             const currentValue = [
                                               ...field.value
                                             ];
+                                            const initialCategories =
+                                              manga?.categories?.map(
+                                                (cat) => cat.category_id
+                                              ) || [];
+
                                             if (checked) {
+                                              // Thêm category mới
                                               field.onChange([
                                                 ...currentValue,
                                                 category.category_id
                                               ]);
+
+                                              // Nếu category này không có trong danh sách ban đầu
+                                              if (
+                                                !initialCategories.includes(
+                                                  category.category_id
+                                                )
+                                              ) {
+                                                setNewCategories((prev) => [
+                                                  ...prev,
+                                                  category.category_id
+                                                ]);
+                                              }
+                                              // Nếu category này đã từng bị xóa, loại bỏ khỏi danh sách đã xóa
+                                              setRemovedCategories((prev) =>
+                                                prev.filter(
+                                                  (id) =>
+                                                    id !== category.category_id
+                                                )
+                                              );
                                             } else {
+                                              // Xóa category
                                               field.onChange(
                                                 currentValue.filter(
                                                   (value) =>
                                                     value !==
                                                     category.category_id
+                                                )
+                                              );
+
+                                              // Nếu category này có trong danh sách ban đầu
+                                              if (
+                                                initialCategories.includes(
+                                                  category.category_id
+                                                )
+                                              ) {
+                                                setRemovedCategories((prev) => [
+                                                  ...prev,
+                                                  category.category_id
+                                                ]);
+                                              }
+                                              // Nếu category này là category mới thêm vào, loại bỏ khỏi danh sách mới
+                                              setNewCategories((prev) =>
+                                                prev.filter(
+                                                  (id) =>
+                                                    id !== category.category_id
                                                 )
                                               );
                                             }
@@ -469,15 +561,19 @@ export default function EditMangaPage() {
                     )}
                   />
                 </CardContent>
-              </Card> */}
+              </Card>
 
               <Card>
                 <div className="flex w-full items-center justify-between px-6">
                   <Button variant="outline" type="button" asChild>
                     <Link href={`/dashboard/manga/${mangaId}`}>Cancel</Link>
                   </Button>
-                  <Button type="submit" disabled={isUpdating} className="gap-2">
-                    {isUpdating ? (
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="gap-2"
+                  >
+                    {isSubmitting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Save className="h-4 w-4" />
