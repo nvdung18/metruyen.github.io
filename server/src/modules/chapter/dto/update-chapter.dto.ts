@@ -9,9 +9,10 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
-export class UpdateChapterDto extends PartialType(
-  OmitType(CreateChapterDto, ['chap_content'] as const),
-) {
+export class UpdateChapterDto {
+  // extends PartialType(
+  //   OmitType(CreateChapterDto, ['list_cid'] as const),
+  // )
   @ApiProperty({
     description: `Array containing page numbers will be changed.`,
     type: [Number],

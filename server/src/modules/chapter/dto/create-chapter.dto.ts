@@ -1,16 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateChapterDto {
   @ApiProperty({
     description: 'Chapter title',
     example: 'Chapter 1: The Beginning',
-    required: false,
+    required: true,
   })
-  @IsOptional()
+  // @IsOptional()
   @IsString()
-  chap_title?: string;
+  chap_title: string;
 
   @ApiProperty({
     description: 'Chapter number',
@@ -25,10 +31,20 @@ export class CreateChapterDto {
   chap_number: number;
 
   @ApiProperty({
-    description: 'Chapter images (upload multiple images)',
-    type: 'string',
-    format: 'binary',
-    isArray: true,
+    description:
+      'List Cid of chapter content (images), This Cid is uploaded to Pinata by client',
+    example: ['Qm...', 'Qm...'],
+    type: [String],
   })
-  chap_content: Express.Multer.File[];
+  @IsArray({ message: 'list_cid must be an array' })
+  @IsString({ each: true })
+  list_cid: string[];
+
+  // @ApiProperty({
+  //   description: 'Chapter images (upload multiple images)',
+  //   type: 'string',
+  //   format: 'binary',
+  //   isArray: true,
+  // })
+  // chap_content: Express.Multer.File[];
 }

@@ -31,30 +31,16 @@ export class ChapterService {
 
   async createChapterForManga(
     createChapterDto: CreateChapterDto,
-    files: Express.Multer.File[],
     mangaId: number,
   ): Promise<Chapter> {
     const foundManga =
       await this.mangaService.findMangaByIdCanPublishOrUnPublish(mangaId);
+
+    const listCid = createChapterDto.list_cid;
     const nameManga = foundManga.manga_title;
     const folderName = `${nameManga}/${createChapterDto.chap_number}`;
 
-    const filesName = files.map((value, index) => {
-      return `page-${index}`;
-    });
-    const uploadResults = await this.pinataService.folderUpload(
-      files,
-      folderName,
-      filesName,
-      `chapter-content-${createChapterDto.chap_number}`,
-    );
-    const ipfsHash = uploadResults['IpfsHash'];
-    const response = await fetch(`https://ipfs.io/ipfs/${ipfsHash}/`);
-    const data = await response.text();
-
-    const listCids = this.extractCIDFromTextHtml(data);
-
-    const secureUrls = listCids.map((result, index) => ({
+    const secureUrls = listCid.map((result, index) => ({
       page: index,
       image: `ipfs.io/ipfs/${result}`,
     }));

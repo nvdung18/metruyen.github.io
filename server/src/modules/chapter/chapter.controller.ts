@@ -44,6 +44,7 @@ export class ChapterController {
     private readonly pinataService: PinataService,
   ) {}
 
+  @ApiConsumes('application/json')
   @ApiOperation({
     summary: 'Add chapter by admin',
     description: `
@@ -52,7 +53,6 @@ export class ChapterController {
     `,
   })
   @Post(':id')
-  @ApiConsumes('multipart/form-data')
   @ApiParam({
     name: 'id',
     type: Number,
@@ -60,31 +60,17 @@ export class ChapterController {
   })
   @ApiBody({
     description: 'Add chapter',
-    schema: {
-      type: 'object',
-      properties: {
-        chap_title: { type: 'string', example: 'Chapter 1: The Beginning' },
-        chap_number: { type: 'integer', example: 1 },
-        chap_content: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
-        },
-      },
-    },
+    type: CreateChapterDto,
   })
-  @UseInterceptors(FilesInterceptor('chap_content'))
   @ResponseMessage('Chapter added successful')
   @AuthorizeAction({ action: 'createAny', resource: 'Chapters' })
   async createChapterForManga(
     @Req() req: Request,
     @Body() createChapterDto: CreateChapterDto,
-    @UploadedFiles(new FilesValidationPipe({}, 5, IMAGE_TYPES))
-    files: Express.Multer.File[],
     @Param('id') mangaId: number,
   ) {
     const data = await this.chapterService.createChapterForManga(
       createChapterDto,
-      files,
       mangaId,
     );
     return {
