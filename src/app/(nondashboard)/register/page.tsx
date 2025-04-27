@@ -15,6 +15,7 @@ const AuthPage = () => {
   const navigate = useRouter();
   const pathname = usePathname();
   const [register, { isLoading }] = useRegisterMutation();
+  const [isNavigating, setIsNavigating] = useState(false);
   const isRegisterPage = pathname === '/register';
   const defaultTab = isRegisterPage ? 'register' : 'login';
   const dispatch = useAppDispatch();
@@ -24,6 +25,9 @@ const AuthPage = () => {
     username: '',
     confirmPassword: ''
   });
+
+  // Determine if we should show loading state
+  const showLoading = isLoading || isNavigating;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -57,7 +61,7 @@ const AuthPage = () => {
         usr_email: formData.email,
         usr_password: formData.password
       }).unwrap();
-      console.log(result);
+
       // Check if registration was successful
       if (result.status && result.statusCode == 201) {
         // Extract token and user data from the response
@@ -79,7 +83,23 @@ const AuthPage = () => {
         );
 
         toast.success('Account created successfully!');
-        navigate.push('/');
+
+        // Set navigating state to true before navigation
+        setIsNavigating(true);
+
+        // Wrap navigation in a Promise to handle loading state
+        await new Promise<void>((resolve) => {
+          navigate.push('/');
+          // Add an event listener to detect when navigation is complete
+          const checkNavigation = () => {
+            if (document.readyState === 'complete') {
+              resolve();
+            } else {
+              window.requestAnimationFrame(checkNavigation);
+            }
+          };
+          checkNavigation();
+        });
       } else {
         toast.error('Registration failed. Please try again.');
       }
@@ -87,11 +107,20 @@ const AuthPage = () => {
       toast.error(
         err?.data?.message || 'Registration failed. Please try again.'
       );
+    } finally {
+      setIsNavigating(false);
     }
   };
   return (
     <div className="container mx-auto max-w-md px-4 py-12">
-      <div className="bg-card border-border rounded-xl border p-6 shadow-lg">
+      <div className="bg-card border-border relative rounded-xl border p-6 shadow-lg">
+        {/* Add loading overlay */}
+        {showLoading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-xl bg-black/50">
+            <div className="border-manga-500 h-12 w-12 animate-spin rounded-full border-t-2 border-b-2"></div>
+          </div>
+        )}
+
         <h1 className="manga-heading mb-6 text-center">
           {isRegisterPage ? 'Welcome Back!' : 'Join MangaSphere'}
         </h1>
@@ -183,33 +212,10 @@ const AuthPage = () => {
               <Button
                 type="submit"
                 className="bg-manga-600 hover:bg-manga-700 w-full"
-                disabled={isLoading}
+                disabled={showLoading}
               >
-                {isLoading ? 'Creating account...' : 'Create Account'}
+                {showLoading ? 'Creating account...' : 'Create Account'}
               </Button>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="border-border w-full border-t"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card text-muted-foreground px-2">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <Button type="button" variant="outline" className="w-full">
-                  <Facebook className="h-4 w-4" />
-                </Button>
-                <Button type="button" variant="outline" className="w-full">
-                  <Twitter className="h-4 w-4" />
-                </Button>
-                <Button type="button" variant="outline" className="w-full">
-                  <Github className="h-4 w-4" />
-                </Button>
-              </div>
             </form>
           </TabsContent>
         </Tabs>

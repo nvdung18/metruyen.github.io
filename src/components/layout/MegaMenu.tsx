@@ -121,7 +121,7 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
                     ))}
                 </div>
                 <Button variant="outline" className="group mt-2 w-full" asChild>
-                  <Link href="/discover" onClick={onClose}>
+                  <Link href="/manga/list" onClick={onClose}>
                     View All Categories
                     <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:transform" />
                   </Link>

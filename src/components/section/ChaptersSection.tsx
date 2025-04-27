@@ -14,14 +14,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -66,7 +59,7 @@ import {
   useCreateChapterMutation,
   useDeleteChapterMutation
 } from '@/services/apiManga';
-import { toast } from 'sonner'; // Assuming you use sonner for toasts
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,6 +67,8 @@ import {
   DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
+import SortableImageGrid from '../chapter/SortableImageGrid';
+import { PinataService } from '@/services/pinataService';
 
 const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
   const {
@@ -206,32 +201,35 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
     }
   }, [dialogOpen]);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async ({
+    chap_title,
+    chap_number
+  }: {
+    chap_title: string;
+    chap_number: string;
+  }) => {
     try {
-      // Create FormData object to handle file uploads
-      const formData = new FormData();
+      console.log('Data', chap_title, chap_number);
+      const uploadResult = await PinataService.uploadFolderAsDirectory(
+        selectedFiles,
+        String(chap_title)
+      );
+      console.log('Result', uploadResult);
 
-      // Add chapter details
-      formData.append('chap_title', data.chap_title);
-      formData.append('chap_number', data.chap_number);
+      const response = await fetch(`${uploadResult.gateway}`);
+      const data = await response.text();
+      const listCids = await PinataService.extractCIDFromTextHtml(data);
 
-      // Add each file to formData with the same field name (chap_content)
-      selectedFiles.forEach((file) => {
-        formData.append('chap_content', file);
-      });
+      console.log('listCids', listCids);
 
-      // Call the mutation with the FormData
       await createChapter({
         manga_id: Number(mangaid),
-        formData
+        chap_title,
+        chap_number: Number(chap_number),
+        listCids
       }).unwrap();
-
-      // Success handling
       toast.success('Chapter created successfully');
       setDialogOpen(false);
-      form.reset();
-      setSelectedFiles([]);
-      setFilePreviews([]);
     } catch (error) {
       console.log('error to create chapter:', error);
       toast.error('Failed to create chapter. Please try again.');
@@ -257,6 +255,15 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
     }
   };
 
+  const handleReorder = (newPreviews: string[]) => {
+    setFilePreviews(newPreviews);
+    // Reorder selectedFiles to match the new preview order
+    const newSelectedFiles = newPreviews.map(
+      (preview) => selectedFiles[filePreviews.indexOf(preview)]
+    );
+    setSelectedFiles(newSelectedFiles);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top section with controls */}
@@ -279,7 +286,7 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                 Add Chapter
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-manga-600/30 flex max-h-[85vh] flex-col overflow-hidden backdrop-blur-lg sm:max-w-[600px]">
+            <DialogContent className="bg-card border-manga-600/30 flex max-h-[90vh] w-[95vw] flex-col overflow-hidden backdrop-blur-lg sm:max-w-[800px] md:max-w-[900px]">
               <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-xl">Add New Chapter</DialogTitle>
                 <DialogDescription>
@@ -293,40 +300,42 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                     onSubmit={form.handleSubmit(onSubmit)}
                     className="space-y-4"
                   >
-                    <FormField
-                      control={form.control}
-                      name="chap_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Chapter Number</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="e.g. 1"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="chap_number"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Chapter Number</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g. 1"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="chap_title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Chapter Title</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter chapter title"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name="chap_title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Chapter Title</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter chapter title"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     <div className="mt-6">
                       <FormLabel className="mb-2 block">
@@ -363,40 +372,15 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                       {filePreviews.length > 0 && (
                         <div className="mt-4">
                           <p className="mb-2 text-sm font-medium">
-                            Preview ({filePreviews.length} images)
+                            Preview ({filePreviews.length} images) - Drag to
+                            reorder
                           </p>
-                          <div className="border-border max-h-[240px] overflow-y-auto rounded-md border p-2">
-                            <div className="grid grid-cols-3 gap-2">
-                              {filePreviews.map((preview, index) => (
-                                <div
-                                  key={index}
-                                  className="group relative aspect-[2/3] overflow-hidden rounded-md"
-                                >
-                                  <img
-                                    src={preview}
-                                    alt={`Page ${index + 1}`}
-                                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                                    <div className="absolute right-0 bottom-0 left-0 p-1 text-center">
-                                      <span className="text-xs font-medium text-white">
-                                        Page {index + 1}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeFile(index);
-                                    }}
-                                    className="absolute top-1 right-1 rounded-full bg-black/70 p-1 opacity-0 transition-opacity group-hover:opacity-100"
-                                  >
-                                    <X size={14} className="text-white" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="border-border max-h-[400px] overflow-y-auto rounded-md border p-2">
+                            <SortableImageGrid
+                              previews={filePreviews}
+                              onReorder={handleReorder}
+                              onRemove={removeFile}
+                            />
                           </div>
                         </div>
                       )}

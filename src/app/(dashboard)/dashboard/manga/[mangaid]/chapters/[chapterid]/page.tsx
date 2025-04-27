@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import type { ImageProps } from 'next/image';
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,6 +32,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useGetChapterDetailQuery } from '@/services/apiManga';
 import UpdateChapterDialog from '@/components/chapter/UpdateChapterDialog';
 
+const imageVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? '100%' : '-100%',
+    opacity: 0
+  }),
+  center: {
+    x: 0,
+    opacity: 1
+  },
+  exit: (direction: number) => ({
+    x: direction < 0 ? '100%' : '-100%',
+    opacity: 0
+  })
+};
+
+const transition = {
+  type: 'spring',
+  stiffness: 300,
+  damping: 30,
+  opacity: { duration: 0.2 }
+};
+
 export default function ChapterViewPage() {
   const params = useParams();
   const mangaid = params.mangaid as string;
@@ -40,6 +63,61 @@ export default function ChapterViewPage() {
   const [direction, setDirection] = useState(0); // -1 for previous, 1 for next
   const [images, setImages] = useState<{ url: string; page: number }[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false); // State for dialog visibility
+  const [isLoadingIPFS, setIsLoadingIPFS] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
+
+  const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
+
+  // Image preloading logic
+  const preloadImages = useCallback(async (imageUrls: string[]) => {
+    return Promise.all(
+      imageUrls.map((url) => {
+        return new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new window.Image();
+          img.onload = () => resolve(img);
+          img.onerror = (event: Event | string) => reject(event);
+          img.src = url;
+        });
+      })
+    );
+  }, []);
+
+  useEffect(() => {
+    if (images[currentPage]) {
+      setIsImageLoading(true);
+      const imageUrl = `https://gold-blank-bovid-152.mypinata.cloud/ipfs/${images[currentPage].url}`;
+
+      // Preload current, previous and next images
+      const imagesToPreload = [];
+      if (currentPage > 0) {
+        imagesToPreload.push(
+          `https://gold-blank-bovid-152.mypinata.cloud/ipfs/${images[currentPage - 1].url}`
+        );
+      }
+      imagesToPreload.push(imageUrl);
+      if (currentPage < images.length - 1) {
+        imagesToPreload.push(
+          `https://gold-blank-bovid-152.mypinata.cloud/ipfs/${images[currentPage + 1].url}`
+        );
+      }
+
+      preloadImages(imagesToPreload)
+        .then(() => {
+          setImgSrc(imageUrl);
+          setIsImageLoading(false);
+        })
+        .catch((error) => {
+          // console.error('Image preload failed:', error);
+          // Fallback to IPFS gateway
+          const fallbackUrl = imageUrl.replace(
+            'https://gold-blank-bovid-152.mypinata.cloud',
+            'https://ipfs.io'
+          );
+          setImgSrc(fallbackUrl);
+          setIsImageLoading(false);
+        });
+    }
+  }, [images, currentPage, preloadImages]);
 
   const router = useRouter();
   const {
@@ -51,62 +129,68 @@ export default function ChapterViewPage() {
     chapterId: parseInt(chapterid)
   });
 
+  console.log('chapter', chapter);
+
   // Generate page URLs from IPFS CID when chapter data is loaded
   useEffect(() => {
-    if (chapter?.chap_content) {
-      // Use the CID from chap_content
-      const cid = chapter.chap_content;
+    if (!chapter?.chap_content) return;
 
-      // Fetch the JSON data from IPFS
-      const fetchIPFSData = async () => {
+    const cid = chapter.chap_content;
+    setIsLoadingIPFS(true);
+
+    const gateways = [
+      `https://gold-blank-bovid-152.mypinata.cloud/ipfs/${cid}`,
+      `https://ipfs.io/ipfs/${cid}`
+      // Có thể thêm nhiều gateway khác ở đây
+    ];
+
+    const fetchIPFSData = async () => {
+      for (const gateway of gateways) {
         try {
-          // Ensure URL includes protocol (https://)
-          const response = await fetch(
-            `https://gold-blank-bovid-152.mypinata.cloud/ipfs/${cid}`
-          );
+          const response = await fetch(gateway);
+          console.log('response', response);
           if (!response.ok) {
-            throw new Error(`Failed to fetch IPFS content: ${response.status}`);
+            const errorText = await response.text();
+            console.warn(
+              `Fetch failed from ${gateway}: ${response.status} - ${errorText}`
+            );
+            continue;
           }
 
-          // Parse the JSON response which should contain the array of images
           const data = await response.json();
+          if (!Array.isArray(data)) {
+            console.warn(`Data from ${gateway} is not an array, skipping...`);
+            continue;
+          }
+          console.log('data', data);
+          const formattedImages = data.map((item) => {
+            let imageUrl = item.image;
+            let CID;
+            if (imageUrl && !imageUrl.startsWith('http')) {
+              CID = imageUrl.split('/ipfs/')[1];
+            }
 
-          // Format the data to match our expected format
-          // Ensuring all URLs include protocol (https://)
-          const formattedImages = Array.isArray(data)
-            ? data.map((item) => {
-                // Ensure the image URL has a protocol
-                let imageUrl = item.image;
-                if (imageUrl && !imageUrl.startsWith('http')) {
-                  // If URL doesn't have protocol, add https://
-                  imageUrl = imageUrl.startsWith('//')
-                    ? `https:${imageUrl}`
-                    : `https://${imageUrl}`;
-                }
+            return {
+              url: CID,
+              page: item.page
+            };
+          });
 
-                return {
-                  url: imageUrl,
-                  page: item.page
-                };
-              })
-            : [];
-
-          // Check if the data is in the expected format
-          console.log('Formatted Images:', formattedImages);
-
-          // Sort by page number if needed
           formattedImages.sort((a, b) => a.page - b.page);
-
+          console.log(`Successfully loaded images from ${gateway}`);
           setImages(formattedImages);
+          return; // Thành công rồi thì return luôn
         } catch (error) {
-          console.log('Error fetching IPFS data:', error);
-          // Fallback to empty array if there's an error
-          setImages([]);
+          console.error(`Error fetching from ${gateway}:`, error);
+          // Nếu lỗi thì thử tiếp gateway khác
         }
-      };
+      }
 
-      fetchIPFSData();
-    }
+      console.error('All IPFS gateways failed.');
+      setImages([]);
+    };
+
+    fetchIPFSData().finally(() => setIsLoadingIPFS(false));
   }, [chapter]);
 
   // Handle keyboard navigation
@@ -123,20 +207,20 @@ export default function ChapterViewPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentPage, images.length]);
 
-  // Handle page navigation
-  const handleNextPage = () => {
-    if (currentPage < images.length - 1) {
+  // Navigation handlers with loading state
+  const handleNextPage = useCallback(() => {
+    if (currentPage < images.length - 1 && !isImageLoading) {
       setDirection(1);
       setCurrentPage(currentPage + 1);
     }
-  };
+  }, [currentPage, images.length, isImageLoading]);
 
-  const handlePrevPage = () => {
-    if (currentPage > 0) {
+  const handlePrevPage = useCallback(() => {
+    if (currentPage > 0 && !isImageLoading) {
       setDirection(-1);
       setCurrentPage(currentPage - 1);
     }
-  };
+  }, [currentPage, isImageLoading]);
 
   if (chapterLoading) {
     return (
@@ -195,6 +279,62 @@ export default function ChapterViewPage() {
     );
   }
 
+  // Image container component
+  const ImageContainer = () => (
+    <motion.div
+      key={currentPage}
+      custom={direction}
+      variants={imageVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={transition}
+      className="relative h-full w-full"
+    >
+      {isImageLoading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          <div className="bg-muted h-[70vh] w-full animate-pulse rounded-md" />
+        </motion.div>
+      )}
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isImageLoading ? 0 : 1 }}
+        transition={{ duration: 0.3 }}
+        className="relative h-full"
+      >
+        {imgSrc && (
+          <Image
+            src={imgSrc}
+            alt={`Page ${currentPage + 1}`}
+            width={800}
+            height={1200}
+            className="mx-auto h-auto max-h-[70vh] w-auto object-contain"
+            priority={true}
+            quality={90}
+            onLoadingComplete={() => setIsImageLoading(false)}
+            onError={() => {
+              if (imgSrc?.includes('mypinata.cloud')) {
+                const fallbackUrl = imgSrc.replace(
+                  'https://gold-blank-bovid-152.mypinata.cloud',
+                  'https://ipfs.io'
+                );
+                setImgSrc(fallbackUrl);
+              } else {
+                setImgSrc('/placeholder.svg');
+              }
+            }}
+          />
+        )}
+      </motion.div>
+    </motion.div>
+  );
+
   return (
     <>
       <div className="space-y-6">
@@ -213,6 +353,17 @@ export default function ChapterViewPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() =>
+                router.push(
+                  `/dashboard/manga/${mangaid}/chapters/${chapterid}/views?cid=${chapter.chap_content}`
+                )
+              }
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              View Full
+            </Button>
             <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
               <Edit className="mr-2 h-4 w-4" />
               Edit Chapter
@@ -260,7 +411,8 @@ export default function ChapterViewPage() {
                   variant="outline"
                   size="icon"
                   onClick={handlePrevPage}
-                  disabled={currentPage === 0}
+                  disabled={currentPage === 0 || isImageLoading}
+                  className="transition-transform hover:scale-105"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -268,107 +420,48 @@ export default function ChapterViewPage() {
                   variant="outline"
                   size="icon"
                   onClick={handleNextPage}
-                  disabled={
-                    images.length === 0 || currentPage === images.length - 1
-                  }
+                  disabled={currentPage === images.length - 1 || isImageLoading}
+                  className="transition-transform hover:scale-105"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {!chapter?.chap_content || images.length === 0 ? (
-              <div className="flex h-[50vh] items-center justify-center rounded-md border border-dashed">
-                <div className="text-center">
-                  <FileText className="text-muted-foreground mx-auto h-10 w-10" />
-                  <p className="text-muted-foreground mt-2 text-sm">
-                    No images available
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="relative flex items-center justify-center">
-                <div className="relative max-h-[70vh] w-full overflow-hidden rounded-md">
-                  <AnimatePresence
-                    initial={false}
-                    custom={direction}
-                    mode="wait"
-                  >
-                    <motion.div
-                      key={currentPage}
-                      custom={direction}
-                      variants={{
-                        enter: (direction) => ({
-                          x: direction > 0 ? 300 : -300,
-                          opacity: 0,
-                          scale: 0.95
-                        }),
-                        center: {
-                          x: 0,
-                          opacity: 1,
-                          scale: 1
-                        },
-                        exit: (direction) => ({
-                          x: direction < 0 ? 300 : -300,
-                          opacity: 0,
-                          scale: 0.95
-                        })
-                      }}
-                      initial="enter"
-                      animate="center"
-                      exit="exit"
-                      transition={{
-                        x: {
-                          type: 'spring',
-                          stiffness: 500,
-                          damping: 25,
-                          mass: 0.8
-                        },
-                        opacity: { duration: 0.01 }
-                      }}
-                      className="relative h-full w-full"
-                    >
-                      <Image
-                        src={images[currentPage]?.url || '/placeholder.svg'}
-                        alt={`Page ${currentPage + 1}`}
-                        width={800}
-                        height={1200}
-                        className="mx-auto h-auto max-h-[70vh] w-auto object-contain"
-                      />
-                    </motion.div>
-                  </AnimatePresence>
+            <div className="bg-background/50 relative flex items-center justify-center overflow-hidden rounded-md backdrop-blur-sm">
+              <AnimatePresence initial={false} custom={direction} mode="wait">
+                <ImageContainer />
+              </AnimatePresence>
 
-                  {/* Click areas for navigation */}
-                  <button
-                    className="absolute top-0 left-0 h-full w-1/2 cursor-w-resize"
-                    onClick={handlePrevPage}
-                    disabled={currentPage === 0}
-                    aria-label="Previous page"
-                  />
-                  <button
-                    className="absolute top-0 right-0 h-full w-1/2 cursor-e-resize"
-                    onClick={handleNextPage}
-                    disabled={currentPage === images.length - 1}
-                    aria-label="Next page"
-                  />
-                </div>
+              {/* Navigation overlay */}
+              <div className="absolute inset-0 flex">
+                <button
+                  className="hover:bg-foreground/5 h-full w-1/2 cursor-w-resize bg-transparent transition-colors"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 0 || isImageLoading}
+                />
+                <button
+                  className="hover:bg-foreground/5 h-full w-1/2 cursor-e-resize bg-transparent transition-colors"
+                  onClick={handleNextPage}
+                  disabled={currentPage === images.length - 1 || isImageLoading}
+                />
               </div>
-            )}
+            </div>
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button
               variant="outline"
               onClick={handlePrevPage}
-              disabled={currentPage === 0}
+              disabled={currentPage === 0 || isImageLoading}
+              className="transition-transform hover:scale-105"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Previous Page
             </Button>
             <Button
               onClick={handleNextPage}
-              disabled={
-                images.length === 0 || currentPage === images.length - 1
-              }
+              disabled={currentPage === images.length - 1 || isImageLoading}
+              className="transition-transform hover:scale-105"
             >
               Next Page
               <ChevronRight className="ml-2 h-4 w-4" />

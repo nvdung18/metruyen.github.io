@@ -48,6 +48,11 @@ interface CategoriesResponse {
   categories: Category[];
 }
 
+interface DeleteCategoryResponse {
+  success: boolean;
+  message?: string;
+}
+
 export const categoryApi = createApi({
   reducerPath: 'categoryApi',
   baseQuery: apiBaseQuery,
@@ -176,22 +181,17 @@ export const categoryApi = createApi({
       ]
     }),
 
-    deleteCategory: builder.mutation<
-      { success: boolean; message: string },
-      number
-    >({
-      query: (id) => ({
-        url: `/category/${id}`,
-        method: 'DELETE'
+    deleteCategory: builder.mutation<void, number>({
+      query: (categoryId) => ({
+        url: '/category',
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `listCategory=${categoryId}`
       }),
-      transformResponse: (response: ApiResponse<null>) => {
-        return {
-          success: response.status,
-          message: response.message
-        };
-      },
-      invalidatesTags: (result, error, id) => [
-        { type: 'Category', id },
+      invalidatesTags: (result, error, categoryId) => [
+        { type: 'Category', id: categoryId },
         { type: 'Category', id: 'LIST' }
       ]
     })

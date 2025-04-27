@@ -17,10 +17,6 @@ import {
 import { useMangaPagination } from '@/hooks/useMangaPagination';
 import { useMangaFilters } from '@/hooks/useMangaFilters';
 import { useMangaSelection } from '@/hooks/useMangaSelection';
-import {
-  BulkActions,
-  MobileBulkActions
-} from '@/components/custom-component/BulkActions';
 import { MangaFilters, MangaPagination, MangaTable } from '@/components/admin';
 
 interface MangaPageProps {

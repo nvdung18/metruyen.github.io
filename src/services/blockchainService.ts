@@ -10,6 +10,11 @@ export interface BlockchainConfig {
   apiKey?: string;
 }
 
+interface VersionInfo {
+  version: number;
+  cid: string;
+}
+
 const fetchBlockchainConfig = async () => {
   try {
     const response = await fetch('/api/blockchain/config');
@@ -186,149 +191,51 @@ class BlockchainService {
    * @param pageSize - Number of versions per page
    * @returns Object containing array of version history entries and pagination metadata
    */
-  async getCompleteVersionHistory(
-    latestCid: string,
-    page: number = 1,
-    pageSize: number = 10
-  ): Promise<{
+  async getCompleteVersionHistory(latestCid: string): Promise<{
     history: HistoryEntry[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      hasMore: boolean;
-    };
   }> {
     if (!latestCid) {
-      console.log('No CID provided to fetch version history');
       return {
-        history: [],
-        pagination: {
-          currentPage: page,
-          totalPages: 0,
-          totalItems: 0,
-          hasMore: false
-        }
+        history: []
       };
     }
 
     try {
-      console.log(
-        `Fetching paginated history for page ${page} with size ${pageSize}`
-      );
+      // Fetch first entry
+      const firstEntry = await this.fetchIPFSData(latestCid);
+      if (!firstEntry) throw new Error('Failed to fetch initial entry');
 
-      // We'll use a more efficient approach by:
-      // 1. First, getting a count of total items (without fetching all content)
-      // 2. Then, only fetching the specific items needed for the requested page
+      // Use Set to store unique versions
+      const processedVersions = new Set<number>();
+      const historyEntries: HistoryEntry[] = [];
 
-      // Step 1: Count total items by traversing the chain lightly
-      let currentCid = latestCid;
-      let totalItems = 0;
-      const processedCids = new Set<string>(); // To prevent infinite loops
+      // Add first entry
+      processedVersions.add(firstEntry.version);
+      historyEntries.push(firstEntry);
 
-      // First pass: Just count the total number of versions
-      while (currentCid && !processedCids.has(currentCid)) {
-        processedCids.add(currentCid);
-        totalItems++;
-
-        // Get basic metadata to find previous version without fetching full content
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL_IPFS}${currentCid}`,
-          { method: 'HEAD' }
+      // Process recent versions
+      let currentEntry: HistoryEntry | null = firstEntry;
+      while (currentEntry?.previousVersion) {
+        const nextEntry = await this.fetchIPFSData(
+          currentEntry.previousVersion
         );
-
-        if (!response.ok) {
-          // If we can't access the metadata, try to fetch the full content as fallback
-          const versionData = await this.fetchIPFSData(currentCid);
-          if (!versionData) break;
-          currentCid = versionData.previousVersion;
+        if (nextEntry && !processedVersions.has(nextEntry.version)) {
+          processedVersions.add(nextEntry.version);
+          historyEntries.push(nextEntry);
+          currentEntry = nextEntry;
         } else {
-          // Try to get previousVersion from headers if available
-          // If not available, we'll need to fetch the content
-          const versionData = await this.fetchIPFSData(currentCid);
-          if (!versionData) break;
-          currentCid = versionData.previousVersion;
-        }
-
-        // Safety check - if we've processed too many versions, break
-        if (totalItems > 100) {
-          console.warn(
-            'Reached maximum history depth (100 versions) during counting'
-          );
-          break;
+          currentEntry = null; // Break the loop if we get null or duplicate version
         }
       }
 
-      // Calculate pagination metadata
-      const totalPages = Math.ceil(totalItems / pageSize);
-      const normalizedPage = Math.max(1, Math.min(page, totalPages || 1));
-
-      // Step 2: Now fetch only the items needed for this page
-      // We need to skip (page-1)*pageSize items and fetch pageSize items
-
-      // Reset for second traversal
-      currentCid = latestCid;
-      processedCids.clear();
-
-      // Skip items for previous pages
-      let itemsToSkip = (normalizedPage - 1) * pageSize;
-      while (itemsToSkip > 0 && currentCid && !processedCids.has(currentCid)) {
-        processedCids.add(currentCid);
-
-        // Get just enough information to find the next CID
-        const versionData = await this.fetchIPFSData(currentCid);
-        if (!versionData) break;
-
-        currentCid = versionData.previousVersion;
-        itemsToSkip--;
-      }
-
-      // Now fetch only the items for our page
-      const pageHistory: HistoryEntry[] = [];
-      let itemsFetched = 0;
-
-      while (
-        itemsFetched < pageSize &&
-        currentCid &&
-        !processedCids.has(currentCid)
-      ) {
-        console.log(
-          `Fetching version data for page ${normalizedPage}, item ${itemsFetched + 1}`
-        );
-        processedCids.add(currentCid);
-
-        // Fetch the full data for this item
-        const versionData = await this.fetchIPFSData(currentCid);
-        if (!versionData) break;
-
-        pageHistory.push(versionData);
-        currentCid = versionData.previousVersion;
-        itemsFetched++;
-      }
-
-      // Sort by version number (descending) if needed
-      pageHistory.sort((a, b) => b.version - a.version);
-
+      // Sort entries by version (descending)
+      historyEntries.sort((a, b) => b.version - a.version);
       return {
-        history: pageHistory,
-        pagination: {
-          currentPage: normalizedPage,
-          totalPages,
-          totalItems,
-          hasMore: normalizedPage < totalPages
-        }
+        history: historyEntries
       };
     } catch (error) {
-      console.error('Error fetching paginated version history:', error);
-      return {
-        history: [],
-        pagination: {
-          currentPage: page,
-          totalPages: 0,
-          totalItems: 0,
-          hasMore: false
-        }
-      };
+      console.error('Error fetching version history:', error);
+      throw error;
     }
   }
 }

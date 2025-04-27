@@ -35,7 +35,7 @@ interface UseBlockchainReturn {
     history: HistoryEntry[];
     pagination: PaginationState;
   }>;
-  changePage: (newPage: number) => Promise<void>;
+  // changePage: (newPage: number) => Promise<void>;
   currentMangaId: number | null;
   latestCid: string | null;
   originalLatestCid: string | null; // Added original CID reference
@@ -126,75 +126,60 @@ export function useBlockchain(
     async (
       historyEntry: HistoryEntry,
       page: number = 1,
-      pageSize: number = 10
+      pageSize: number = 5
     ): Promise<{
       history: HistoryEntry[];
       pagination: PaginationState;
     }> => {
       try {
         setError(null);
+        setIsLoading(true);
 
         if (!historyEntry.previousVersion) {
           throw new Error('No CID provided to fetch version history');
         }
 
-        // Store both the current and original latest CID when first fetching history
+        // Store both the current and original latest CID
         setLatestCid(historyEntry.previousVersion);
-        setOriginalLatestCid(historyEntry.previousVersion); // Always set this on first fetch
+        setOriginalLatestCid(historyEntry.previousVersion);
 
-        // For first page, fetch one less item since we'll add the latest entry
-        const adjustedPageSize = page === 1 ? pageSize - 1 : pageSize;
-
-        // Use the blockchain service to fetch paginated history
-        // with our optimized implementation
+        // Fetch complete history from blockchain
         const result = await blockchainService.getCompleteVersionHistory(
-          historyEntry.previousVersion,
-          page,
-          adjustedPageSize
+          historyEntry.previousVersion
         );
 
-        // Process results differently for first page vs other pages
-        if (page === 1) {
-          // For the first page, include the latest entry at the beginning
-          const historyWithLatest = [historyEntry, ...result.history];
-          setHistoryData(historyWithLatest);
-          setPagination({
-            ...result.pagination,
-            // Use original pageSize for calculation
-            totalPages: Math.ceil((result.pagination.totalItems + 1) / pageSize)
-          });
+        // Add current version to the complete history
+        const completeHistory = [historyEntry, ...result.history];
 
-          return {
-            history: historyWithLatest,
-            pagination: {
-              ...result.pagination,
-              totalItems: result.pagination.totalItems + 1,
-              totalPages: Math.ceil(
-                (result.pagination.totalItems + 1) / pageSize
-              )
-            }
-          };
-        } else {
-          // For other pages, just use what we got from the service
-          setHistoryData(result.history);
-          setPagination(result.pagination);
+        // Calculate pagination
+        const totalItems = completeHistory.length;
+        const totalPages = Math.ceil(totalItems / pageSize);
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, totalItems);
 
-          return {
-            history: result.history,
-            pagination: result.pagination
-          };
-        }
+        // Get items for current page
+        const paginatedHistory = completeHistory.slice(startIndex, endIndex);
+
+        // Update state
+        setHistoryData(paginatedHistory);
+        const newPagination = {
+          currentPage: page,
+          totalPages,
+          totalItems,
+          hasMore: page < totalPages
+        };
+        setPagination(newPagination);
+
+        return {
+          history: paginatedHistory,
+          pagination: newPagination
+        };
       } catch (err) {
         const errorMessage =
           err instanceof Error
             ? err.message
             : 'Failed to fetch version history';
-
         setError(errorMessage);
-        toast('History Error', {
-          description: errorMessage
-        });
-
         return {
           history: [],
           pagination: {
@@ -204,77 +189,49 @@ export function useBlockchain(
             hasMore: false
           }
         };
+      } finally {
+        setIsLoading(false);
       }
     },
     []
   );
 
-  /**
-   * Changes the current page and fetches that page's data
-   * @param newPage - The page number to navigate to
-   */
-  const changePage = useCallback(
-    async (newPage: number) => {
-      if (!originalLatestCid) {
-        toast('Error', {
-          description: 'No history data available to paginate'
-        });
-        return;
-      }
+  // /**
+  //  * Changes the current page and fetches that page's data
+  //  * @param newPage - The page number to navigate to
+  //  */
+  // const changePage = useCallback(
+  //   async (newPage: number) => {
+  //     if (!originalLatestCid) {
+  //       toast.error('No history data available to paginate');
+  //       return;
+  //     }
 
-      try {
-        setError(null);
-        setIsLoading(true); // Add loading state
-        console.log(
-          'Using originalLatestCid for pagination:',
-          originalLatestCid
-        );
+  //     try {
+  //       setError(null);
+  //       setIsLoading(true);
 
-        // Always use the originalLatestCid for pagination to ensure consistency
-        const result = await blockchainService.getCompleteVersionHistory(
-          originalLatestCid,
-          newPage,
-          5 // Using the consistent page size
-        );
+  //       const result = await blockchainService.getCompleteVersionHistory(
+  //         originalLatestCid,
+  //         newPage,
+  //         5
+  //       );
 
-        // Handle first page special case - add the latest entry
-        if (newPage === 1 && currentMangaId) {
-          // Try to get the latest version again to ensure freshness
-          const latestVersion =
-            await blockchainService.getLatestMangaVersion(currentMangaId);
-          if (latestVersion) {
-            result.history = [latestVersion, ...result.history];
-            // Adjust pagination totals to account for the added entry
-            result.pagination.totalItems += 1;
-            result.pagination.totalPages = Math.ceil(
-              result.pagination.totalItems / 5
-            );
-          }
-        }
-
-        // Update state with the new history data and pagination info
-        console.log(
-          `Fetched page ${newPage} with ${result.history.length} entries`
-        );
-
-        setHistoryData(result.history);
-        setPagination(result.pagination);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : `Failed to fetch page ${newPage}`;
-
-        setError(errorMessage);
-        toast('Pagination Error', {
-          description: errorMessage
-        });
-      } finally {
-        setIsLoading(false); // Reset loading state
-      }
-    },
-    [originalLatestCid, currentMangaId]
-  );
+  //       setHistoryData(result.history);
+  //       setPagination(result.pagination);
+  //     } catch (err) {
+  //       const errorMessage =
+  //         err instanceof Error
+  //           ? err.message
+  //           : `Failed to fetch page ${newPage}`;
+  //       setError(errorMessage);
+  //       toast.error(errorMessage);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   },
+  //   [originalLatestCid]
+  // );
 
   return {
     isConnected,
@@ -286,7 +243,7 @@ export function useBlockchain(
     getHistoryByCID,
     getLatestMangaVersion,
     getCompleteVersionHistory,
-    changePage,
+    // changePage,
     currentMangaId,
     latestCid,
     originalLatestCid // Return the original latest CID

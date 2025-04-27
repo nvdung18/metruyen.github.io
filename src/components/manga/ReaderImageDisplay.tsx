@@ -40,15 +40,23 @@ const ReaderImageDisplay: React.FC<ReaderImageDisplayProps> = ({
                   delay: index * 0.1 > 1 ? 1 : index * 0.1 // Cap delay at 1 second
                 }}
               >
-                <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg shadow-2xl">
+                <div
+                  key={index}
+                  className="group bg-card relative shadow-lg transition-all duration-300 hover:shadow-xl"
+                  style={{ transform: `scale(${zoom / 100})` }}
+                >
                   <Image
-                    src={`https://${image.url}` || '/placeholder.jpg'}
-                    alt={`Page ${image.pageNumber}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 800px"
-                    className="object-contain transition-all duration-300"
-                    loading="lazy"
+                    src={`https://${image.url}`}
+                    alt={`Page ${index}`}
+                    width={800}
+                    height={1200}
+                    className="w-full object-contain"
+                    priority={index < 2}
+                    loading={index < 2 ? 'eager' : 'lazy'}
                   />
+                  <div className="absolute right-4 bottom-4 rounded-full bg-black/50 px-3 py-1 text-sm text-white backdrop-blur-sm">
+                    Page {image.pageNumber}
+                  </div>
                 </div>
               </motion.div>
             ))}

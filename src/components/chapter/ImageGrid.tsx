@@ -146,7 +146,8 @@ export function ImageGrid({
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
                     className={`object-cover transition-transform duration-150 ease-in-out ${isSelected ? '' : 'group-hover:scale-105'}`}
-                    priority={index < 6}
+                    loading="lazy"
+                    unoptimized
                   />
 
                   {/* Optional: Add subtle overlay on hover when not selected */}

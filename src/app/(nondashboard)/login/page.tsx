@@ -17,6 +17,7 @@ const AuthPage = () => {
   const isLoginPage = pathname === '/login';
   const defaultTab = isLoginPage ? 'login' : 'register';
   const [isLoading, setIsLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [login] = useLoginMutation();
   const dispatch = useAppDispatch();
 
@@ -32,7 +33,6 @@ const AuthPage = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(formData);
     try {
       setIsLoading(true);
       const result = await login({
@@ -40,13 +40,30 @@ const AuthPage = () => {
         usr_password: formData.password
       }).unwrap();
 
-      console.log(result);
       if (result.status && result.statusCode == 200) {
         const { metadata } = result;
-        // Dispatch login success action with the token and user data
         toast.success('Login successfully!');
-        if (metadata.user.usr_id === 1) navigate.push('/dashboard/manga');
-        else navigate.push('/');
+
+        // Set navigating state to true before navigation
+        setIsNavigating(true);
+
+        // Wrap navigation in a Promise to handle loading state
+        await new Promise<void>((resolve) => {
+          if (metadata.user.usr_id === 1) {
+            navigate.push('/dashboard/manga');
+          } else {
+            navigate.push('/');
+          }
+          // Add an event listener to detect when navigation is complete
+          const checkNavigation = () => {
+            if (document.readyState === 'complete') {
+              resolve();
+            } else {
+              window.requestAnimationFrame(checkNavigation);
+            }
+          };
+          checkNavigation();
+        });
       } else {
         toast.error('Login failed. Please try again.');
       }
@@ -55,12 +72,23 @@ const AuthPage = () => {
       toast.error(err?.data?.message || 'Login failed');
     } finally {
       setIsLoading(false);
+      setIsNavigating(false);
     }
   };
+
+  // Determine if we should show loading state
+  const showLoading = isLoading || isNavigating;
 
   return (
     <div className="container mx-auto max-w-md px-4 py-12">
       <div className="bg-card border-border rounded-xl border p-6 shadow-lg">
+        {/* Add loading overlay */}
+        {showLoading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center rounded-xl bg-black/50">
+            <div className="border-manga-500 h-12 w-12 animate-spin rounded-full border-t-2 border-b-2"></div>
+          </div>
+        )}
+
         <h1 className="manga-heading mb-6 text-center">
           {isLoginPage ? 'Welcome Back!' : 'Join MangaSphere'}
         </h1>
@@ -127,9 +155,9 @@ const AuthPage = () => {
               <Button
                 type="submit"
                 className="bg-manga-600 hover:bg-manga-700 w-full"
-                disabled={isLoading}
+                disabled={showLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {showLoading ? 'Please wait...' : 'Sign In'}
               </Button>
 
               <div className="relative my-6">

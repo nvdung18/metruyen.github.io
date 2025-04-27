@@ -20,7 +20,6 @@ import {
 import { HistoryEntry } from '@/types/history';
 import { formatDate, getBadgeVariant } from '@/lib/utils';
 import Link from 'next/link';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Tooltip,
   TooltipContent,
@@ -57,13 +56,15 @@ const TruncatedBadge = ({
 interface HistoryDetailsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedEntry: HistoryEntry | null;
+  selectedEntry: HistoryEntry | null; // Đổi tên từ historyEntry sang selectedEntry để khớp với code
+  onClose?: () => void;
 }
 
 const HistoryDetailsDialog = ({
   isOpen,
   onOpenChange,
-  selectedEntry
+  selectedEntry, // Đảm bảo tên prop khớp với interface
+  onClose
 }: HistoryDetailsDialogProps) => {
   if (!selectedEntry) return null;
 
@@ -212,6 +213,7 @@ const ChangeDetailsTable = ({
   previousVersion,
   type
 }: ChangeDetailsTableProps) => {
+  console.log('changes', changes);
   if (changes.length === 0) {
     return (
       <div className="border-muted text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed">
@@ -242,7 +244,68 @@ const ChangeDetailsTable = ({
           <TableBody>
             {changes.map((change, index) => {
               // Handle different change types
-              if (change.field) {
+              if (change.field === 'category_id') {
+                // Category changes
+                return (
+                  <TableRow
+                    key={`category-change-${index}-${change.newCategoryId || change.removeCategoryId}`}
+                    className="hover:bg-manga-600/5 transition-colors"
+                  >
+                    <TableCell className="font-medium">Category</TableCell>
+                    <TableCell>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block max-w-[150px] truncate font-mono text-xs">
+                            {change.removeCategoryId ? (
+                              <TruncatedBadge
+                                text={`${change.removeCategoryName} (ID: ${change.removeCategoryId})`}
+                                variant="destructive"
+                                className="bg-background/60"
+                              />
+                            ) : (
+                              '-'
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        {change.removeCategoryId && (
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <p className="font-mono text-xs break-all">
+                              Removed: {change.removeCategoryName} (ID:{' '}
+                              {change.removeCategoryId})
+                            </p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block max-w-[150px] truncate font-mono text-xs">
+                            {change.newCategoryId ? (
+                              <TruncatedBadge
+                                text={`${change.newCategoryName} (ID: ${change.newCategoryId})`}
+                                variant="default"
+                                className="bg-background/60"
+                              />
+                            ) : (
+                              '-'
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        {change.newCategoryId && (
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <p className="font-mono text-xs break-all">
+                              Added: {change.newCategoryName} (ID:{' '}
+                              {change.newCategoryId})
+                            </p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                );
+              } else if (change.field) {
                 // Check if this is a chapter content change
                 const isChapContent =
                   change.field === 'chap_content' &&
@@ -252,7 +315,7 @@ const ChangeDetailsTable = ({
                 // Regular field update
                 return (
                   <TableRow
-                    key={index}
+                    key={`field-${change.field}-${index}`}
                     className="hover:bg-manga-600/5 transition-colors"
                   >
                     <TableCell className="font-medium">
@@ -263,15 +326,24 @@ const ChangeDetailsTable = ({
                         <TooltipTrigger asChild>
                           <span className="inline-block max-w-[150px] truncate font-mono text-xs">
                             {change.oldValue ||
-                              (change.categoryId
-                                ? `Category ID: ${change.categoryId}`
+                              (change.newCategoryId
+                                ? `Category ID: ${change.newCategoryId}`
+                                : 'N/A') ||
+                              (change.removeCategoryId
+                                ? `Category ID: ${change.removeCategoryId}`
                                 : 'N/A')}
                           </span>
                         </TooltipTrigger>
-                        {change.oldValue && (
+                        {(change.oldValue || change.newCategoryId) && (
                           <TooltipContent side="bottom" className="max-w-xs">
                             <p className="font-mono text-xs break-all">
-                              {change.oldValue}
+                              {change.oldValue ||
+                                (change.newCategoryId
+                                  ? `Category ID: ${change.newCategoryId}`
+                                  : 'N/A') ||
+                                (change.removeCategoryId
+                                  ? `Category ID: ${change.removeCategoryId}`
+                                  : 'N/A')}
                             </p>
                           </TooltipContent>
                         )}
@@ -282,15 +354,24 @@ const ChangeDetailsTable = ({
                         <TooltipTrigger asChild>
                           <span className="inline-block max-w-[150px] truncate font-mono text-xs">
                             {change.newValue ||
-                              (change.categoryName
-                                ? change.categoryName
+                              (change.newCategoryName
+                                ? change.newCategoryName
+                                : 'N/A') ||
+                              (change.removeCategoryName
+                                ? change.removeCategoryName
                                 : 'N/A')}
                           </span>
                         </TooltipTrigger>
                         {change.newValue && (
                           <TooltipContent side="bottom" className="max-w-xs">
                             <p className="font-mono text-xs break-all">
-                              {change.newValue}
+                              {change.newValue ||
+                                (change.newCategoryName
+                                  ? `Category name: ${change.newCategoryName}`
+                                  : 'N/A') ||
+                                (change.removeCategoryName
+                                  ? `Category name: ${change.removeCategoryName}`
+                                  : 'N/A')}
                             </p>
                           </TooltipContent>
                         )}
@@ -317,20 +398,31 @@ const ChangeDetailsTable = ({
               } else if (change.manga_title) {
                 // CreateManga type
                 return (
-                  <React.Fragment key={index}>
-                    <TableRow className="hover:bg-manga-600/5 transition-colors">
+                  <React.Fragment
+                    key={`manga-create-${change.manga_id || index}`}
+                  >
+                    <TableRow
+                      key={`manga-title-${index}`}
+                      className="hover:bg-manga-600/5 transition-colors"
+                    >
                       <TableCell className="font-medium">Title</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell>{change.manga_title}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
-                    <TableRow className="hover:bg-manga-600/5 transition-colors">
+                    <TableRow
+                      key={`manga-author-${index}`}
+                      className="hover:bg-manga-600/5 transition-colors"
+                    >
                       <TableCell className="font-medium">Author</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell>{change.manga_author}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
-                    <TableRow className="hover:bg-manga-600/5 transition-colors">
+                    <TableRow
+                      key={`manga-slug-${index}`}
+                      className="hover:bg-manga-600/5 transition-colors"
+                    >
                       <TableCell className="font-medium">Slug</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell>
@@ -349,7 +441,10 @@ const ChangeDetailsTable = ({
                       </TableCell>
                       <TableCell></TableCell>
                     </TableRow>
-                    <TableRow className="hover:bg-manga-600/5 transition-colors">
+                    <TableRow
+                      key={`manga-id-${index}`}
+                      className="hover:bg-manga-600/5 transition-colors"
+                    >
                       <TableCell className="font-medium">ID</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell className="font-mono text-xs">
@@ -358,17 +453,20 @@ const ChangeDetailsTable = ({
                       <TableCell></TableCell>
                     </TableRow>
                     {change.categories && (
-                      <TableRow className="hover:bg-manga-600/5 transition-colors">
+                      <TableRow
+                        key={`manga-categories-${index}`}
+                        className="hover:bg-manga-600/5 transition-colors"
+                      >
                         <TableCell className="font-medium">
                           Categories
                         </TableCell>
                         <TableCell>-</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {change.categories.map((cat) => (
+                            {change.categories.map((cat, index) => (
                               <TruncatedBadge
-                                key={cat.categoryId}
-                                text={cat.categoryName}
+                                key={index}
+                                text={cat.newCategoryName}
                                 variant="outline"
                                 className="bg-background/60"
                               />
@@ -378,7 +476,10 @@ const ChangeDetailsTable = ({
                         <TableCell></TableCell>
                       </TableRow>
                     )}
-                    <TableRow className="hover:bg-manga-600/5 pb-3 transition-colors">
+                    <TableRow
+                      key={`manga-thumbnail-${index}`}
+                      className="hover:bg-manga-600/5 pb-3 transition-colors"
+                    >
                       <TableCell className="font-medium">Thumb_nail</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell className="flex-col font-mono text-xs">
@@ -403,8 +504,13 @@ const ChangeDetailsTable = ({
                 const hasContent = change.chap_content;
 
                 return (
-                  <React.Fragment key={index}>
-                    <TableRow className="hover:bg-manga-600/5 transition-colors">
+                  <React.Fragment
+                    key={`chapter-create-${change.chap_id || index}`}
+                  >
+                    <TableRow
+                      key={`chapter-id-${index}`}
+                      className="hover:bg-manga-600/5 transition-colors"
+                    >
                       <TableCell className="font-medium">Chapter ID</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell className="font-mono text-xs">
@@ -412,7 +518,10 @@ const ChangeDetailsTable = ({
                       </TableCell>
                       <TableCell></TableCell>
                     </TableRow>
-                    <TableRow className="hover:bg-manga-600/5 transition-colors">
+                    <TableRow
+                      key={`chapter-title-${index}`}
+                      className="hover:bg-manga-600/5 transition-colors"
+                    >
                       <TableCell className="font-medium">Title</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell>
@@ -429,13 +538,19 @@ const ChangeDetailsTable = ({
                       </TableCell>
                       <TableCell></TableCell>
                     </TableRow>
-                    <TableRow className="hover:bg-manga-600/5 transition-colors">
+                    <TableRow
+                      key={`chapter-number-${index}`}
+                      className="hover:bg-manga-600/5 transition-colors"
+                    >
                       <TableCell className="font-medium">Number</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell>{change.chap_number}</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
-                    <TableRow className="hover:bg-manga-600/5 transition-colors">
+                    <TableRow
+                      key={`chapter-content-${index}`}
+                      className="hover:bg-manga-600/5 transition-colors"
+                    >
                       <TableCell className="font-medium">
                         chap_content
                       </TableCell>
@@ -477,7 +592,7 @@ const ChangeDetailsTable = ({
                 // Empty change (e.g. for publish/unpublish)
                 return (
                   <TableRow
-                    key={index}
+                    key={`empty-change-${index}`}
                     className="hover:bg-manga-600/5 transition-colors"
                   >
                     <TableCell

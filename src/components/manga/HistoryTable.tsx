@@ -45,7 +45,7 @@ const HistoryTable = ({
 }: HistoryTableProps) => {
   // Use internal state for pagination if not controlled externally
   const [internalCurrentPage, setInternalCurrentPage] = useState(1);
-
+  console.log('HistoryTable', historyEntries);
   // Determine if we're using controlled or uncontrolled pagination
   const isControlled =
     externalCurrentPage !== undefined && onPageChange !== undefined;

@@ -16,10 +16,14 @@ export interface MangaChange {
   chap_title?: string;
   chap_number?: number;
   chap_content?: string;
+  newCategoryId?: number;
+  newCategoryName?: string;
+  removeCategoryId?: number;
+  removeCategoryName?: string;
   categories?: {
     field: string;
-    categoryId: number;
-    categoryName: string;
+    newCategoryId: number;
+    newCategoryName: string;
   }[];
 }
 

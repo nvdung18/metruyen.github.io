@@ -21,6 +21,7 @@ const MangaGrid = ({
   emptyMessage = 'No manga available.',
   isLoading = false
 }: MangaGridProps) => {
+  console.log('Manga', manga);
   // Use template literals for the responsive grid classes
   const gridClassName = `grid grid-cols-2 sm:grid-cols-${
     columns > 2 ? 3 : 2

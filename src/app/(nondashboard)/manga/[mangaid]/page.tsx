@@ -294,7 +294,7 @@ const MangaDetails = () => {
                 <div
                   className={`grid ${auth.user?.id != String(1) ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}
                 >
-                  {auth.user?.id != String(1) && (
+                  {String(auth.user?.id) != String(1) && (
                     <Button
                       variant="outline"
                       className="w-full"

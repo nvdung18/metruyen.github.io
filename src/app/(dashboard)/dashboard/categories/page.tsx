@@ -24,13 +24,6 @@ import {
   XCircle
 } from 'lucide-react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -38,8 +31,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import {
@@ -97,7 +88,6 @@ const CategoryPage = ({
 
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -232,25 +222,17 @@ const CategoryPage = ({
     if (categoryToDelete === null) return;
 
     try {
-      const result = await deleteCategory(categoryToDelete).unwrap();
+      // Show loading state in the delete dialog
+      setIsDeleteDialogOpen(true);
 
-      if (result.success) {
-        toast.success('Category deleted', {
-          description:
-            result.message || 'Category has been deleted successfully.',
-          icon: <CheckCircle2 className="h-5 w-5 text-green-500" />
-        });
+      await deleteCategory(categoryToDelete).unwrap();
 
-        // Remove from selected categories if present
-        if (selectedCategories.includes(categoryToDelete)) {
-          setSelectedCategories((prev) =>
-            prev.filter((id) => id !== categoryToDelete)
-          );
-        }
-      } else {
-        throw new Error(result.message || 'Failed to delete category');
-      }
+      toast.success('Category deleted', {
+        description: 'Category has been deleted successfully.',
+        icon: <CheckCircle2 className="h-5 w-5 text-green-500" />
+      });
 
+      // Reset states
       setCategoryToDelete(null);
       setIsDeleteDialogOpen(false);
     } catch (err: any) {
@@ -258,25 +240,6 @@ const CategoryPage = ({
         description: err.message || 'There was an error deleting the category',
         icon: <XCircle className="h-5 w-5 text-red-500" />
       });
-    }
-  };
-
-  // Handle bulk selection
-  const toggleSelectAll = (checked: boolean) => {
-    if (checked && filteredAndSortedCategories.length > 0) {
-      setSelectedCategories(
-        filteredAndSortedCategories.map((cat) => cat.category_id)
-      );
-    } else {
-      setSelectedCategories([]);
-    }
-  };
-
-  const toggleSelectCategory = (id: number, checked: boolean) => {
-    if (checked) {
-      setSelectedCategories((prev) => [...prev, id]);
-    } else {
-      setSelectedCategories((prev) => prev.filter((catId) => catId !== id));
     }
   };
 
@@ -403,14 +366,6 @@ const CategoryPage = ({
                                 >
                                   <Edit className="mr-2 h-4 w-4" />
                                   Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <BookOpen className="mr-2 h-4 w-4" />
-                                  <Link
-                                    href={`/dashboard/categories/${item.category_id}`}
-                                  >
-                                    View Manga
-                                  </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -590,25 +545,23 @@ const CategoryPage = ({
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="bg-card/90 border-manga-600/40 backdrop-blur-xl">
+        <DialogContent className="bg-card/90 border-manga-600/40 backdrop-blur-xl sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
-              Confirm Deletion
+              Delete Category
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p>
+          <div className="py-6">
+            <p className="text-muted-foreground">
               Are you sure you want to delete this category? This action cannot
               be undone.
             </p>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Note: This will not delete manga associated with this category.
-            </p>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
             >
               Cancel
             </Button>
@@ -616,14 +569,18 @@ const CategoryPage = ({
               variant="destructive"
               onClick={handleDeleteCategory}
               disabled={isDeleting}
+              className="relative"
             >
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  <span>Deleting...</span>
                 </>
               ) : (
-                'Delete'
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete</span>
+                </>
               )}
             </Button>
           </DialogFooter>

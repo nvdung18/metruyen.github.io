@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 const apiBaseQuery = fetchBaseQuery({
   baseUrl: 'http://localhost:8080',
+  timeout: 60000, // Set timeout to 60 seconds (default is usually 10 seconds)
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as any;
     const token = state.auth?.tokens;
@@ -133,7 +134,9 @@ type ChapterCreateRequestObject = {
 // This type should include the manga_id
 export type ChapterCreateRequest = {
   manga_id: number;
-  formData: FormData;
+  chap_title: string;
+  chap_number: number;
+  listCids: string[];
 };
 export interface ChapterUpdateRequest {
   chap_id: number;
@@ -616,11 +619,14 @@ export const mangaApi = createApi({
 
     // Create chapter
     createChapter: builder.mutation<MangaChapter, ChapterCreateRequest>({
-      query: ({ formData, manga_id }) => ({
+      query: ({ listCids, chap_title, chap_number, manga_id }) => ({
         url: `/chapter/${manga_id}`,
         method: 'POST',
-        body: formData,
-        formData: true // Some RTK Query configurations might need this flag
+        body: {
+          chap_title,
+          chap_number,
+          list_cid: listCids
+        }
       }),
       transformResponse: (response: ApiResponse<MangaChapter>) => {
         if (!response.metadata) {
