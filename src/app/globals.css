@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin 'tailwindcss-animate';
 
@@ -96,11 +96,11 @@ body,
 
   @keyframes float {
     0%, 100%: {
-      transform: "translateY(0)";
+      transform: 'translateY(0)';
     }
     ,
 		50%: {
-      transform: "translateY(-10px)";
+      transform: 'translateY(-10px)';
     }
   }
 }
@@ -290,6 +290,15 @@ body,
     }
     50% {
       transform: translateY(-10px);
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
     }
   }
 }

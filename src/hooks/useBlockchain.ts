@@ -37,8 +37,8 @@ interface UseBlockchainReturn {
   }>;
   // changePage: (newPage: number) => Promise<void>;
   currentMangaId: number | null;
-  latestCid: string | null;
-  originalLatestCid: string | null; // Added original CID reference
+  previouslatestCid: string | null;
+  originalLatestCid: HistoryEntry | null; // Added original CID reference
 }
 
 export function useBlockchain(
@@ -49,10 +49,11 @@ export function useBlockchain(
   const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentMangaId, setCurrentMangaId] = useState<number | null>(null);
-  const [latestCid, setLatestCid] = useState<string | null>(null);
-  const [originalLatestCid, setOriginalLatestCid] = useState<string | null>(
+  const [previouslatestCid, setPreviousLatestCid] = useState<string | null>(
     null
-  ); // Store the original latest CID
+  );
+  const [originalLatestCid, setOriginalLatestCid] =
+    useState<HistoryEntry | null>(null); // Store the original latest CID
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [pagination, setPagination] = useState<PaginationState>({
     currentPage: 1,
@@ -102,11 +103,11 @@ export function useBlockchain(
       if (!isConnected) await connect();
       const latestVersion =
         await blockchainService.getLatestMangaVersion(mangaId);
-
+      console.log('Latest version111:', latestVersion);
       if (latestVersion) {
         setCurrentMangaId(mangaId);
-        setLatestCid(latestVersion.previousVersion);
-        setOriginalLatestCid(latestVersion.previousVersion); // Set the original latest CID
+        setPreviousLatestCid(latestVersion.previousVersion);
+        setOriginalLatestCid(latestVersion); // Set the original latest CID
       }
 
       console.log('Latest version:', latestVersion);
@@ -140,8 +141,9 @@ export function useBlockchain(
         }
 
         // Store both the current and original latest CID
-        setLatestCid(historyEntry.previousVersion);
-        setOriginalLatestCid(historyEntry.previousVersion);
+        setPreviousLatestCid(historyEntry.previousVersion);
+        setOriginalLatestCid(historyEntry);
+        console.log('Original latest CID:', historyEntry);
 
         // Fetch complete history from blockchain
         const result = await blockchainService.getCompleteVersionHistory(
@@ -150,6 +152,7 @@ export function useBlockchain(
 
         // Add current version to the complete history
         const completeHistory = [historyEntry, ...result.history];
+        console.log('Complete history:', completeHistory);
 
         // Calculate pagination
         const totalItems = completeHistory.length;
@@ -168,6 +171,7 @@ export function useBlockchain(
           totalItems,
           hasMore: page < totalPages
         };
+        console.log('Pagination:', newPagination);
         setPagination(newPagination);
 
         return {
@@ -196,43 +200,6 @@ export function useBlockchain(
     []
   );
 
-  // /**
-  //  * Changes the current page and fetches that page's data
-  //  * @param newPage - The page number to navigate to
-  //  */
-  // const changePage = useCallback(
-  //   async (newPage: number) => {
-  //     if (!originalLatestCid) {
-  //       toast.error('No history data available to paginate');
-  //       return;
-  //     }
-
-  //     try {
-  //       setError(null);
-  //       setIsLoading(true);
-
-  //       const result = await blockchainService.getCompleteVersionHistory(
-  //         originalLatestCid,
-  //         newPage,
-  //         5
-  //       );
-
-  //       setHistoryData(result.history);
-  //       setPagination(result.pagination);
-  //     } catch (err) {
-  //       const errorMessage =
-  //         err instanceof Error
-  //           ? err.message
-  //           : `Failed to fetch page ${newPage}`;
-  //       setError(errorMessage);
-  //       toast.error(errorMessage);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   },
-  //   [originalLatestCid]
-  // );
-
   return {
     isConnected,
     historyData,
@@ -245,7 +212,7 @@ export function useBlockchain(
     getCompleteVersionHistory,
     // changePage,
     currentMangaId,
-    latestCid,
-    originalLatestCid // Return the original latest CID
+    previouslatestCid,
+    originalLatestCid
   };
 }

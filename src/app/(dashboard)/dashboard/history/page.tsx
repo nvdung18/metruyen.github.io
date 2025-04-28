@@ -13,6 +13,10 @@ import HistoryTable from '@/components/manga/HistoryTable';
 import HistoryDetailsDialog from '@/components/manga/HistoryDetailsDialog';
 import HistoryPagination from '@/components/manga/HistoryPagination';
 import { useBlockchain } from '@/hooks/useBlockchain';
+import {
+  fetchIPFSData,
+  useMangaEventsPagination
+} from '@/hooks/useMangaEventsPagination';
 
 /**
  * Dashboard page for displaying manga history from blockchain
@@ -29,89 +33,48 @@ const DashboardMangaHistory = () => {
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  // State để lưu history entries
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
 
-  // Blockchain hook
   const {
-    historyData,
-    pagination,
-    error,
-    isLoading,
-    getLatestMangaVersion,
-    getCompleteVersionHistory
-  } = useBlockchain();
+    data: eventData,
+    totalPages,
+    isLoading: eventLoading,
+    currentPage,
+    onPageChange
+  } = useMangaEventsPagination(mangaId || '');
 
-  /**
-   * Initialize history data
-   */
-  const initializeHistory = useCallback(async () => {
-    if (!mangaId) {
-      toast.error('No manga ID provided');
-      router.push('/dashboard/manga');
-      return;
-    }
-
-    try {
-      const latestVersion = await getLatestMangaVersion(Number(mangaId));
-
-      if (!latestVersion) {
-        toast.error('No history found for this manga');
-        return;
-      }
-
-      if (!latestVersion.previousVersion) {
-        toast.error('No previous versions found');
-        return;
-      }
-
-      await getCompleteVersionHistory(latestVersion, 1, 5);
-    } catch (error) {
-      console.error('Failed to initialize history:', error);
-      toast.error('Failed to load manga history');
-    } finally {
-      setIsInitialLoad(false);
-    }
-  }, [mangaId, getLatestMangaVersion, getCompleteVersionHistory, router]);
-
-  // Initialize on mount
   useEffect(() => {
-    initializeHistory();
-  }, [initializeHistory]);
+    const fetchHistoryEntries = async () => {
+      if (!eventData?.data) return;
 
-  // Show error toast when error occurs
-  useEffect(() => {
-    if (error) {
-      toast.error('Error', { description: error });
-    }
-  }, [error]);
-
-  /**
-   * Handle page change
-   */
-  const handlePageChange = useCallback(
-    async (page: number) => {
       try {
-        if (!mangaId) {
-          toast.error('No manga ID provided');
-          return;
-        }
+        // Sử dụng Promise.all để fetch parallel
+        const entries = await Promise.all(
+          eventData.data.map(async (event) => {
+            const cid = event.args[1];
+            const historyEntry = await fetchIPFSData(cid);
+            return historyEntry;
+          })
+        );
 
-        // Get latest version again to ensure we have the most recent data
-        const latestVersion = await getLatestMangaVersion(Number(mangaId));
+        // Lọc ra các entry không null và sắp xếp theo version
+        const validEntries = entries
+          .filter((entry): entry is HistoryEntry => entry !== null)
+          .sort((a, b) => b.version - a.version);
 
-        if (!latestVersion) {
-          toast.error('Failed to fetch latest version');
-          return;
-        }
-
-        // Get history for the new page
-        await getCompleteVersionHistory(latestVersion, page, 5);
+        setHistoryEntries(validEntries);
+        console.log('Fetched history entries:', validEntries);
       } catch (error) {
-        console.error('Error changing page:', error);
-        toast.error('Failed to load page data');
+        console.error('Error fetching history entries:', error);
+        toast.error('Failed to fetch history entries');
+      } finally {
+        setIsInitialLoad(false);
       }
-    },
-    [mangaId, getLatestMangaVersion, getCompleteVersionHistory]
-  );
+    };
+
+    fetchHistoryEntries();
+  }, [eventData]);
 
   /**
    * Handle view details
@@ -123,11 +86,12 @@ const DashboardMangaHistory = () => {
 
   // Get filtered data and unique types
   const filteredHistory = filterHistoryData(
-    historyData,
+    historyEntries,
     filterType,
     searchTerm
   );
-  const changeTypes = getChangeTypes(historyData);
+  // const changeTypes = getChangeTypes(historyData);
+  const changeTypes = getChangeTypes(historyEntries);
 
   // Loading state
   if (isInitialLoad) {
@@ -176,7 +140,7 @@ const DashboardMangaHistory = () => {
         </CardHeader>
 
         <CardContent>
-          {isLoading ? (
+          {eventLoading ? (
             <div className="flex flex-col items-center justify-center space-y-4 py-12">
               <Loader2 className="text-manga-400 h-8 w-8 animate-spin" />
               <span className="text-manga-400 text-sm">
@@ -193,20 +157,21 @@ const DashboardMangaHistory = () => {
                 changeTypes={changeTypes}
               />
 
-              {filteredHistory.length > 0 ? (
+              {historyEntries.length > 0 ? (
                 <>
                   <HistoryTable
                     historyEntries={filteredHistory}
+                    // historyEntries={historyEntries}
                     onViewDetails={handleViewDetails}
                   />
 
-                  {pagination.totalPages > 1 && (
+                  {totalPages > 1 && (
                     <div className="mt-6">
                       <HistoryPagination
-                        currentPage={pagination.currentPage}
-                        totalPages={pagination.totalPages}
-                        onPageChange={handlePageChange}
-                        isLoading={isLoading}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={onPageChange}
+                        isLoading={eventLoading}
                       />
                     </div>
                   )}

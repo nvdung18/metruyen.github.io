@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 
 interface HistoryPaginationProps {
   currentPage: number;
@@ -9,10 +8,6 @@ interface HistoryPaginationProps {
   isLoading?: boolean;
 }
 
-/**
- * Pagination component for history pages
- * Shows current page, navigation buttons, and page numbers
- */
 const HistoryPagination: React.FC<HistoryPaginationProps> = ({
   currentPage,
   totalPages,

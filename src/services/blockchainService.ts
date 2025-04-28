@@ -15,6 +15,14 @@ interface VersionInfo {
   cid: string;
 }
 
+export interface PaginatedResult<T> {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  data: T[];
+}
+
 const fetchBlockchainConfig = async () => {
   try {
     const response = await fetch('/api/blockchain/config');
@@ -130,10 +138,24 @@ class BlockchainService {
         console.log(`No events found for manga ID: ${mangaId}`);
         return null;
       }
+      //test
+      const totalEventsCount = events.length;
+      console.log('Total events:', totalEventsCount);
 
       // Get the latest event (last in the array)
       const latestEvent = events[events.length - 1];
+      console.log('Latest event:', latestEvent);
+      const sortedEvents = events.sort(
+        (a: any, b: any) => b.blockNumber - a.blockNumber
+      );
 
+      // Lấy 5 event mới nhất
+      const latestFiveEvents = sortedEvents.slice(0, 5);
+      for (const event of latestFiveEvents) {
+        console.log('Event:', event.args[1]);
+      }
+      console.log('latestFiveEvents', latestFiveEvents);
+      //test
       // Extract data from the event
       const eventData = {
         storyId: latestEvent.args[0].toString(),
@@ -156,12 +178,54 @@ class BlockchainService {
     }
   }
 
+  async getPaginatedEvents(
+    mangaId: string,
+    page: number = 1,
+    limit: number = 5
+  ): Promise<PaginatedResult<any> | null> {
+    console.log(`Fetching latest version of manga ID: ${mangaId}`);
+
+    if (!this.contract) {
+      await this.connect();
+      if (!this.contract) {
+        throw new Error('Failed to establish blockchain connection');
+      }
+    }
+
+    const filter = this.contract.filters.StoryUpdated(mangaId);
+
+    const events = await this.contract.queryFilter(filter, 0, 'latest');
+
+    if (events.length === 0) {
+      console.log(`No events found for manga ID: ${mangaId}`);
+      return null;
+    }
+
+    const sortedEvents = events.sort((a, b) => b.blockNumber - a.blockNumber);
+
+    const total = sortedEvents.length;
+    const totalPages = Math.ceil(total / limit);
+
+    const currentPage = Math.min(Math.max(page, 1), totalPages);
+    const startIndex = (currentPage - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedEvents = sortedEvents.slice(startIndex, endIndex);
+
+    return {
+      total,
+      page: currentPage,
+      limit,
+      totalPages,
+      data: paginatedEvents
+    };
+  }
+
   /**
    * Fetch data from IPFS using the CID
    * @param cid - Content Identifier for IPFS
    * @returns The history entry or null if not found
    */
-  private async fetchIPFSData(cid: string): Promise<HistoryEntry | null> {
+  async fetchIPFSData(cid: string): Promise<HistoryEntry | null> {
     try {
       if (!cid) return null;
 
@@ -193,12 +257,19 @@ class BlockchainService {
    */
   async getCompleteVersionHistory(latestCid: string): Promise<{
     history: HistoryEntry[];
+    page?: number;
+    pageSize?: number;
   }> {
     if (!latestCid) {
       return {
         history: []
       };
     }
+
+    // const page: number = 1; // default page
+    // const pageSize = page === 1 ? 4 : 5;
+    // const startIndex = (page - 1) * pageSize;
+    // const endIndex = startIndex + pageSize;
 
     try {
       // Fetch first entry
@@ -212,6 +283,7 @@ class BlockchainService {
       // Add first entry
       processedVersions.add(firstEntry.version);
       historyEntries.push(firstEntry);
+      console.log('First entry:', firstEntry);
 
       // Process recent versions
       let currentEntry: HistoryEntry | null = firstEntry;
@@ -228,8 +300,49 @@ class BlockchainService {
         }
       }
 
+      //Test
+      // Process versions until we have enough for the requested page
+      // let currentEntry: HistoryEntry | null = firstEntry;
+      // while (
+      //   currentEntry?.previousVersion &&
+      //   historyEntries.length < endIndex + 1
+      // ) {
+      //   const nextEntry = await this.fetchIPFSData(
+      //     currentEntry.previousVersion
+      //   );
+      //   if (nextEntry && !processedVersions.has(nextEntry.version)) {
+      //     processedVersions.add(nextEntry.version);
+      //     historyEntries.push(nextEntry);
+      //     currentEntry = nextEntry;
+      //   } else {
+      //     currentEntry = null; // Break the loop if we get null or duplicate version
+      //   }
+      // }
+      //--endtest
+
       // Sort entries by version (descending)
       historyEntries.sort((a, b) => b.version - a.version);
+      //Test
+      // const totalItems = historyEntries.length;
+      // const totalPages = Math.ceil(totalItems / pageSize);
+      // const hasMore = currentEntry?.previousVersion != null;
+
+      // // Get items for the requested page
+      // const paginatedHistory = historyEntries.slice(startIndex, endIndex);
+      // console.log('Paginated history:', paginatedHistory);
+      // console.log('Total pages:', totalPages);
+      // console.log('Has more:', hasMore);
+      // console.log('Total items:', totalItems);
+      // console.log('historyEntries', historyEntries);
+      // const pagination = {
+      //   currentPage: page,
+      //   totalPages,
+      //   totalItems,
+      //   hasMore
+      // };
+      // console.log('Pagination:', pagination, paginatedHistory);
+
+      //EndTest
       return {
         history: historyEntries
       };

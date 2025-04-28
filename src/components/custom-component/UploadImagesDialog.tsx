@@ -176,7 +176,6 @@ export function UploadImagesDialog({
           return prev + 5;
         });
       }, 200);
-
       // Prepare the FormData for the API call
       const formData = new FormData();
 
@@ -389,10 +388,7 @@ export function UploadImagesDialog({
             disabled={
               selectedFiles.length === 0 ||
               isUploading ||
-              (uploadMode === 'update' &&
-                (updatePageNumbers.some((num) => !num) ||
-                  (updateMode &&
-                    selectedImages.length !== selectedFiles.length)))
+              (updateMode && selectedImages.length !== selectedFiles.length)
             }
           >
             <Upload className="mr-2 h-4 w-4" />

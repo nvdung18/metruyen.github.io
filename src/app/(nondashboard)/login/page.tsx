@@ -164,23 +164,6 @@ const AuthPage = () => {
                 <div className="absolute inset-0 flex items-center">
                   <div className="border-border w-full border-t"></div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card text-muted-foreground px-2">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <Button type="button" variant="outline" className="w-full">
-                  <Facebook className="h-4 w-4" />
-                </Button>
-                <Button type="button" variant="outline" className="w-full">
-                  <Twitter className="h-4 w-4" />
-                </Button>
-                <Button type="button" variant="outline" className="w-full">
-                  <Github className="h-4 w-4" />
-                </Button>
               </div>
             </form>
           </TabsContent>

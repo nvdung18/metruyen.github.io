@@ -81,8 +81,9 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
 
   console.log('Chapters', chapters);
   // Add create chapter mutation
-  const [createChapter, { isLoading: isCreating }] = useCreateChapterMutation();
+  const [createChapter] = useCreateChapterMutation();
   const [deleteChapter, { isLoading: isDeleting }] = useDeleteChapterMutation();
+  const [isCreatingLoading, setIsCreatingLoading] = useState(false);
 
   const [selectedChapters, setSelectedChapters] = useState<number[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -136,24 +137,6 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const toggleSelectChapter = (id: number) => {
-    if (selectedChapters.includes(id)) {
-      setSelectedChapters(
-        selectedChapters.filter((chapterId) => chapterId !== id)
-      );
-    } else {
-      setSelectedChapters([...selectedChapters, id]);
-    }
-  };
-
-  const selectAllChapters = () => {
-    if (selectedChapters.length === paginatedChapters.length) {
-      setSelectedChapters([]);
-    } else {
-      setSelectedChapters(paginatedChapters.map((chapter) => chapter.chap_id));
-    }
-  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -209,6 +192,7 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
     chap_number: string;
   }) => {
     try {
+      setIsCreatingLoading(true);
       console.log('Data', chap_title, chap_number);
       const uploadResult = await PinataService.uploadFolderAsDirectory(
         selectedFiles,
@@ -233,6 +217,9 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
     } catch (error) {
       console.log('error to create chapter:', error);
       toast.error('Failed to create chapter. Please try again.');
+    } finally {
+      setIsCreatingLoading(false);
+      form.reset();
     }
   };
 
@@ -446,10 +433,10 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                 <Button
                   type="submit"
                   className="bg-manga-500 hover:bg-manga-600"
-                  disabled={isCreating || selectedFiles.length === 0}
+                  disabled={isCreatingLoading || selectedFiles.length === 0}
                   onClick={form.handleSubmit(onSubmit)}
                 >
-                  {isCreating ? 'Uploading...' : 'Save Chapter'}
+                  {isCreatingLoading ? 'Uploading...' : 'Save Chapter'}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -526,7 +513,6 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
               <TableHead className="hidden md:table-cell">
                 Release Date
               </TableHead>
-              <TableHead className="hidden md:table-cell">Engagement</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -569,14 +555,7 @@ const ChaptersSection = ({ mangaid }: { mangaid: number }) => {
                         })()
                       : '-'}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <div className="text-muted-foreground flex items-center space-x-2 text-xs">
-                      <span className="flex items-center">
-                        <Eye size={12} className="mr-1" />
-                        {chapter!!.chap_views!!.toLocaleString()}
-                      </span>
-                    </div>
-                  </TableCell>
+
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-1">
                       <Button

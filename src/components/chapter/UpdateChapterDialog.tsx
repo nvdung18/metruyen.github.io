@@ -25,7 +25,7 @@ const UpdateChapterDialog: React.FC<UpdateChapterDialogProps> = ({
 }) => {
   const [title, setTitle] = useState(chapterTitle);
   const [number, setNumber] = useState(chapterNumber);
-  const [updateChapter] = useUpdateChapterMutation();
+  const [updateChapter, { isLoading }] = useUpdateChapterMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +76,8 @@ const UpdateChapterDialog: React.FC<UpdateChapterDialogProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="ml-2">
-              Update
+            <Button type="submit" className="ml-2" disabled={isLoading}>
+              {isLoading ? 'Updating...' : 'Update'}
             </Button>
           </div>
         </form>
