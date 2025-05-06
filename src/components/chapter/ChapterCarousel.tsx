@@ -134,7 +134,7 @@ export const ChapterImage = ({
         }`}
         priority={Math.abs(index - currentPage) <= 1}
         quality={100}
-        onLoadingComplete={() => setIsLoading(false)}
+        onLoad={() => setIsLoading(false)}
         onError={() => setIsLoading(false)}
       />
     </div>

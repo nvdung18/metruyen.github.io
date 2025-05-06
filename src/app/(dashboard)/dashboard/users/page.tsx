@@ -111,8 +111,8 @@ export default function UsersPage() {
             onSearchChange={setSearchQuery}
             roleFilter={roleFilter}
             onRoleChange={setRoleFilter}
-            statusFilter={statusFilter}
-            onStatusChange={setStatusFilter}
+            // statusFilter={statusFilter}
+            // onStatusChange={setStatusFilter}
           />
           <UserTable users={processedUsers} isLoading={isLoading} />
         </TabsContent>

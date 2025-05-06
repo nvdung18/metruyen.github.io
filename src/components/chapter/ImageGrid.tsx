@@ -43,6 +43,7 @@ export function ImageGrid({
 }: ImageGridProps) {
   const isSelectionMode = selectedImages.length > 0;
   console.log('Images', images);
+
   return (
     <Card>
       <CardHeader>
@@ -83,6 +84,8 @@ export function ImageGrid({
               const isSelected = selectedImages.some(
                 (img) => img.id === image.id
               );
+              const parts = image.url.split('/');
+              const cid = parts[parts.length - 1];
 
               return (
                 <div
@@ -141,13 +144,17 @@ export function ImageGrid({
 
                   {/* Image */}
                   <Image
-                    src={`https://${image.url}` || '/placeholder.svg'}
+                    src={
+                      `${process.env.NEXT_PUBLIC_API_URL_IPFS}${cid}` ||
+                      '/placeholder.svg'
+                    }
                     alt={`Page ${image.pageNumber}`}
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
                     className={`object-cover transition-transform duration-150 ease-in-out ${isSelected ? '' : 'group-hover:scale-105'}`}
                     loading="lazy"
-                    unoptimized
+                    placeholder="blur"
+                    blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAySURBVHgB7c0xAQAACAIw7f+PA4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg8sP8AYvOQMVcDAAAAAElFTkSuQmCC"
                   />
 
                   {/* Optional: Add subtle overlay on hover when not selected */}

@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 // Define available statuses
-const MANGA_STATUSES = ['ongoing', 'completed', 'hiatus'];
+const MANGA_STATUSES = ['ongoing', 'completed'];
 
 const MangaSidebar = () => {
   const dispatch = useAppDispatch();

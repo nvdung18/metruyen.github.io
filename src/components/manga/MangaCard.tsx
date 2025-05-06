@@ -48,7 +48,8 @@ const MangaCard = ({
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
           placeholder="blur"
-          blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          loading="lazy"
+          blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAySURBVHgB7c0xAQAACAIw7f+PA4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg8sP8AYvOQMVcDAAAAAElFTkSuQmCC"
         />
 
         {/* Gradient overlay for better text readability */}
@@ -74,12 +75,12 @@ const MangaCard = ({
 
           {/* Rating and chapters */}
           <div className="flex items-center justify-between text-xs text-white">
-            {rating !== undefined && (
+            {/* {rating !== undefined && (
               <div className="flex items-center">
                 <Star className="mr-1 h-3 w-3 text-yellow-400" />
                 <span>{rating.toFixed(1)}</span>
               </div>
-            )}
+            )} */}
             {chapters !== undefined && (
               <div className="flex items-center">
                 <BookOpen className="text-manga-300 mr-1 h-3 w-3" />

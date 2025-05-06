@@ -112,14 +112,6 @@ const DashboardMangaHistory = () => {
       {/* Header */}
       <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.push('/dashboard/manga')}
-            className="border-manga-600/20 hover:bg-manga-600/10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
           <h1 className="from-manga-300 to-manga-500 flex items-center gap-2 bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent">
             <History className="text-manga-400 h-8 w-8" />
             Manga History

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { formatDate, getBadgeVariant } from '@/lib/utils';
 import { HistoryEntry } from '@/types/history';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HistoryTableProps {
   historyEntries: HistoryEntry[];
@@ -20,6 +21,7 @@ interface HistoryTableProps {
   itemsPerPage?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  isTransitioning?: boolean;
 }
 
 /**
@@ -41,7 +43,8 @@ const HistoryTable = ({
   onViewCompleteHistory,
   itemsPerPage = 5,
   currentPage: externalCurrentPage,
-  onPageChange
+  onPageChange,
+  isTransitioning = false
 }: HistoryTableProps) => {
   // Use internal state for pagination if not controlled externally
   const [internalCurrentPage, setInternalCurrentPage] = useState(1);
@@ -77,73 +80,128 @@ const HistoryTable = ({
   }, [historyEntries.length, isControlled]);
 
   return (
-    <div className="space-y-4">
-      <div className="border-manga-600/20 overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader className="bg-manga-600/20">
-            <TableRow>
-              <TableHead className="w-[60px]">Version</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {historyEntries.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-muted-foreground py-8 text-center"
-                >
-                  No history records found
-                </TableCell>
-              </TableRow>
-            ) : (
-              historyEntries.map((entry, index) => (
-                <TableRow
-                  key={generateUniqueKey(entry, index)}
-                  className="border-manga-600/10 hover:bg-manga-600/5 border-t"
-                >
-                  <TableCell className="font-mono">{entry.version}</TableCell>
-                  <TableCell>
-                    <Badge variant={getBadgeVariant(entry.type)}>
-                      {entry.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{entry.changeLog.description}</TableCell>
-                  <TableCell>{formatDate(entry.changeLog.timestamp)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewDetails(entry)}
-                        className="hover:bg-manga-600/10"
+    <div className="relative min-h-[400px]">
+      {' '}
+      {/* Add relative positioning */}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={currentPage}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{
+            duration: 0.2,
+            delay: isTransitioning ? 0.3 : 0
+          }}
+          className="absolute w-full"
+        >
+          <div className="space-y-4">
+            <div className="border-manga-600/20 overflow-hidden rounded-md border">
+              <Table>
+                <TableHeader className="bg-manga-600/20">
+                  <TableRow>
+                    <TableHead className="w-[60px]">Version</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historyEntries.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-muted-foreground h-[300px] text-center"
                       >
-                        <Eye className="mr-1 h-4 w-4" />
-                        Details
-                      </Button>
-
-                      {onViewCompleteHistory && entry.previousVersion && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onViewCompleteHistory(entry)}
-                          className="hover:bg-manga-600/10"
+                        No history records found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {historyEntries
+                        .slice(startIndex, endIndex)
+                        .map((entry, index) => (
+                          <TableRow
+                            key={generateUniqueKey(entry, index)}
+                            className="border-manga-600/10 hover:bg-manga-600/5 h-[60px] border-t"
+                          >
+                            <TableCell className="font-mono">
+                              <div className="opacity-100">{entry.version}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="opacity-100">
+                                <Badge variant={getBadgeVariant(entry.type)}>
+                                  {entry.type}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="opacity-100">
+                                {entry.changeLog.description}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="opacity-100">
+                                {formatDate(entry.changeLog.timestamp)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2 opacity-100">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onViewDetails(entry)}
+                                  className="hover:bg-manga-600/10"
+                                >
+                                  <Eye className="mr-1 h-4 w-4" />
+                                  Details
+                                </Button>
+                                {onViewCompleteHistory &&
+                                  entry.previousVersion && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        onViewCompleteHistory(entry)
+                                      }
+                                      className="hover:bg-manga-600/10"
+                                    >
+                                      <History className="mr-1 h-4 w-4" />
+                                      History
+                                    </Button>
+                                  )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      {Array.from({
+                        length: Math.max(
+                          0,
+                          itemsPerPage -
+                            historyEntries.slice(startIndex, endIndex).length
+                        )
+                      }).map((_, index) => (
+                        <TableRow
+                          key={`empty-${index}`}
+                          className="h-[60px] border-none" // Add border-none to remove borders
                         >
-                          <History className="mr-1 h-4 w-4" />
-                          History
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                          <TableCell
+                            colSpan={5}
+                            className="border-0" // Remove cell borders
+                          >
+                            &nbsp;
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

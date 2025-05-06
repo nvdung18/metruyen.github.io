@@ -21,10 +21,15 @@ import Reply from './Reply';
 import CommentForm from './CommentForm';
 import { useAppSelector } from '@/lib/redux/hook';
 import { formatDate } from '@/lib/utils';
-import { useGetListCommentsQuery } from '@/services/apiManga';
+import {
+  useDeleteCommentMutation,
+  useGetListCommentsQuery,
+  useGetUserAvatarQuery
+} from '@/services/apiManga';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '../ui/skeleton';
+import { toast } from 'sonner';
 
 // Create a context to track which comment is being replied to
 interface CommentContextType {
@@ -62,12 +67,14 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
   const [replyContent, setReplyContent] = useState('');
   const [showReplies, setShowReplies] = useState(false);
   const auth = useAppSelector((state) => state.auth);
-
+  const { data, isLoading } = useGetUserAvatarQuery(comment.comment_user_id);
+  console.log('User avatar:', data);
   // Use the comment context to track active reply
   const { activeReplyId, setActiveReplyId } = useContext(CommentContext);
 
   // Check if this comment is the one being replied to
   const isReplying = activeReplyId === comment.comment_id;
+  const [deleteComment] = useDeleteCommentMutation(); // 👈 hook gọi ở đây
 
   const {
     data: commentsData,
@@ -98,6 +105,24 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
     }
   };
 
+  const handleDeleteComment = async (commentId: number) => {
+    if (!auth.isAuthenticated) {
+      toast('Please log in to delete comment');
+      return;
+    }
+    try {
+      await deleteComment(Number(commentId)).unwrap();
+      toast('Comment deleted successfully');
+      refetchComments();
+    } catch (err) {
+      console.log('Failed to delete comment:', err);
+      toast('Failed to delete comment', {
+        description:
+          'There was an error deleting your comment. Please try again.'
+      });
+    }
+  };
+
   return (
     <div className="space-y-4 transition-all duration-300 hover:translate-x-1">
       {/* Main comment */}
@@ -106,7 +131,7 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
           <div className="flex gap-3">
             <Avatar className="ring-manga-500/30 ring-offset-background h-8 w-8 ring-1 ring-offset-1">
               <img
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.comment_user_id}`}
+                src={`${data?.usr_avatar ? `${process.env.NEXT_PUBLIC_API_URL_IPFS}${data?.usr_avatar}` : `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.comment_user_id}`}`}
                 alt={comment.user?.usr_name || 'User'}
               />
             </Avatar>
@@ -119,7 +144,7 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
               </p>
             </div>
           </div>
-          <DropdownMenu>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -134,12 +159,15 @@ const CommentItem = ({ comment, chapterId }: CommentProps) => {
               className="bg-card/90 border-manga-600/30 backdrop-blur-lg"
             >
               {Number(auth.clientId) === comment.comment_user_id && (
-                <DropdownMenuItem className="hover:bg-destructive/10 text-destructive cursor-pointer">
+                <DropdownMenuItem
+                  className="hover:bg-destructive/10 text-destructive cursor-pointer"
+                  onClick={() => handleDeleteComment(comment.comment_id)}
+                >
                   Delete
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
         </div>
 
         <p className="mt-2 text-sm">{comment.comment_content}</p>

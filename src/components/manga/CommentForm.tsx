@@ -74,7 +74,10 @@ const CommentForm = ({
   // Handle form submission
   const handleSubmit = async (data: CommentFormValues) => {
     // Check if user is authenticated
-
+    if (!auth.isAuthenticated) {
+      toast('Please log in to post comment');
+      return;
+    }
     try {
       // Prepare comment data
       const commentData = {
@@ -143,15 +146,6 @@ const CommentForm = ({
                         disabled={isLoading}
                       />
                     </FormControl>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className={`text-manga-400 hover:text-manga-500 hover:bg-manga-500/10 absolute right-2 bottom-2 ${isReply ? 'h-6 w-6' : ''}`}
-                      disabled={isLoading}
-                    >
-                      <Smile className={`${isReply ? 'h-4 w-4' : 'h-5 w-5'}`} />
-                    </Button>
                   </div>
                   <FormMessage className="mt-1 text-sm text-red-500" />
                 </FormItem>

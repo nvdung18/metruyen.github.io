@@ -159,12 +159,6 @@ const AuthPage = () => {
               >
                 {showLoading ? 'Please wait...' : 'Sign In'}
               </Button>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="border-border w-full border-t"></div>
-                </div>
-              </div>
             </form>
           </TabsContent>
         </Tabs>

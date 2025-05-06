@@ -53,9 +53,9 @@ const MangaSorting = () => {
           <SelectItem value="manga_views">Popularity</SelectItem>
           <SelectItem value="updatedAt">Newest</SelectItem>
           <SelectItem value="createdAt">Oldest</SelectItem>
-          <SelectItem value="manga_number_of_followers">
-            Highest Follow
-          </SelectItem>
+          {/* <SelectItem value="manga_number_of_followers">
+            Highest Favorite
+          </SelectItem> */}
         </SelectContent>
       </Select>
     </div>

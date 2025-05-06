@@ -5,9 +5,11 @@ import CommentForm from './CommentForm';
 import { toast } from 'sonner';
 import {
   useCreateCommentMutation,
-  useGetListCommentsQuery
+  useGetListCommentsQuery,
+  useGetUserAvatarQuery
 } from '@/services/apiManga';
 import { CommentContext } from './Comment';
+import { useAppSelector } from '@/lib/redux/hook';
 
 // Mock user data - in a real app this would come from auth context
 const currentUser = {
@@ -31,7 +33,10 @@ const CommentSection = ({ mangaId, chapterId }: CommentSectionProps) => {
   } = useGetListCommentsQuery({
     chapter_id: Number(chapterId)
   });
-
+  const auth = useAppSelector((state) => state.auth);
+  const { data } = useGetUserAvatarQuery(Number(auth.clientId), {
+    skip: !auth.clientId
+  });
   return (
     <CommentContext.Provider value={{ activeReplyId, setActiveReplyId }}>
       <div className="from-card to-card/70 border-manga-600/30 animate-fade-in space-y-6 rounded-lg border bg-gradient-to-br p-4 shadow-lg backdrop-blur-sm md:p-6">
@@ -40,15 +45,17 @@ const CommentSection = ({ mangaId, chapterId }: CommentSectionProps) => {
           <h3 className="from-manga-300 to-manga-500 bg-gradient-to-r bg-clip-text text-xl font-medium text-transparent">
             Comments & Discussion
           </h3>
-          <div className="text-muted-foreground ml-auto text-sm">
-            {commentsData?.length} comments
-          </div>
+          <div className="text-muted-foreground ml-auto text-sm">comments</div>
         </div>
 
         {/* Add new comment */}
         <CommentForm
           chapterId={Number(chapterId)}
-          avatarUrl={currentUser.avatar}
+          avatarUrl={
+            data?.usr_avatar
+              ? `${process.env.NEXT_PUBLIC_API_URL_IPFS}${data.usr_avatar}`
+              : currentUser.avatar
+          }
           userName={currentUser.name}
           placeholder="Share your thoughts on this chapter..."
           buttonText="Post Comment"

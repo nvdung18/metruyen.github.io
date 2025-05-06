@@ -160,21 +160,6 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
                       Completed
                     </span>
                   </Link>
-                  <Link
-                    href="/manga/list"
-                    className="hover:bg-accent group flex items-center gap-2 rounded-md p-2"
-                    onClick={() => {
-                      dispatch(setStatus('hiatus'));
-                      onClose();
-                    }}
-                  >
-                    <span className="bg-secondary text-secondary-foreground group-hover:bg-manga-600 rounded-md p-1.5 transition-colors group-hover:text-white">
-                      <Flame size={16} />
-                    </span>
-                    <span className="group-hover:text-manga-300 text-sm font-medium transition-colors">
-                      Hiatus
-                    </span>
-                  </Link>
                 </div>
               </TabsContent>
             </Tabs>

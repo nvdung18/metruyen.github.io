@@ -38,7 +38,7 @@ const MangaGrid = ({
   };
 
   // Sort manga by manga_id in descending order
-  const sortedManga = [...manga].sort((a, b) => b.manga_id - a.manga_id);
+  // const sortedManga = [...manga].sort((a, b) => b.manga_id - a.manga_id);
   return (
     <div className="manga-grid-container space-y-6">
       {title && (
@@ -53,26 +53,26 @@ const MangaGrid = ({
       ) : manga.length > 0 ? (
         <div className={gridClassName}>
           {limit == 0
-            ? sortedManga.map((item) => (
+            ? manga.map((item) => (
                 <MangaCard
                   key={item.manga_id}
                   id={item.manga_id.toString()}
                   title={item.manga_title}
                   coverImage={item.manga_thumb}
                   rating={item.manga_ratings_count}
-                  // genres={item.genres}
                 />
               ))
-            : sortedManga.slice(0, limit).map((item) => (
-                <MangaCard
-                  key={item.manga_id}
-                  id={item.manga_id.toString()}
-                  title={item.manga_title}
-                  coverImage={item.manga_thumb}
-                  rating={item.manga_ratings_count}
-                  // genres={item.genres}
-                />
-              ))}
+            : manga
+                .slice(0, limit)
+                .map((item) => (
+                  <MangaCard
+                    key={item.manga_id}
+                    id={item.manga_id.toString()}
+                    title={item.manga_title}
+                    coverImage={item.manga_thumb}
+                    rating={item.manga_ratings_count}
+                  />
+                ))}
         </div>
       ) : (
         <div className="py-10 text-center">

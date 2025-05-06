@@ -29,8 +29,8 @@ export interface UserFiltersProps {
   onSearchChange: (value: string) => void;
   roleFilter: typeof FILTER_ALL | RoleName;
   onRoleChange: (value: typeof FILTER_ALL | RoleName) => void;
-  statusFilter: typeof FILTER_ALL | Status;
-  onStatusChange: (value: typeof FILTER_ALL | Status) => void;
+  statusFilter?: typeof FILTER_ALL | Status;
+  onStatusChange?: (value: typeof FILTER_ALL | Status) => void;
 }
 
 export interface UserTableProps {

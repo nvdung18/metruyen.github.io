@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useUpdateChapterMutation } from '@/services/apiManga';
+import { toast } from 'sonner';
 
 interface UpdateChapterDialogProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ const UpdateChapterDialog: React.FC<UpdateChapterDialogProps> = ({
       formData.append('chap_title', title);
       formData.append('chap_number', number.toString());
       await updateChapter({ chap_id: Number(chapterId), formData }).unwrap();
+      toast.success('Chapter updated successfully!');
       onClose();
     } catch (error) {
       console.log('Failed to update chapter:', error);

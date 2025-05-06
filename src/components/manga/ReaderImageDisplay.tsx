@@ -29,37 +29,44 @@ const ReaderImageDisplay: React.FC<ReaderImageDisplayProps> = ({
       <div className="w-full" style={{ maxWidth: `${zoom}%` }}>
         {isLoading
           ? renderSkeletonPages()
-          : images.map((image, index) => (
-              <motion.div
-                key={image.id}
-                className="w-full"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.5,
-                  delay: index * 0.1 > 1 ? 1 : index * 0.1 // Cap delay at 1 second
-                }}
-              >
-                <div
-                  key={index}
-                  className="group bg-card relative shadow-lg transition-all duration-300 hover:shadow-xl"
-                  style={{ transform: `scale(${zoom / 100})` }}
+          : images.map((image, index) => {
+              const parts = image.url.split('/');
+              const cid = parts[parts.length - 1];
+
+              return (
+                <motion.div
+                  key={image.id}
+                  className="w-full"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.5,
+                    delay: index * 0.1 > 1 ? 1 : index * 0.1 // Cap delay at 1 second
+                  }}
                 >
-                  <Image
-                    src={`https://${image.url}`}
-                    alt={`Page ${index}`}
-                    width={800}
-                    height={1200}
-                    className="w-full object-contain"
-                    priority={index < 2}
-                    loading={index < 2 ? 'eager' : 'lazy'}
-                  />
-                  <div className="absolute right-4 bottom-4 rounded-full bg-black/50 px-3 py-1 text-sm text-white backdrop-blur-sm">
-                    Page {image.pageNumber}
+                  <div
+                    className="group bg-card relative shadow-lg transition-all duration-300 hover:shadow-xl"
+                    style={{ transform: `scale(${zoom / 100})` }}
+                  >
+                    <Image
+                      src={`${process.env.NEXT_PUBLIC_API_URL_IPFS}${cid}`}
+                      alt={`Page ${index}`}
+                      width={800}
+                      height={1200}
+                      className="w-full object-contain"
+                      // priority={index < 2}
+                      // loading={index < 2 ? 'eager' : 'lazy'}
+                      loading="lazy"
+                      placeholder="blur"
+                      blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAySURBVHgB7c0xAQAACAIw7f+PA4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg8sP8AYvOQMVcDAAAAAElFTkSuQmCC"
+                    />
+                    <div className="absolute right-4 bottom-4 rounded-full bg-black/50 px-3 py-1 text-sm text-white backdrop-blur-sm">
+                      Page {image.pageNumber}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
       </div>
     </div>
   );

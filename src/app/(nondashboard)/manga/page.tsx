@@ -63,6 +63,29 @@ const Index = () => {
     <>
       <FeaturedManga />
       <div className="flex flex-col items-center">
+        <section className="manga-section bg-accent/30 container py-12">
+          <div className="container">
+            <MangaGrid
+              title="Latest Updates"
+              manga={sortedByLatest.slice(0, 8)}
+              isLoading={isLoading}
+              limit={8}
+              action={
+                <Button
+                  variant="link"
+                  className="text-manga-400 hover:text-manga-300"
+                  asChild
+                >
+                  <Link href="/manga/list" className="flex items-center">
+                    <TrendingUp className="mr-1 h-4 w-4" />
+                    View All <ChevronRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+              }
+            />
+          </div>
+        </section>
+
         <section className="manga-section container">
           <MangaGrid
             title="Popular Manga"
@@ -84,28 +107,6 @@ const Index = () => {
           />
         </section>
 
-        <section className="manga-section bg-accent/30 container py-12">
-          <div className="container">
-            <MangaGrid
-              title="Latest Updates"
-              manga={sortedByLatest.slice(0, 8)}
-              isLoading={isLoading}
-              limit={8}
-              action={
-                <Button
-                  variant="link"
-                  className="text-manga-400 hover:text-manga-300"
-                  asChild
-                >
-                  <Link href="/updates" className="flex items-center">
-                    View All <ChevronRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              }
-            />
-          </div>
-        </section>
-
         <section className="manga-section container">
           <MangaGrid
             title="High Followers Manga"
@@ -118,7 +119,8 @@ const Index = () => {
                 className="text-manga-400 hover:text-manga-300"
                 asChild
               >
-                <Link href="/new" className="flex items-center">
+                <Link href="/manga/list" className="flex items-center">
+                  <TrendingUp className="mr-1 h-4 w-4" />
                   View All <ChevronRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
@@ -150,7 +152,7 @@ const Index = () => {
                 className="border-manga-500 text-manga-300 hover:bg-manga-900"
                 asChild
               >
-                <Link href="/library">Browse Manga Library</Link>
+                <Link href="/list">Browse Manga Search</Link>
               </Button>
             </div>
           </div>

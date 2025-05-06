@@ -61,7 +61,7 @@ export function UserFilters({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
+        {/* <div className="space-y-1">
           <Label htmlFor="status-filter" className="text-sm">
             Status
           </Label>
@@ -81,7 +81,7 @@ export function UserFilters({
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
       </div>
     </div>
   );

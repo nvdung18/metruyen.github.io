@@ -201,6 +201,8 @@ export interface User {
   usr_sex: string;
 }
 
+export type Avatar = Pick<User, 'usr_avatar'>;
+
 export interface CIDStorage {
   cid: string;
 }
@@ -991,6 +993,21 @@ export const mangaApi = createApi({
       providesTags: (result, error, userId) => [{ type: 'User', id: userId }]
     }),
 
+    getUserAvatar: builder.query<Avatar, number>({
+      query: (userId) => ({
+        url: `/user/${userId}`
+      }),
+      transformResponse: (response: ApiResponse<User>) => {
+        if (!response.metadata) {
+          throw new Error('Failed to fetch user profile');
+        }
+        return {
+          usr_avatar: response.metadata.usr_avatar || ''
+        };
+      },
+      providesTags: (result, error, userId) => [{ type: 'User', id: userId }]
+    }),
+
     // Add more endpoints as needed
     getContractAddress: builder.query<CIDStorage, void>({
       query: () => ({
@@ -1071,6 +1088,23 @@ export const mangaApi = createApi({
       invalidatesTags: (result, error, { mangaId }) => [
         { type: 'MangaAdmin', id: mangaId }
       ]
+    }),
+
+    deleteComment: builder.mutation<
+      {
+        success: boolean;
+      },
+      number
+    >({
+      query: (commentId) => ({
+        url: `/comment/${commentId}`,
+        method: 'DELETE'
+      }),
+      transformResponse: (response: ApiResponse<null>) => {
+        return {
+          success: response.status
+        };
+      }
     })
   })
 });
@@ -1103,5 +1137,7 @@ export const {
   useIncreaseMangaViewMutation,
   useIncreaseChapterViewMutation,
   useRatingMangaMutation,
-  useUpdateMangaCategoriesMutation
+  useUpdateMangaCategoriesMutation,
+  useGetUserAvatarQuery,
+  useDeleteCommentMutation
 } = mangaApi;

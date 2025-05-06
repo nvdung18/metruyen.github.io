@@ -552,6 +552,8 @@ export const getUserName = async (userId: number): Promise<string> => {
       return defaultUserName;
     }
 
+    const parsedAccessToken = JSON.parse(accessToken);
+
     const response = await fetch(
       // Ensure NEXT_PUBLIC_API_URL_BACKEND is defined in your environment variables
       `${process.env.NEXT_PUBLIC_API_URL_BACKEND}/user/${userId}`,
@@ -559,7 +561,7 @@ export const getUserName = async (userId: number): Promise<string> => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${parsedAccessToken}`,
           // Use the actual client ID, not the access token again
           'x-client-id': clientId
         }

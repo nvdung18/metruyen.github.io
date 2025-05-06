@@ -69,7 +69,7 @@ export function UserStats({
                 total={totalUsers}
                 colorClass="bg-green-500"
               />
-              <StatusDistributionBar
+              {/* <StatusDistributionBar
                 label="Inactive"
                 count={inactiveUsers}
                 total={totalUsers}
@@ -80,7 +80,7 @@ export function UserStats({
                 count={suspendedUsers}
                 total={totalUsers}
                 colorClass="bg-red-500"
-              />
+              /> */}
             </div>
           </CardContent>
         </Card>

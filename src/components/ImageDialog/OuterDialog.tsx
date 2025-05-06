@@ -91,6 +91,8 @@ export const OuterDialog: React.FC<OuterDialogProps> = ({
         chap_id: chapterId,
         formData
       }).unwrap();
+      toast.success('Images updated successfully!');
+      onChange([]);
     } catch (error) {
       console.error('Error updating images:', error);
       toast.error('Failed to update images. Please try again.');
@@ -139,15 +141,28 @@ export const OuterDialog: React.FC<OuterDialogProps> = ({
 
           <DialogFooter>
             {images.length > 0 ? (
-              <Button
-                onClick={() => {
-                  setInnerDialogOpen(false);
-                  setOpen(false);
-                  handleUpdateImages();
-                }}
-              >
-                Add / Reorder Images
-              </Button>
+              <div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setInnerDialogOpen(false);
+                    setOpen(false);
+                    onChange([]);
+                  }}
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    setInnerDialogOpen(false);
+                    setOpen(false);
+                    handleUpdateImages();
+                  }}
+                >
+                  Add / Reorder Images
+                </Button>
+              </div>
             ) : (
               <Button onClick={handleEditImages}>Add Images</Button>
             )}

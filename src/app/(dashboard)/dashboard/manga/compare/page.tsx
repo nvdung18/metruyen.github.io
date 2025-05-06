@@ -136,8 +136,10 @@ const ChapterContentComparison = () => {
         width={800} // Provide a base width (adjust as needed)
         height={1200} // Provide a base height (adjust as needed, maintaining aspect ratio)
         className="aspect-[2/3] h-auto w-full object-cover transition-transform duration-300 hover:scale-105"
-        priority={key.includes('-0') || key.includes('-1')} // Prioritize loading first few images
         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw" // Responsive sizes
+        loading="lazy"
+        placeholder="blur"
+        blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAySURBVHgB7c0xAQAACAIw7f+PA4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg8sP8AYvOQMVcDAAAAAElFTkSuQmCC"
       />
       <div className="bg-card/50 text-accent-foreground absolute right-0 bottom-0 left-0 p-2 text-center text-xs backdrop-blur-sm">
         Page {image.page}

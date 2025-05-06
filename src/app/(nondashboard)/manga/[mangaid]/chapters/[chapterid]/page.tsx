@@ -244,7 +244,7 @@ const MangaReader = () => {
     // Simplified loading state for initial manga info
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black text-white">
-        Loading Manga Info...
+        Loading Info...
       </div>
     );
   }

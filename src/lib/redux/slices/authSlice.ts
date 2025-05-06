@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import Cookies from 'js-cookie';
 import { isTokenExpired } from '@/lib/utils';
+import Cookies from 'js-cookie';
 
 // Define types for our state
 interface User {
@@ -33,9 +33,9 @@ const initialState: AuthState = {
 
 function SECURE_COOKIE_OPTIONS(expires: number = 7) {
   return {
-    expires, // 20 seconds
-    secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-    path: '/' // Available across the entire site
+    expires,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/'
   };
 }
 

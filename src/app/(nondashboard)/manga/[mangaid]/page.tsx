@@ -37,7 +37,7 @@ const MangaDetails = () => {
   const mangaid = params.mangaid as string;
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const auth = useAppSelector((state) => state.auth);
-
+  console.log('x-client-id', auth.clientId);
   // --- Data Fetching Hooks ---
   const {
     data: manga,
@@ -292,34 +292,25 @@ const MangaDetails = () => {
 
                 {/* Favorite/Bookmark/Share Buttons */}
                 <div
-                  className={`grid ${auth.user?.id != String(1) ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}
+                  className={`grid ${auth.isAuthenticated && Number(auth!!.clientId) != Number(1) ? 'grid-cols-1' : ''} gap-3`}
                 >
-                  {String(auth.user?.id) != String(1) && (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => handleToggleHeart(manga.manga_id)}
-                      disabled={favoritesLoading} // Disable while favs are loading
-                    >
-                      <Heart
-                        className={`h-4 w-4 transition-colors ${
-                          checkMangaIdInFavorites(manga.manga_id)
-                            ? 'fill-red-500 text-red-500'
-                            : 'text-muted-foreground'
-                        }`}
-                      />
-                    </Button>
-                  )}
-                  <Button variant="outline" className="w-full" disabled>
-                    {' '}
-                    {/* Placeholder */}
-                    <BookMarked className="text-muted-foreground h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" className="w-full" disabled>
-                    {' '}
-                    {/* Placeholder */}
-                    <Share2 className="text-muted-foreground h-4 w-4" />
-                  </Button>
+                  {auth.isAuthenticated &&
+                    Number(auth!!.clientId) != Number(1) && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleToggleHeart(manga.manga_id)}
+                        disabled={favoritesLoading} // Disable while favs are loading
+                      >
+                        <Heart
+                          className={`h-4 w-4 transition-colors ${
+                            checkMangaIdInFavorites(manga.manga_id)
+                              ? 'fill-red-500 text-red-500'
+                              : 'text-muted-foreground'
+                          }`}
+                        />
+                      </Button>
+                    )}
                 </div>
               </div>
             </div>
