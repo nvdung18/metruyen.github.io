@@ -67,4 +67,8 @@ export default class Util {
     // });
     return { updatedObject: objWillBeReplace, changes };
   }
+
+  getTimeFromISOToDateTime(isoTime: Date): string {
+    return isoTime.toISOString().slice(0, 19).replace('T', ' ');
+  }
 }

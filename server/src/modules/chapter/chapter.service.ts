@@ -66,6 +66,18 @@ export class ChapterService {
         { transaction: t },
       );
 
+      const isUpdateTime = await this.mangaService.updateMangaUpdateTime(
+        {
+          mangaId,
+        },
+        { transaction: t },
+      );
+      if (!isUpdateTime)
+        throw new HttpException(
+          'Can not update time of manga',
+          HttpStatus.BAD_REQUEST,
+        );
+
       const folderHistoryName = `${nameManga}-history`;
       await this.createHistoryOfUpdateChapter(
         HistoryType.CreateChapter,

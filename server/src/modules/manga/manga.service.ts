@@ -481,7 +481,7 @@ export class MangaService {
     // Sorting logic
     const order = [];
     if (updatedAt) order.push(['updatedAt', 'DESC']);
-    if (createdAt) order.push(['createdAt', 'DESC']);
+    if (createdAt) order.push(['createdAt', 'ASC']);
     if (manga_views) order.push(['manga_views', 'DESC']);
     if (manga_number_of_followers) {
       order.push(['manga_number_of_followers', 'DESC']);
@@ -727,5 +727,24 @@ export class MangaService {
         HttpStatus.BAD_REQUEST,
       );
     return isUpdated;
+  }
+
+  async updateMangaUpdateTime(
+    {
+      mangaId,
+      updateTime = new Date(),
+    }: {
+      mangaId: number;
+      updateTime?: Date;
+    },
+    options: object = {},
+  ): Promise<number> {
+    return await this.mangaRepo.updateMangaUpdateTime(
+      {
+        mangaId,
+        updateTime,
+      },
+      options,
+    );
   }
 }

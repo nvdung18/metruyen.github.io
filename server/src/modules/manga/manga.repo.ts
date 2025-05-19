@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Manga } from './models/manga.model';
 import { MangaCategory } from './models/manga-category.model';
-import { Attributes, where } from 'sequelize';
+import { Attributes, QueryTypes, where } from 'sequelize';
 import { Op, literal } from 'sequelize';
 import { Category } from '@modules/category/models/category.model';
 import PaginateUtil from 'src/shared/utils/paginate.util';
@@ -230,6 +230,28 @@ export class MangaRepo {
       },
       {
         where: { manga_id: mangaId },
+        ...options,
+      },
+    );
+
+    return affectedCount;
+  }
+
+  async updateMangaUpdateTime(
+    {
+      mangaId,
+      updateTime = new Date(),
+    }: {
+      mangaId: number;
+      updateTime?: Date;
+    },
+    options: object = {},
+  ): Promise<any> {
+    const [_, affectedCount] = await this.mangaModel.sequelize.query(
+      'UPDATE manga SET updatedAt = ? WHERE manga_id = ?',
+      {
+        replacements: [updateTime, mangaId],
+        type: QueryTypes.UPDATE,
         ...options,
       },
     );
