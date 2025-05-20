@@ -15,6 +15,7 @@ import { MangaType, MangaChapterDetail } from '@/services/apiManga';
 import { ReportChapterDialog } from '../chapter/ReportChapterDialog';
 import { useState } from 'react';
 import { useCreateReportMutation } from '@/services/apiError';
+import { useAppSelector } from '@/lib/redux/hook';
 
 interface ReaderTopControlsProps {
   manga: MangaType;
@@ -40,9 +41,10 @@ const ReaderTopControls: React.FC<ReaderTopControlsProps> = ({
   hideControlsWithDelay
 }) => {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false); // State for dialog
+  const auth = useAppSelector((state) => state.auth);
   const [reportChapter] = useCreateReportMutation();
   if (!isVisible) return null;
-
+  console.log('x-client-id', auth.clientId);
   return (
     <>
       <motion.div
@@ -119,15 +121,17 @@ const ReaderTopControls: React.FC<ReaderTopControlsProps> = ({
                 <Home className="h-5 w-5" />
               </Link>
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsReportDialogOpen(true)} // Open dialog on click
-              className="rounded-full text-white hover:bg-white/10"
-              aria-label="Report Chapter" // Add aria-label for accessibility
-            >
-              <Flag className="h-5 w-5" />
-            </Button>
+            {auth.clientId && Number(auth.clientId) != 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsReportDialogOpen(true)} // Open dialog on click
+                className="rounded-full text-white hover:bg-white/10"
+                aria-label="Report Chapter" // Add aria-label for accessibility
+              >
+                <Flag className="h-5 w-5" />
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>

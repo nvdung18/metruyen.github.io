@@ -3,6 +3,8 @@
 import { fetchIPFSData } from '@/lib/utils';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 import {
   ChevronUp,
   ChevronDown,
@@ -24,6 +26,58 @@ interface ImageData {
   url: string;
   page: number;
 }
+
+// Component cho mỗi ảnh với lazy loading
+const LazyImage = ({
+  image,
+  index,
+  zoom
+}: {
+  image: ImageData;
+  index: number;
+  zoom: number;
+}) => {
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    rootMargin: '200px 0px',
+    threshold: 0.1
+  });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: inView ? 1 : 0, y: inView ? 0 : 20 }}
+      transition={{ duration: 0.5, delay: Math.min(index * 0.1, 0.5) }}
+      className="mb-4"
+    >
+      <div
+        className="group bg-card relative rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+        style={{ transform: `scale(${zoom / 100})` }}
+      >
+        {inView ? (
+          <Image
+            src={image.url}
+            alt={`Page ${image.page}`}
+            width={800}
+            height={1200}
+            className="w-full rounded-lg object-contain"
+            loading="lazy"
+            placeholder="blur"
+            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAySURBVHgB7c0xAQAACAIw7f+PA4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg8sP8AYvOQMVcDAAAAAElFTkSuQmCC"
+          />
+        ) : (
+          <Skeleton className="aspect-[2/3] w-full rounded-lg" />
+        )}
+        {inView && (
+          <div className="absolute right-4 bottom-4 rounded-full bg-black/50 px-3 py-1 text-sm text-white backdrop-blur-sm">
+            Page {image.page}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 const ReaderPage = () => {
   const searchparams = useSearchParams();
@@ -80,26 +134,9 @@ const ReaderPage = () => {
     <div className="bg-background relative min-h-screen">
       {/* Main content */}
       <main className="mx-auto max-w-4xl p-4">
-        <div className="space-y-4">
+        <div>
           {images.map((image, index) => (
-            <div
-              key={index}
-              className="group bg-card relative rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl"
-              style={{ transform: `scale(${zoom / 100})` }}
-            >
-              <Image
-                src={image.url}
-                alt={`Page ${image.page}`}
-                width={800}
-                height={1200}
-                className="w-full rounded-lg object-contain"
-                priority={index < 2}
-                loading={index < 2 ? 'eager' : 'lazy'}
-              />
-              <div className="absolute right-4 bottom-4 rounded-full bg-black/50 px-3 py-1 text-sm text-white backdrop-blur-sm">
-                Page {image.page}
-              </div>
-            </div>
+            <LazyImage key={index} image={image} index={index} zoom={zoom} />
           ))}
         </div>
       </main>

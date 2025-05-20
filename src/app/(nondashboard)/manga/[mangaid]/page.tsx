@@ -241,11 +241,10 @@ const MangaDetails = () => {
                     <span className="text-muted-foreground">Author</span>
                     <span>{manga.manga_author || 'N/A'}</span>
                   </div>
-                  <div className="grid grid-cols-2">
+                  {/* <div className="grid grid-cols-2">
                     <span className="text-muted-foreground">Total Stars</span>
                     <span>{manga.manga_total_star_rating || '0'}</span>
-                    {/* Assuming same as author */}
-                  </div>
+                  </div> */}
                   <div className="grid grid-cols-2">
                     <span className="text-muted-foreground">Released</span>
                     <span>
