@@ -170,7 +170,7 @@ const MegaMenu = ({ isOpen, onClose, className }: MegaMenuProps) => {
             {/* Featured Manga */}
             <div>
               <div className="mb-2 flex items-center">
-                <h3 className="text-sm font-semibold">Favorite Manga</h3>
+                <h3 className="text-sm font-semibold">Manga</h3>
                 <Badge variant="default" className="ml-2">
                   New
                 </Badge>

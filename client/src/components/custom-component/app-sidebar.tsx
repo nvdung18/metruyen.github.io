@@ -95,6 +95,14 @@ export function AppSidebar() {
                       'transition duration-200 group-data-[collapsible=icon]:group-hover:brightness-75'
                     )}
                   />
+                  {/* <Link
+                    href="/dashboard/manga"
+                    className="flex items-center space-x-2"
+                  >
+                    <span className="from-manga-300 to-manga-500 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent">
+                      MangaSphere
+                    </span>
+                  </Link> */}
                 </div>
                 <PanelLeft
                   size={24}

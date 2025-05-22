@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import Image from 'next/image'; // Import next/image
 import { fetchIPFSData } from '@/lib/utils';
+import { useInView } from 'react-intersection-observer';
+import { motion } from 'framer-motion';
 
 /**
  * Interface for image comparison data
@@ -25,6 +27,61 @@ interface ComparisonImage {
    */
   page: number;
 }
+
+/**
+ * Component for rendering a single image card with lazy loading
+ */
+const ImageCard = React.memo(
+  ({
+    image,
+    keyPrefix,
+    index,
+    borderClass
+  }: {
+    image: ComparisonImage;
+    keyPrefix: string;
+    index: number;
+    borderClass?: string;
+  }) => {
+    const { ref, inView } = useInView({
+      triggerOnce: true,
+      rootMargin: '200px 0px',
+      threshold: 0.1
+    });
+
+    return (
+      <motion.div
+        ref={ref}
+        key={`${keyPrefix}-${index}`}
+        className={`relative overflow-hidden rounded-md shadow-sm ${borderClass || ''}`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: inView ? 1 : 0, y: inView ? 0 : 20 }}
+        transition={{ duration: 0.3 }}
+      >
+        {inView ? (
+          <Image
+            src={image.url}
+            alt={`Page ${image.page}`}
+            width={800}
+            height={1200}
+            className="aspect-[2/3] h-auto w-full object-cover transition-transform duration-300 hover:scale-105"
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+            loading="lazy"
+            placeholder="blur"
+            blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAySURBVHgB7c0xAQAACAIw7f+PA4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg8sP8AYvOQMVcDAAAAAElFTkSuQmCC"
+          />
+        ) : (
+          <div className="aspect-[2/3] w-full animate-pulse bg-gray-800/20" />
+        )}
+        <div className="bg-card/50 text-accent-foreground absolute right-0 bottom-0 left-0 p-2 text-center text-xs backdrop-blur-sm">
+          Page {image.page}
+        </div>
+      </motion.div>
+    );
+  }
+);
+
+ImageCard.displayName = 'ImageCard';
 
 /**
  * Component for comparing chapter content between two versions or viewing a single version
@@ -113,40 +170,6 @@ const ChapterContentComparison = () => {
     return oldImages.filter((oldImage) => !newImageUrls.has(oldImage.url));
   };
 
-  /**
-   * Renders an image card using next/image
-   * @param image - Image data to render
-   * @param key - React key for the element
-   * @param borderClass - Optional CSS class for the border
-   * @returns JSX element for the image card
-   */
-  const renderImageCard = (
-    image: ComparisonImage,
-    key: string,
-    borderClass?: string
-  ) => (
-    <div
-      key={key}
-      className={`relative overflow-hidden rounded-md shadow-sm ${borderClass || ''}`}
-    >
-      {/* Use next/image component */}
-      <Image
-        src={image.url}
-        alt={`Page ${image.page}`}
-        width={800} // Provide a base width (adjust as needed)
-        height={1200} // Provide a base height (adjust as needed, maintaining aspect ratio)
-        className="aspect-[2/3] h-auto w-full object-cover transition-transform duration-300 hover:scale-105"
-        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw" // Responsive sizes
-        loading="lazy"
-        placeholder="blur"
-        blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAySURBVHgB7c0xAQAACAIw7f+PA4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg8sP8AYvOQMVcDAAAAAElFTkSuQmCC"
-      />
-      <div className="bg-card/50 text-accent-foreground absolute right-0 bottom-0 left-0 p-2 text-center text-xs backdrop-blur-sm">
-        Page {image.page}
-      </div>
-    </div>
-  );
-
   const addedImages = getAddedImages();
   const removedImages = getRemovedImages();
 
@@ -163,13 +186,15 @@ const ChapterContentComparison = () => {
               Added Images ({addedImages.length})
             </h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {addedImages.map((image, index) =>
-                renderImageCard(
-                  image,
-                  `added-${index}`,
-                  'border-2 border-green-500/30'
-                )
-              )}
+              {addedImages.map((image, index) => (
+                <ImageCard
+                  key={`added-${index}`}
+                  image={image}
+                  keyPrefix="added"
+                  index={index}
+                  borderClass="border-2 border-green-500/30"
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -183,13 +208,15 @@ const ChapterContentComparison = () => {
               Removed Images ({removedImages.length})
             </h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {removedImages.map((image, index) =>
-                renderImageCard(
-                  image,
-                  `removed-${index}`,
-                  'border-2 border-red-500/30'
-                )
-              )}
+              {removedImages.map((image, index) => (
+                <ImageCard
+                  key={`removed-${index}`}
+                  image={image}
+                  keyPrefix="removed"
+                  index={index}
+                  borderClass="border-2 border-red-500/30"
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -209,9 +236,14 @@ const ChapterContentComparison = () => {
               </h3>
               <div className="border-manga-600/20 space-y-4 rounded-md border p-4">
                 {oldImages.length > 0 ? (
-                  oldImages.map((image, index) =>
-                    renderImageCard(image, `old-${index}`)
-                  )
+                  oldImages.map((image, index) => (
+                    <ImageCard
+                      key={`old-${index}`}
+                      image={image}
+                      keyPrefix="old"
+                      index={index}
+                    />
+                  ))
                 ) : (
                   <p className="text-muted-foreground py-8 text-center">
                     No images in old version
@@ -226,9 +258,14 @@ const ChapterContentComparison = () => {
               </h3>
               <div className="border-manga-600/20 space-y-4 rounded-md border p-4">
                 {newImages.length > 0 ? (
-                  newImages.map((image, index) =>
-                    renderImageCard(image, `new-${index}`)
-                  )
+                  newImages.map((image, index) => (
+                    <ImageCard
+                      key={`new-${index}`}
+                      image={image}
+                      keyPrefix="new"
+                      index={index}
+                    />
+                  ))
                 ) : (
                   <p className="text-muted-foreground py-8 text-center">
                     No images in new version
@@ -254,9 +291,14 @@ const ChapterContentComparison = () => {
         {remainImages.length > 0 ? (
           // Use a single column layout that naturally scrolls vertically
           <div className="mx-auto max-w-2xl space-y-6">
-            {remainImages.map((image, index) =>
-              renderImageCard(image, `remain-${index}`)
-            )}
+            {remainImages.map((image, index) => (
+              <ImageCard
+                key={`remain-${index}`}
+                image={image}
+                keyPrefix="remain"
+                index={index}
+              />
+            ))}
           </div>
         ) : (
           <div className="border-manga-600/20 flex h-64 items-center justify-center rounded-md border border-dashed">
