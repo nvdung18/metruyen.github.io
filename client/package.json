@@ -45,6 +45,7 @@
     "js-cookie": "^3.0.5",
     "lodash": "^4.17.21",
     "lucide-react": "^0.477.0",
+    "my-app": "file:",
     "next": "15.2.1",
     "next-themes": "^0.4.4",
     "react": "^19.0.0",
