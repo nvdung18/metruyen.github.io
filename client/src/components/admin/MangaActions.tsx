@@ -65,7 +65,7 @@ export default function MangaActions({
             Unpublish
           </DropdownMenuItem>
         )}
-        {/* <DropdownMenuItem asChild className="cursor-pointer">
+        <DropdownMenuItem asChild className="cursor-pointer">
           <Link
             href={`/dashboard/history?manga_id=${item.manga_id}`}
             className="flex w-full"
@@ -73,7 +73,7 @@ export default function MangaActions({
             <History className="mr-2 h-4 w-4" />
             History
           </Link>
-        </DropdownMenuItem> */}
+        </DropdownMenuItem>
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link
             href={`/dashboard/manga/${item.manga_id}?status=${isPublished ? 'publish' : 'unpublish'}`}
