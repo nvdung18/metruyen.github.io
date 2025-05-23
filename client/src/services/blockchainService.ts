@@ -6,7 +6,6 @@ import { metadata } from '../app/layout';
 // Interface for blockchain connection configuration
 export interface BlockchainConfig {
   rpcUrl: string;
-  contractAddress: string;
   apiKey?: string;
 }
 
@@ -42,8 +41,6 @@ const fetchBlockchainConfig = async () => {
 // Default configuration
 const defaultConfig: BlockchainConfig = {
   rpcUrl: process.env.RPC_URL || 'http://127.0.0.1:7545',
-  contractAddress:
-    process.env.CONTRACT_ADDRESS || '0xa556FDe944c946B89F36303aa35CB00ee7457B50'
 };
 
 // Contract ABI for interacting with the smart contract

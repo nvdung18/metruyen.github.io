@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-refresh-key': refreshToken
+            'x-refresh-token': refreshToken
           }
         }
       );
