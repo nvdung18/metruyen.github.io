@@ -266,11 +266,6 @@ class BlockchainService {
       };
     }
 
-    // const page: number = 1; // default page
-    // const pageSize = page === 1 ? 4 : 5;
-    // const startIndex = (page - 1) * pageSize;
-    // const endIndex = startIndex + pageSize;
-
     try {
       // Fetch first entry
       const firstEntry = await this.fetchIPFSData(latestCid);
@@ -300,49 +295,9 @@ class BlockchainService {
         }
       }
 
-      //Test
-      // Process versions until we have enough for the requested page
-      // let currentEntry: HistoryEntry | null = firstEntry;
-      // while (
-      //   currentEntry?.previousVersion &&
-      //   historyEntries.length < endIndex + 1
-      // ) {
-      //   const nextEntry = await this.fetchIPFSData(
-      //     currentEntry.previousVersion
-      //   );
-      //   if (nextEntry && !processedVersions.has(nextEntry.version)) {
-      //     processedVersions.add(nextEntry.version);
-      //     historyEntries.push(nextEntry);
-      //     currentEntry = nextEntry;
-      //   } else {
-      //     currentEntry = null; // Break the loop if we get null or duplicate version
-      //   }
-      // }
-      //--endtest
-
       // Sort entries by version (descending)
       historyEntries.sort((a, b) => b.version - a.version);
-      //Test
-      // const totalItems = historyEntries.length;
-      // const totalPages = Math.ceil(totalItems / pageSize);
-      // const hasMore = currentEntry?.previousVersion != null;
 
-      // // Get items for the requested page
-      // const paginatedHistory = historyEntries.slice(startIndex, endIndex);
-      // console.log('Paginated history:', paginatedHistory);
-      // console.log('Total pages:', totalPages);
-      // console.log('Has more:', hasMore);
-      // console.log('Total items:', totalItems);
-      // console.log('historyEntries', historyEntries);
-      // const pagination = {
-      //   currentPage: page,
-      //   totalPages,
-      //   totalItems,
-      //   hasMore
-      // };
-      // console.log('Pagination:', pagination, paginatedHistory);
-
-      //EndTest
       return {
         history: historyEntries
       };
