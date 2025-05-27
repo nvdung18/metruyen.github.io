@@ -260,13 +260,15 @@ export async function fetchAndParseIPFSData(
 ): Promise<ChapterImage[]> {
   if (!cid) return [];
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL_IPFS}${cid}`
-    );
+    let response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_IPFS}${cid}`);
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch IPFS content (${response.status}) for CID: ${cid}`
+      response = await fetch(
+        `${process.env.NEXT_PUBLIC_ALTERNATE_URL_IPFS}${cid}`
       );
+      if (!response.ok)
+        throw new Error(
+          `Failed to fetch IPFS content (${response.status}) for CID: ${cid}`
+        );
     }
     const data = await response.json();
 

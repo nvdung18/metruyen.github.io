@@ -86,7 +86,7 @@ export function AppSidebar() {
               <div className="flex w-full items-center justify-between group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
                 <div className="flex items-center">
                   <Image
-                    src={'/MANGA.webp'}
+                    src={'/MeTruyen_Logo.png'}
                     alt="Vercel Logo"
                     sizes="25px"
                     width={25}
