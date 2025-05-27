@@ -8,12 +8,12 @@ module.exports = {
     const baseManga = [
       {
         manga_id: 1,
-        manga_title: 'One Piece',
-        manga_thumb: 'https://example.com/thumbs/one-piece.jpg',
-        manga_slug: 'one-piece',
+        manga_title: 'Thanh Kiếm Của Thợ Săn Quỷ',
+        manga_thumb: 'https://example.com/thumbs/thanh-kiem-cua-tho-san-quy.jpg',
+        manga_slug: 'thanh-kiem-cua-tho-san-quy',
         manga_description:
-          'A legendary adventure on the high seas in search of the One Piece treasure.',
-        manga_author: 'Eiichiro Oda',
+          'Kijin Gentoushou, Sword of the Demon Hunter',
+        manga_author: 'Aiura Kazuya',
         manga_status: 'ongoing',
         manga_views: 1000000,
         manga_ratings_count: 10000,
