@@ -90,7 +90,7 @@ const AuthPage = () => {
         )}
 
         <h1 className="manga-heading mb-6 text-center">
-          {isLoginPage ? 'Welcome Back!' : 'Join MangaSphere'}
+          {isLoginPage ? 'Welcome Back!' : 'Join MeTruyen'}
         </h1>
 
         <Tabs defaultValue={defaultTab} className="w-full">

@@ -36,7 +36,6 @@ export default function DashboardLayout({
     dispatch(getUserCurrent());
   }, []);
 
-  console.log('auth', auth);
 
   if (!auth.isAuthenticated) {
     return <DashboardSkeleton />;

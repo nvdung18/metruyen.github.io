@@ -100,7 +100,7 @@ export function AppSidebar() {
                     className="flex items-center space-x-2"
                   >
                     <span className="from-manga-300 to-manga-500 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent">
-                      MangaSphere
+                      MeTruyen
                     </span>
                   </Link> */}
                 </div>

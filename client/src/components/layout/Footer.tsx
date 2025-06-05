@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-1">
             <h3 className="text-xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-manga-300 to-manga-500">
-              MangaSphere
+              MeTruyen
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
               Your gateway to the world of manga. Discover, read, and connect
@@ -158,7 +158,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-border mt-8 pt-6 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} MangaSphere. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} MeTruyen. All rights reserved.</p>
         </div>
       </div>
     </footer>
